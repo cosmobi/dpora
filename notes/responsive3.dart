@@ -13,51 +13,40 @@ class _DporaAppState extends State<DporaApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'dpora',
+    return Scaffold(
       //     appBar: AppBar(),
-      home: Scaffold(
-        body: OrientationBuilder(
-          builder: (context, orientation) {
-            return orientation == Orientation.portrait
-                ? _buildVerticalLayout()
-                : _buildHorizontalLayout();
-          },
-        ),
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          return orientation == Orientation.portrait
+              ? _buildVerticalLayout()
+              : _buildHorizontalLayout();
+        },
       ),
     );
   }
 
-  // Widget _simbox() {
-  //   return Container(
-  //     padding: const EdgeInsets.all(8.0),
-  //     child: Icon(
-  //       Icons.account_circle,
-  //       size: 100.0,
-  //     ),
-  //   );
-  // }
-
-  // Widget _userInput() {
-  //   return Container(
-  //     padding: const EdgeInsets.all(8.0),
-  //       child: Text(
-  //         someText,
-  //         style: TextStyle(fontSize: 32.0),
-  //       ),
-  //     );
-  // }
-
   Widget _simbox() {
-    return Text('simbox goes here');
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      child: Icon(
+        Icons.account_circle,
+        size: 100.0,
+      ),
+    );
   }
 
   Widget _userInput() {
-    return Text('user input area');
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+        child: Text(
+          someText,
+          style: TextStyle(fontSize: 32.0),
+        ),
+      );
   }
 
   Widget _chatTiles() {
-    // get the screen width and height for responsive design
+        // get the screen width and height for responsive design
     final screenSize = MediaQuery.of(context).size;
     final double tileHeight = screenSize.height / 2;
     final double tileWidth = screenSize.width / 2;
@@ -67,15 +56,11 @@ class _DporaAppState extends State<DporaApp> {
         crossAxisCount: 2, // 2 tiles per row
         crossAxisSpacing: 8, // vertical space between left & right tiles
         mainAxisSpacing: 8, // horizontal space between top & bottom tiles
-        childAspectRatio: tileWidth / tileHeight,
+        childAspectRatio: tileWidth / tileHeight, 
         // responsive tile size
         physics:
             NeverScrollableScrollPhysics(), // to disable GridView's scrolling
-        shrinkWrap: false, 
-        /* changing shrinkWrap to true will center the tiles
-        in the horizontal view (landscape mode) only.
-        however, it may be computationally expensive to use
-        */
+        shrinkWrap: true, // uncomment if you get infinite size error
         children: <Widget>[
           Container(
             padding: const EdgeInsets.all(20), // padding space within tile
@@ -103,26 +88,33 @@ class _DporaAppState extends State<DporaApp> {
   }
 
   Widget _buildVerticalLayout() {
-    return Column(
-      children: [
-        _simbox(),
-        _chatTiles(),
-        _userInput(),
-      ],
+    return Center(
+      child: Column(
+        children: <Widget>[
+          _simbox (),
+          _chatTiles(),
+          _userInput (),
+        ],
+      ),
     );
   }
 
   Widget _buildHorizontalLayout() {
-    return Row(
-      children: [
-        Column(
-          children: [
-            _simbox(),
-            _userInput(),
-          ],
-        ),
-        _chatTiles(),
-      ],
+    return Center(
+      child: Row(
+        children: <Widget>[
+          //Expanded(
+          //  child: 
+            Column(
+              children: <Widget>[
+                _simbox(),
+                _userInput(),
+              ],
+            ),
+          //),
+          _chatTiles(),
+        ],
+      ),
     );
   }
 }
