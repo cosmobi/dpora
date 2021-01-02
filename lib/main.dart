@@ -9,7 +9,19 @@ class DporaApp extends StatefulWidget {
 }
 
 class _DporaAppState extends State<DporaApp> {
-//  var someText = "yada yada yada";
+  // updatable content from DB
+  String stimText =
+      'Mind on your money, or money on your mind? And would you rather sip on gin or juice, or both?';
+  Color userColor = Colors.greenAccent; // userText updated in userOutput below
+  String tileTextLT = 'left top text here';
+  Color textColorLT = Colors.orangeAccent;
+  String tileTextLB = 'left bottom text here';
+  Color textColorLB = Colors.blueAccent;
+  String tileTextRT =
+      'this text is about 25 words or something maybe longer. this text is about 25 words or maybe shorter. this text is about 25 words or so.';
+  Color textColorRT = Colors.purpleAccent;
+  String tileTextRB = 'right bottom text here';
+  Color textColorRB = Colors.redAccent;
 
   @override
   Widget build(BuildContext context) {
@@ -22,33 +34,51 @@ class _DporaAppState extends State<DporaApp> {
         body: OrientationBuilder(
           builder: (context, orientation) {
             return orientation == Orientation.portrait
-                ? _buildVerticalLayout()
-                : _buildHorizontalLayout();
+                ? _buildVerticalLayout(
+                    tileTextLT,
+                    textColorLT,
+                    tileTextLB,
+                    textColorLB,
+                    tileTextRT,
+                    textColorRT,
+                    tileTextRB,
+                    textColorRB,
+                  )
+                : _buildHorizontalLayout(
+                    tileTextLT,
+                    textColorLT,
+                    tileTextLB,
+                    textColorLB,
+                    tileTextRT,
+                    textColorRT,
+                    tileTextRB,
+                    textColorRB,
+                  );
           },
         ),
       ),
     );
   }
 
-  Widget _stimulus() {
-    var stimText = 'And you are?';
-//        'Mind on your money, or money on your mind? And would you rather sip on gin or juice, or both?';
+  Widget _stimulus(textSize) {
     return Container(
       padding: EdgeInsets.all(10),
       margin: EdgeInsets.all(10),
       child: Text(
         stimText,
         style: TextStyle(
-            fontSize: 24.0, color: Colors.yellow), // yellowAccent is too bright
+            fontSize: textSize,
+            color: Colors.yellow), // yellowAccent is too bright
       ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.yellow),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
         color: Colors.black,
       ),
     );
   }
 
-  Widget _userInput(userColor) {
+  Widget _userInput() {
     return TextField(
       decoration: InputDecoration(
         enabledBorder: OutlineInputBorder(
@@ -68,168 +98,225 @@ class _DporaAppState extends State<DporaApp> {
     );
   }
 
-  Widget _userOutput(userColor) {
+  Widget _userOutput(textSize) {
     return Container(
       padding: EdgeInsets.all(10),
       margin: EdgeInsets.all(10),
       decoration: BoxDecoration(
         border: Border.all(color: userColor),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
         color: Colors.black,
       ),
-      child:
-          Text('text here', style: TextStyle(fontSize: 18.0, color: userColor)),
+      child: Text('what the user wrote goes here',
+          style: TextStyle(fontSize: textSize, color: userColor)),
     );
   }
 
-  Widget _chatTiles(tileHeight, tileWidth) {
-    return Row(
-      children: [
-        Column(
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height / tileHeight,
-              width: (MediaQuery.of(context).size.width / tileWidth) - 10,
-              // the -10 takes off 10% to leave room for the margin
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.orangeAccent),
-                color: Colors.black,
-              ),
-              child: Text(
-                'text here for about this much space.',
-                style: TextStyle(fontSize: 18.0, color: Colors.orangeAccent),
-              ),
-            ),
-            Container(
-              height: MediaQuery.of(context).size.height / tileHeight,
-              width: (MediaQuery.of(context).size.width / tileWidth) - 10,
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.purpleAccent),
-                color: Colors.black,
-              ),
-              child: Text(
-                'text goes here.',
-                style: TextStyle(fontSize: 18.0, color: Colors.purpleAccent),
-              ),
-            ),
-          ],
+  Widget _chatTile(tileHeight, tileWidth, textSize, tileText, textColor) {
+    return Container(
+      height: MediaQuery.of(context).size.height * tileHeight,
+      width: MediaQuery.of(context).size.width * tileWidth,
+      padding: EdgeInsets.all(10),
+      margin: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: textColor),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+        color: Colors.black,
+      ),
+      child: SingleChildScrollView(
+        child: Text(
+          tileText,
+          style: TextStyle(fontSize: textSize, color: textColor),
         ),
-        Column(
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height / tileHeight,
-              width: (MediaQuery.of(context).size.width / tileWidth) - 10,
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.redAccent),
-                color: Colors.black,
-              ),
-              child: Text(
-                'text here',
-                style: TextStyle(fontSize: 18.0, color: Colors.redAccent),
-              ),
-            ),
-            Container(
-              height: MediaQuery.of(context).size.height / tileHeight,
-              width: (MediaQuery.of(context).size.width / tileWidth) - 10,
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.blueAccent),
-                color: Colors.black,
-              ),
-              child: Text(
-                'B: text goes here for about this much space. text goes here for about this much space',
-                style: TextStyle(fontSize: 18.0, color: Colors.blueAccent),
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildVerticalLayout() {
+  Widget _buildVerticalLayout(
+    tileTextLT,
+    textColorLT,
+    tileTextLB,
+    textColorLB,
+    tileTextRT,
+    textColorRT,
+    tileTextRB,
+    textColorRB,
+  ) {
+    final allTileHeight = 0.2; // 20% screen height
+    final allTileWidth = 0.46; // 46% screen width
+    final allTextSize = 18; // 18 font size
     return Column(
       children: [
+        Expanded(
+          child: Container(),
+        ), // spacer
         Container(
-          height: MediaQuery.of(context).size.height / 4, //20%
+          height: MediaQuery.of(context).size.height * 0.23, //23%
           width: MediaQuery.of(context).size.width, //100%
-          child: _stimulus(),
-        ),
-        _chatTiles(5, 2),
-        Container(
-          width: MediaQuery.of(context).size.width,
-          child: _userOutput(Colors.greenAccent),
+          child: _stimulus(24),
         ),
         Expanded(
-          // this will push the userInput to the bottom
-          child: Container(
-            color: Colors.black,
-          ),
+          child: Container(),
+        ), // spacer
+        // build the chat titles, the left column (top & bottom) and right
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Column(
+              children: [
+                _chatTile(
+                  allTileHeight,
+                  allTileWidth,
+                  allTextSize,
+                  tileTextLT,
+                  textColorLT,
+                ),
+                _chatTile(
+                  allTileHeight,
+                  allTileWidth,
+                  allTextSize,
+                  tileTextLB,
+                  textColorLB,
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                _chatTile(
+                  allTileHeight,
+                  allTileWidth,
+                  allTextSize,
+                  tileTextRT,
+                  textColorRT,
+                ),
+                _chatTile(
+                  allTileHeight,
+                  allTileWidth,
+                  allTextSize,
+                  tileTextRB,
+                  textColorRB,
+                ),
+              ],
+            ),
+          ],
         ),
+        Expanded(
+          child: Container(),
+        ), // spacer
         Container(
-          padding: EdgeInsets.all(20),
           width: MediaQuery.of(context).size.width,
-          child: _userInput(Colors.greenAccent),
+          child: _userOutput(18), // font size 18
         ),
+        Expanded(
+          child: Container(),
+        ), // spacer
+        Container(
+          padding: EdgeInsets.all(10),
+          width: MediaQuery.of(context).size.width,
+          child: _userInput(),
+        ),
+        Expanded(
+          child: Container(),
+        ), // spacer
       ],
     );
   }
 
-  Widget _buildHorizontalLayout() {
-    return Row(
-      children: [
-        Column(
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height / 3, //33%
-              width: MediaQuery.of(context).size.width / 2,
-              child: _stimulus(),
-            ),
-            Expanded(
-              // spacer
-              child: Container(
-                color: Colors.black,
+  Widget _buildHorizontalLayout(
+    tileTextLT,
+    textColorLT,
+    tileTextLB,
+    textColorLB,
+    tileTextRT,
+    textColorRT,
+    tileTextRB,
+    textColorRB,
+  ) {
+    final allTileHeight = 0.33; // 33% screen height
+    final allTileWidth = 0.21; // 21% screen width
+    final allTextSize = 26; // 26 font size
+    return Column(children: [
+      Expanded(
+        child: Container(),
+      ), // spacer
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Column(
+            children: [
+              Container(
+                height: MediaQuery.of(context).size.height * 0.355, //35.5%
+                width: MediaQuery.of(context).size.width / 2,
+                child: _stimulus(32),
               ),
-            ),
-            Container(
-              height: MediaQuery.of(context).size.height / 4, //25%
-              width: MediaQuery.of(context).size.width / 2,
-              child: _userOutput(Colors.greenAccent),
-            ),
-            Expanded(
-              // this will push the userInput to the bottom
-              child: Container(
-                color: Colors.black,
+              Container(
+                height: MediaQuery.of(context).size.height * 0.355,
+                width: MediaQuery.of(context).size.width / 2,
+                child: _userOutput(26), // font size 26
               ),
-            ),
-            Container(
-              padding: EdgeInsets.all(20),
-              width: MediaQuery.of(context).size.width / 2,
-              child: _userInput(Colors.greenAccent),
-            ),
-          ],
-        ),
-        Column(
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height / 8, //12.5%
-              width: MediaQuery.of(context).size.width / 2,
-              child: Container(
-                color: Colors.black,
+            ],
+          ),
+          Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    children: [
+                      _chatTile(
+                        allTileHeight,
+                        allTileWidth,
+                        allTextSize,
+                        tileTextLT,
+                        textColorLT,
+                      ),
+                      _chatTile(
+                        allTileHeight,
+                        allTileWidth,
+                        allTextSize,
+                        tileTextLB,
+                        textColorLB,
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      _chatTile(
+                        allTileHeight,
+                        allTileWidth,
+                        allTextSize,
+                        tileTextRT,
+                        textColorRT,
+                      ),
+                      _chatTile(
+                        allTileHeight,
+                        allTileWidth,
+                        allTextSize,
+                        tileTextRB,
+                        textColorRB,
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            Container(
-              child: _chatTiles(3, 4),
-            ),
-          ],
-        )
-      ],
-    );
+            ],
+          )
+        ],
+      ),
+      Expanded(
+        child: Container(),
+      ), // spacer
+      Container(
+        width: MediaQuery.of(context).size.width * 0.95, //95%
+        padding: EdgeInsets.all(10),
+        child: _userInput(),
+      ),
+      Expanded(
+        child: Container(),
+      ), // spacer
+    ]);
   }
 }
