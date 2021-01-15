@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:connectivity/connectivity.dart';
 import 'dart:math';
 
 // wrap DporaApp widget within a MaterialApp widget
@@ -13,16 +12,6 @@ void main() => runApp(MaterialApp(home: DporaApp()));
 class DporaApp extends StatefulWidget {
   @override
   _DporaAppState createState() => _DporaAppState();
-}
-
-// if both mobile data or wifi is turned off then tell
-// the user (as a stimulus) to turn on one or both.
-bool airplaneMode = false;
-void checkConnectivity() async {
-  var connectivityResult = await (Connectivity().checkConnectivity());
-  if (connectivityResult == ConnectivityResult.none) {
-    airplaneMode = true;
-  }
 }
 
 // Will be used to hold platform identification
@@ -58,15 +47,9 @@ _contactForm() async {
   }
 }
 
-// generate an UUID
-String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
-Random generateRandom = new Random();
-String randomNumber = generateRandom.nextInt(1000000).toString();
-final String uuid = randomNumber + milliseconds;
-
 // Make updated copyright text
 DateTime nowDate = new DateTime.now();
-String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
+String nowYear = new DateTime(nowDate.year).toString().substring(0,4);
 final String copyright = 'Copyright © ' + nowYear + ' dpora';
 
 class _DporaAppState extends State<DporaApp> {
@@ -84,8 +67,6 @@ class _DporaAppState extends State<DporaApp> {
     'Speak your mind and gain\nmultiple perspectives',
     'Educate and learn with others.\nDisagree and grow together.',
   ];
-  // the list order will shuffle everytime the menu drawer closes
-
   String stimText =
       'Mind on your money. Money on your mind. Sippin on gin and juice. West Side, yall!';
   Color userColor = Colors.greenAccent; // userText updated in userOutput below
@@ -109,29 +90,11 @@ class _DporaAppState extends State<DporaApp> {
   // programically (in addition to swiping)
   GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
 
-  // needed for snackbars
-  final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
-      GlobalKey<ScaffoldMessengerState>();
-  bool waitStatus = false;
-  final snackBarWait = SnackBar(
-    content: const Text('Wait for your last post to disappear!'),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(10),
-        topRight: Radius.circular(10),
-      ),
-    ),
-    backgroundColor: Colors.yellow,
-    duration: const Duration(seconds: 4),
-  );
-
   // using this to handle inputted text in the textfield
   TextEditingController inputController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    // is mobile data and wifi turned off?
-    checkConnectivity();
     // detect platform
     if (kIsWeb) {
       // detect if web app
@@ -156,8 +119,17 @@ class _DporaAppState extends State<DporaApp> {
       }
     }
 
+    // generate an UUID
+    String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
+    Random generateRandom = new Random();
+    String randomNumber = generateRandom.nextInt(1000000).toString(); 
+    final String uuid = randomNumber + milliseconds;
+
+    // initial shuffle of menu messages
+    var menuMsgs = menuMessages..shuffle();
+    // list will shuffle again everytime menu closes
+
     return MaterialApp(
-      scaffoldMessengerKey: rootScaffoldMessengerKey,
       title: 'ϕ dpora', // or use Φ
       theme: ThemeData.dark(),
       home: Scaffold(
@@ -182,7 +154,7 @@ class _DporaAppState extends State<DporaApp> {
                       ),
                       TextSpan(
                         // pick the first message from list
-                        text: menuMessages.first + '\n\n',
+                        text: menuMsgs.first + '\n\n',
                         style: TextStyle(
                           fontSize: 19,
                           color: Colors.black,
@@ -216,7 +188,7 @@ class _DporaAppState extends State<DporaApp> {
                   _dporaWebsite();
                   // shuffle order of menu messages list
                   setState(() {
-                    menuMessages = menuMessages..shuffle();
+                    menuMsgs = menuMsgs..shuffle();
                   });
                   //close the drawer
                   _drawerKey.currentState.openEndDrawer();
@@ -235,7 +207,7 @@ class _DporaAppState extends State<DporaApp> {
                   // Go to web-based dynamic contact form
                   _contactForm();
                   setState(() {
-                    menuMessages = menuMessages..shuffle();
+                    menuMsgs = menuMsgs..shuffle();
                   });
                   _drawerKey.currentState.openEndDrawer();
                 },
@@ -257,17 +229,15 @@ class _DporaAppState extends State<DporaApp> {
                         ),
                       ),
                       TextSpan(
-                        text: '''
-This app will guess your country from your
-internet address but will not save IPs.
-
-Every post replaces the previous post.
-No previous posts are saved.
-
-You were given this random number to jump in.
-($uuid) Change it anytime.
-
-Tap the About button above for more info.
+                        text: ''' 
+dpora needs a device ID to join a group.
+Yours is $uuid
+                        
+It will also attempt to parse an IP address
+in order to guess your country location.
+                        
+Every post replaces the previous post
+for that device ID. No posts are saved!
 ''',
                         style: TextStyle(
                           fontSize: 12,
@@ -289,7 +259,7 @@ Tap the About button above for more info.
                   TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: '\nLive Stats' + '\n\n',
+                        text: '\nStats' + '\n\n',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white,
@@ -349,7 +319,7 @@ Tap the About button above for more info.
                 ),
                 onTap: () {
                   setState(() {
-                    menuMessages = menuMessages..shuffle();
+                    menuMsgs = menuMsgs..shuffle();
                   });
                   _drawerKey.currentState.openEndDrawer();
                 },
@@ -387,10 +357,6 @@ Tap the About button above for more info.
   }
 
   Widget _stimulus(textSize) {
-    if (airplaneMode == true) {
-      stimText =
-      'NO INTERNET CONNECTION!\nAre you in Airplane Mode? Please turn on mobile data, WiFi or both.';
-    }
     return Container(
       padding: EdgeInsets.all(10),
       margin: EdgeInsets.all(10),
@@ -490,8 +456,6 @@ Tap the About button above for more info.
   }
 
   Widget _userInput() {
-    int _timeUntilFade = 20;
-    int _fadeDuration = 10;
     return TextField(
         controller: inputController,
         style: TextStyle(color: userColor),
@@ -526,30 +490,19 @@ Tap the About button above for more info.
         // this is way more than needed but allows for ascii art or venting
         autofocus: false,
         onEditingComplete: () {
-          if (waitStatus == true) {
-            // snackbar reminds user to wait until previous post disappears
-            rootScaffoldMessengerKey.currentState.showSnackBar(snackBarWait);
-          } else {
+          setState(() {
+            userFadeTime = 0;
+            userOpacity = 1.0;
+            submittedText = inputController.text;
+          });
+          inputController.clear(); // clear text in input box
+          Timer(Duration(seconds: 20), () {
+            // after 20 seconds...
             setState(() {
-              userFadeTime = 0;
-              userOpacity = 1.0;
-              submittedText = inputController.text;
-              waitStatus = true;
+              userFadeTime = 10; // fade duration
+              userOpacity = 0.0;
             });
-            inputController.clear(); // clear text in input box
-            Timer(Duration(seconds: _timeUntilFade), () {
-              // after 20 seconds...
-              setState(() {
-                userFadeTime = _fadeDuration;
-                userOpacity = 0.0;
-              });
-            });
-            Timer(Duration(seconds: _timeUntilFade + _fadeDuration), () {
-              setState(() {
-                waitStatus = false;
-              });
-            });
-          }
+          });
         });
   }
 
