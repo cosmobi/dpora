@@ -6,16 +6,23 @@ import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:connectivity/connectivity.dart';
 import 'dart:math';
+// Firebase imports
+import 'package:firebase_core/firebase_core.dart';
+// ignore: import_of_legacy_library_into_null_safe
+import 'package:firebase_database/firebase_database.dart';
 
-// wrap DporaApp widget within a MaterialApp widget
-void main() => runApp(MaterialApp(home: DporaApp()));
+// Wrap DporaApp widget within a MaterialApp widget
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(MaterialApp(home: DporaApp()));
+}
 
 class DporaApp extends StatefulWidget {
   @override
   _DporaAppState createState() => _DporaAppState();
 }
 
-// if both mobile data or wifi is turned off then tell
+// If both mobile data or wifi is turned off then tell
 // the user (as a stimulus) to turn on one or both.
 bool airplaneMode = false;
 void checkConnectivity() async {
@@ -28,14 +35,14 @@ void checkConnectivity() async {
 // Will be used to hold platform identification
 String platform;
 
-// creating link to main website
+// Creating link to main website
 _dporaWebsite() async {
   const url = 'https://dpora.com';
   if (await canLaunch(url)) {
     await launch(
       url,
       forceWebView:
-          true, // to open url in-app on android. iOS is in-app by default.
+          true, // To open url in-app on android. iOS is in-app by default.
       // enableJavaScript: true, // uncomment if dpora.com uses javascript
     );
   } else {
@@ -43,14 +50,14 @@ _dporaWebsite() async {
   }
 }
 
-// creating link to the web-based dynamic contact form
+// Creating link to the web-based dynamic contact form
 _contactForm() async {
   const url = 'https://contact.dpora.com';
   if (await canLaunch(url)) {
     await launch(
       url,
       forceWebView:
-          true, // to open url in-app on android. iOS is in-app by default.
+          true, // To open url in-app on android. iOS is in-app by default.
       // enableJavaScript: true, // uncomment if dpora.com uses javascript
     );
   } else {
@@ -58,7 +65,7 @@ _contactForm() async {
   }
 }
 
-// generate an UUID
+// Generate an UUID
 String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
 Random generateRandom = new Random();
 String randomNumber = generateRandom.nextInt(1000000).toString();
@@ -69,67 +76,139 @@ DateTime nowDate = new DateTime.now();
 String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
 final String copyright = 'Copyright © ' + nowYear + ' dpora';
 
-class _DporaAppState extends State<DporaApp> {
-  // default app-wide colors
-  Color boxBGColor = Colors.grey[900];
-  Color iconColor = Colors.grey[700];
-  Color menuColor = Colors.blueGrey;
+// Default stimulus text
+String stimText = 'Error: dpora is not working. Please try again later.';
 
-  // this is updated when user hits Return or Enter on their keyboard
-  String submittedText = '';
+// Default app-wide colors
+Color boxBGColor = Colors.grey[900];
+Color iconColor = Colors.grey[700];
+Color menuColor = Colors.blueGrey;
 
-  // updatable content from DB
-  var menuMessages = [
-    'Have private yet meaningful\nchats with total strangers',
-    'Speak your mind and gain\nmultiple perspectives',
-    'Educate and learn with others.\nDisagree and grow together.',
-  ];
-  // the list order will shuffle everytime the menu drawer closes
+// This is updated when user hits Return or Enter on their keyboard
+String submittedText = '';
 
-  String stimText =
-      'Mind on your money. Money on your mind. Sippin on gin and juice. West Side, yall!';
-  Color userColor = Colors.greenAccent; // userText updated in userOutput below
-  String tileTextLT = 'left top text here';
-  Color textColorLT = Colors.orangeAccent;
-  String tileTextLB = 'left bottom text here';
-  Color textColorLB = Colors.blueAccent;
-  String tileTextRT =
-      'this text is about 25 words or something maybe longer. this text is about 25 words or maybe shorter. this text is about 25 words or so.';
-  Color textColorRT = Colors.purpleAccent;
-  String tileTextRB = 'right bottom text here and not there';
-  Color textColorRB = Colors.redAccent;
+// TODO: later, pull this array content from the DB
+// This list order will shuffle everytime the menu drawer closes
+var menuMessages = [
+  'Have private yet meaningful\nchats with total strangers',
+  'Speak your mind and gain\nmultiple perspectives',
+  'Educate and learn with others.\nDisagree and grow together.',
+];
 
-  // for fading text
-  double userOpacity = 1.0;
-  double chatOpacity = 1.0;
-  int userFadeTime = 10;
-  int chatFadeTime = 10;
+// Default values for the tileText and textColor
+Color userColor = Colors.greenAccent;
+String tileTextLT = 'The top left is orange.';
+Color textColorLT = Colors.orangeAccent;
+String tileTextLB = 'The bottom left is blue.';
+Color textColorLB = Colors.blueAccent;
+String tileTextRT = 'The top right is purple.';
+Color textColorRT = Colors.purpleAccent;
+String tileTextRB = 'The bottom right is red.';
+Color textColorRB = Colors.redAccent;
 
-  // using this key to open and close drawer
-  // programically (in addition to swiping)
-  GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
+// Set the opacity and duration for fading text
+double userOpacity = 1.0;
+double chatOpacity = 1.0;
+int userFadeTime = 10; // in seconds
+int chatFadeTime = 10;
 
-  // needed for snackbars
-  final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
-      GlobalKey<ScaffoldMessengerState>();
-  bool waitStatus = false;
-  final snackBarWait = SnackBar(
-    content: const Text('Wait for your last post to disappear!'),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(10),
-        topRight: Radius.circular(10),
-      ),
+// using this to handle inputted text in the textfield
+TextEditingController inputController = TextEditingController();
+
+// Use this key to open and close drawer
+// programically (in addition to swiping)
+GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
+
+// Code needed for snackbars
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+bool waitStatus = false;
+// alert user when attempting to post prematurely
+final snackBarWait2Post = SnackBar(
+  content: const Text('Wait for your last post to disappear!'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
     ),
-    backgroundColor: Colors.yellow,
-    duration: const Duration(seconds: 4),
-  );
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 4),
+);
+// alert user when Firebase via FlutterFire is initializing
+final snackBarNoInternet = SnackBar(
+  content: const Text('No Internet Connection!'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 30),
+);
 
-  // using this to handle inputted text in the textfield
-  TextEditingController inputController = TextEditingController();
+class _DporaAppState extends State<DporaApp> {
+  // Initializing FlutterFire
+  // Set default `_initialized` and `_error` state to false
+  bool _initialized = false;
+  bool _error = false;
+
+  // Define an async function to initialize FlutterFire
+  void initializeFlutterFire() async {
+    try {
+      // Wait for Firebase to initialize and set `_initialized` state to true
+      await Firebase.initializeApp();
+      setState(() {
+        _initialized = true;
+      });
+    } catch (e) {
+      // Set `_error` state to true if Firebase initialization fails
+      setState(() {
+        _error = true;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    initializeFlutterFire();
+    super.initState();
+  }
+
+  // Firebase realtime database reference
+  final firebaseRTDB = FirebaseDatabase.instance.reference();
+
+  // Add user comment
+  // TODO: where to push it (2 places?)
+  void addComments(String user, String comment) {
+    firebaseRTDB
+        .child('users/comment')
+        .push()
+        .set({'user': user, 'comment': comment});
+    firebaseRTDB
+        .child('groups/0001/yellow')
+        .push()
+        .set({'user': user, 'comment': comment});
+  }
+
+  void getInstructions() {
+    firebaseRTDB
+        .child('instructions/ponder')
+        .once()
+        .then((DataSnapshot snapshot) {
+      print('Data : ${snapshot.value}');
+      setState(() {
+        stimText = snapshot.value;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    // firebase test
+    getInstructions();
+
     // is mobile data and wifi turned off?
     checkConnectivity();
     // detect platform
@@ -154,6 +233,18 @@ class _DporaAppState extends State<DporaApp> {
       } else {
         platform = 'Unknown';
       }
+    }
+
+    // Show error message if Firebase via FlutterFire failed initialization
+    if (_error) {
+      setState(() {
+        stimText = 'Error: initialization failed. Please try again later.';
+      });
+    }
+
+    // Show a loader until Firebase via FlutterFire is initialized
+    if (!_initialized) {
+      return CircularProgressIndicator();
     }
 
     return MaterialApp(
@@ -245,7 +336,7 @@ class _DporaAppState extends State<DporaApp> {
                 thickness: 1,
               ),
               Container(
-                padding: EdgeInsets.only(left: 20),
+                padding: EdgeInsets.only(left: 20.0),
                 child: Text.rich(
                   TextSpan(
                     children: <TextSpan>[
@@ -279,12 +370,12 @@ Tap the About button above for more info.
                 ),
               ),
               Divider(
-                height: 1,
-                thickness: 1,
+                height: 1.0,
+                thickness: 1.0,
               ),
               // need to tap the DB to dynamically update the stats
               Container(
-                padding: EdgeInsets.only(left: 20),
+                padding: EdgeInsets.only(left: 20.0),
                 child: Text.rich(
                   TextSpan(
                     children: <TextSpan>[
@@ -335,8 +426,8 @@ Tap the About button above for more info.
                 ),
               ),
               Divider(
-                height: 1,
-                thickness: 1,
+                height: 1.0,
+                thickness: 1.0,
               ),
               ListTile(
                 leading: Icon(Icons.arrow_back_outlined),
@@ -388,15 +479,19 @@ Tap the About button above for more info.
 
   Widget _stimulus(textSize) {
     if (airplaneMode == true) {
-      stimText =
-      'NO INTERNET CONNECTION!\nAre you in Airplane Mode? Please turn on mobile data, WiFi or both.';
+      // snackbar reminds user to wait until previous post disappears
+      rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
+      setState(() {
+        stimText =
+            'Are you in Airplane Mode? Please turn on mobile data, WiFi or both.';
+      });
     }
     return Container(
-      padding: EdgeInsets.all(10),
-      margin: EdgeInsets.all(10),
+      padding: EdgeInsets.all(10.0),
+      margin: EdgeInsets.all(10.0),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.yellow),
-        borderRadius: BorderRadius.all(Radius.circular(20)),
+        borderRadius: BorderRadius.all(Radius.circular(20.0)),
         color: boxBGColor,
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -405,8 +500,8 @@ Tap the About button above for more info.
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               SizedBox(
-                height: 20,
-                width: 20,
+                height: 20.0,
+                width: 20.0,
                 child: IconButton(
                   icon: Icon(
                     Icons.menu_rounded,
@@ -419,8 +514,8 @@ Tap the About button above for more info.
                 ),
               ),
               SizedBox(
-                height: 20,
-                width: 20,
+                height: 20.0,
+                width: 20.0,
                 child: IconButton(
                   icon: Icon(
                     Icons.share_rounded,
@@ -434,8 +529,8 @@ Tap the About button above for more info.
                 ),
               ),
               SizedBox(
-                height: 20,
-                width: 20,
+                height: 20.0,
+                width: 20.0,
                 child: IconButton(
                   icon: Icon(
                     Icons.threesixty_rounded,
@@ -448,8 +543,8 @@ Tap the About button above for more info.
               ),
               Column(children: [
                 SizedBox(
-                  height: 20,
-                  width: 20,
+                  height: 20.0,
+                  width: 20.0,
                   child: IconButton(
                     icon: Icon(
                       Icons.cancel_presentation_rounded,
@@ -461,12 +556,12 @@ Tap the About button above for more info.
                   ),
                 ),
                 SizedBox(
-                  height: 4, // create some space between
+                  height: 4.0, // create some space between
                 ),
                 Text(
                   '0', // no need for counter here, rather update from DB
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.0,
                     color: iconColor,
                   ),
                   textAlign: TextAlign.center,
@@ -508,17 +603,16 @@ Tap the About button above for more info.
           ),
           fillColor: boxBGColor,
           filled: true,
-          labelText:
-              'Select this box to type, then hit enter on your keyboard.',
+          labelText: 'Tap here, type, then hit enter on keyboard.',
           labelStyle: TextStyle(color: userColor),
-          hintText: 'Responses disappear after 30 seconds. Be brief!',
+          hintText: 'Text disappears after 30 seconds. Be brief!',
           hintStyle: TextStyle(color: iconColor),
           // cancel text button
           suffixIcon: IconButton(
             onPressed: () => inputController.clear(),
             icon: Icon(
               Icons.clear,
-              size: 10,
+              size: 10.0,
             ),
           ),
         ),
@@ -528,7 +622,8 @@ Tap the About button above for more info.
         onEditingComplete: () {
           if (waitStatus == true) {
             // snackbar reminds user to wait until previous post disappears
-            rootScaffoldMessengerKey.currentState.showSnackBar(snackBarWait);
+            rootScaffoldMessengerKey.currentState
+                .showSnackBar(snackBarWait2Post);
           } else {
             setState(() {
               userFadeTime = 0;
@@ -555,8 +650,8 @@ Tap the About button above for more info.
 
   Widget _userOutput(textSize) {
     return Container(
-      padding: EdgeInsets.all(10),
-      margin: EdgeInsets.all(10),
+      padding: EdgeInsets.all(10.0),
+      margin: EdgeInsets.all(10.0),
       decoration: BoxDecoration(
         border: Border.all(color: userColor),
         borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -590,8 +685,8 @@ Tap the About button above for more info.
     return Container(
       height: MediaQuery.of(context).size.height * tileHeight,
       width: MediaQuery.of(context).size.width * tileWidth,
-      padding: EdgeInsets.all(10),
-      margin: EdgeInsets.all(10),
+      padding: EdgeInsets.all(10.0),
+      margin: EdgeInsets.all(10.0),
       decoration: BoxDecoration(
         border: Border.all(color: textColor),
         borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -638,8 +733,8 @@ Tap the About button above for more info.
                     ),
                   ),
                   SizedBox(
-                    height: 20,
-                    width: 20,
+                    height: 20.0,
+                    width: 20.0,
                     child: IconButton(
                       icon: Icon(
                         Icons.person_remove_outlined,
@@ -680,14 +775,14 @@ Tap the About button above for more info.
   ) {
     final allTileHeight = 0.2; // 20% screen height
     final allTileWidth = 0.45; // 45% screen width
-    final allTextSize = 18; // 18 font size
+    final allTextSize = 18.0; // 18 font size
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Container(
           height: MediaQuery.of(context).size.height * 0.23, //23%
           width: MediaQuery.of(context).size.width, //100%
-          child: _stimulus(24),
+          child: _stimulus(24.0),
         ),
         // build the chat titles, the left column (top & bottom) and right
         Row(
@@ -734,10 +829,10 @@ Tap the About button above for more info.
         ),
         Container(
           width: MediaQuery.of(context).size.width,
-          child: _userOutput(18), // font size 18
+          child: _userOutput(18.0), // font size 18
         ),
         Container(
-          padding: EdgeInsets.all(10),
+          padding: EdgeInsets.all(10.0),
           width: MediaQuery.of(context).size.width,
           child: _userInput(),
         ),
@@ -757,7 +852,7 @@ Tap the About button above for more info.
   ) {
     final allTileHeight = 0.33; // 33% screen height
     final allTileWidth = 0.21; // 21% screen width
-    final allTextSize = 26; // 26 font size
+    final allTextSize = 26.0; // 26 font size
     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -767,13 +862,13 @@ Tap the About button above for more info.
             children: [
               Container(
                 height: MediaQuery.of(context).size.height * 0.355, //35.5%
-                width: MediaQuery.of(context).size.width / 2,
-                child: _stimulus(32),
+                width: MediaQuery.of(context).size.width / 2.0,
+                child: _stimulus(32.0),
               ),
               Container(
                 height: MediaQuery.of(context).size.height * 0.355,
-                width: MediaQuery.of(context).size.width / 2,
-                child: _userOutput(26), // font size 26
+                width: MediaQuery.of(context).size.width / 2.0,
+                child: _userOutput(26.0), // font size 26
               ),
             ],
           ),
@@ -827,7 +922,7 @@ Tap the About button above for more info.
       ),
       Container(
         width: MediaQuery.of(context).size.width * 0.95, //95%
-        padding: EdgeInsets.all(10),
+        padding: EdgeInsets.all(10.0),
         child: _userInput(),
       ),
     ]);

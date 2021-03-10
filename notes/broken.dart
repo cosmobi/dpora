@@ -1,17 +1,34 @@
 // import 'package:flutter/material.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_database/firebase_database.dart';
+// //import 'package:firebase_auth/firebase_auth.dart'; TODO: uncomment when ready
 // import 'package:flutter/painting.dart';
 // import 'dart:async';
 // import 'package:share_plus/share_plus.dart';
 // import 'package:flutter/foundation.dart';
 // import 'package:url_launcher/url_launcher.dart';
+// import 'package:connectivity/connectivity.dart';
 // import 'dart:math';
 
 // // wrap DporaApp widget within a MaterialApp widget
-// void main() => runApp(MaterialApp(home: DporaApp()));
+// void main() {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   runApp(MaterialApp(home: DporaApp()));
+// }
 
 // class DporaApp extends StatefulWidget {
 //   @override
 //   _DporaAppState createState() => _DporaAppState();
+// }
+
+// // if both mobile data or wifi is turned off then tell
+// // the user (as a stimulus) to turn on one or both.
+// bool airplaneMode = false;
+// void checkConnectivity() async {
+//   var connectivityResult = await (Connectivity().checkConnectivity());
+//   if (connectivityResult == ConnectivityResult.none) {
+//     airplaneMode = true;
+//   }
 // }
 
 // // Will be used to hold platform identification
@@ -47,12 +64,103 @@
 //   }
 // }
 
+// // generate an UUID
+// String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
+// Random generateRandom = new Random();
+// String randomNumber = generateRandom.nextInt(1000000).toString();
+// final String uuid = randomNumber + milliseconds;
+
 // // Make updated copyright text
 // DateTime nowDate = new DateTime.now();
-// String nowYear = new DateTime(nowDate.year).toString().substring(0,4);
+// String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
 // final String copyright = 'Copyright © ' + nowYear + ' dpora';
 
 // class _DporaAppState extends State<DporaApp> {
+//   // Set default `_initialized` and `_error` state to false
+//   bool _initialized = false;
+//   bool _error = false;
+
+//   // Define an async function to initialize FlutterFire
+//   void initializeFlutterFire() async {
+//     try {
+//       WidgetsFlutterBinding.ensureInitialized();
+//       // Wait for Firebase to initialize and set `_initialized` state to true
+//       await Firebase.initializeApp();
+//       setState(() {
+//         _initialized = true;
+//       });
+//     } catch (e) {
+//       // Set `_error` state to true if Firebase initialization fails
+//       setState(() {
+//         _error = true;
+//       });
+//     }
+//   }
+
+//   @override
+//   void initState() {
+//     initializeFlutterFire();
+//     super.initState();
+//   }
+
+//   // create reference to firebase realtime database
+//   // var retrievedCategory;
+//   // var allInstructions;
+
+//   // Firebase Realtime Database
+//   final realtimeDB = FirebaseDatabase.instance.reference();
+//   //final Future<FirebaseApp> _future = Firebase.initializeApp();
+//   String retrievedInstructions = 'hello';
+
+//   void getInstructions() {
+//     realtimeDB
+//         .orderByChild("instructions")
+//         .equalTo("personal")
+//         .once()
+//         .then((DataSnapshot snapshot) {
+//       setState(() {
+//         // retrievedInstructions = '${snapshot.value}';
+//         // retrievedInstructions = snapshot.value;
+//         retrievedInstructions = 'goodbye';
+//       });
+//       //String stimText = '${snapshot.value}';
+//     });
+//   }
+
+// // String stimText = realtimeDB.orderByChild("instructions").equalTo("personal").once();
+
+//   // @override
+//   // void chigachoochoo() {
+//   //   FutureBuilder(
+//   //       future: refFirebaseRTDB.child("instructions").once(),
+//   //       builder: (context, AsyncSnapshot<DataSnapshot> snapshot) {
+//   //         if (snapshot.hasData) {
+//   //           allInstructions.clear();
+//   //           Map<dynamic, dynamic> values = snapshot.data.value;
+//   //           values.forEach((key, values) {
+//   //             allInstructions.add(values);
+//   //           });
+//   //         }
+//   //         return CircularProgressIndicator();
+//   //       });
+//   // }
+
+//   // @override
+//   // void goGetit() {
+//   //   refFirebaseRTDB.child("instructions/personal").once().then((DataSnapshot data) {
+//   //     setState(() {
+//   //       retrievedCategory = data.key;
+//   //       retrievedInstructions = data.value;
+//   //     });
+//   //   });
+//   // }
+
+//   // goGetit();
+//   // String stimText = retrievedInstructions;
+
+//   // String stimText =
+//   //     'Mind on your money. Money on your mind. Sippin on gin and juice. West Side, yall!';
+
 //   // default app-wide colors
 //   Color boxBGColor = Colors.grey[900];
 //   Color iconColor = Colors.grey[700];
@@ -67,8 +175,8 @@
 //     'Speak your mind and gain\nmultiple perspectives',
 //     'Educate and learn with others.\nDisagree and grow together.',
 //   ];
-//   String stimText =
-//       'Mind on your money. Money on your mind. Sippin on gin and juice. West Side, yall!';
+//   // the list order will shuffle everytime the menu drawer closes
+
 //   Color userColor = Colors.greenAccent; // userText updated in userOutput below
 //   String tileTextLT = 'left top text here';
 //   Color textColorLT = Colors.orangeAccent;
@@ -90,11 +198,40 @@
 //   // programically (in addition to swiping)
 //   GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
 
+//   // needed for snackbars
+//   final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+//       GlobalKey<ScaffoldMessengerState>();
+//   bool waitStatus = false;
+//   final snackBarWait = SnackBar(
+//     content: const Text('Wait for your last post to disappear!'),
+//     shape: RoundedRectangleBorder(
+//       borderRadius: BorderRadius.only(
+//         topLeft: Radius.circular(10),
+//         topRight: Radius.circular(10),
+//       ),
+//     ),
+//     backgroundColor: Colors.yellow,
+//     duration: const Duration(seconds: 4),
+//   );
+//   final snackBarFlutterFireError = SnackBar(
+//     content: const Text('Error: cannot initialize database. Try later.'),
+//     shape: RoundedRectangleBorder(
+//       borderRadius: BorderRadius.only(
+//         topLeft: Radius.circular(10),
+//         topRight: Radius.circular(10),
+//       ),
+//     ),
+//     backgroundColor: Colors.yellow,
+//     duration: const Duration(seconds: 4),
+//   );
+
 //   // using this to handle inputted text in the textfield
 //   TextEditingController inputController = TextEditingController();
 
 //   @override
 //   Widget build(BuildContext context) {
+//     // is mobile data and wifi turned off?
+//     // checkConnectivity(); // TODO: uncomment and fix errors
 //     // detect platform
 //     if (kIsWeb) {
 //       // detect if web app
@@ -119,17 +256,21 @@
 //       }
 //     }
 
-//     // generate an UUID
-//     String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
-//     Random generateRandom = new Random();
-//     String randomNumber = generateRandom.nextInt(1000000).toString(); 
-//     final String uuid = randomNumber + milliseconds;
+//     // Show error message if FlutterFire initialization failed
+//     if (_error) {
+//       rootScaffoldMessengerKey.currentState
+//           .showSnackBar(snackBarFlutterFireError);
+//     }
 
-//     // initial shuffle of menu messages
-//     var menuMsgs = menuMessages..shuffle();
-//     // list will shuffle again everytime menu closes
+//     // Show a loader until FlutterFire is initialized
+//     if (!_initialized) {
+//       return CircularProgressIndicator();
+//     }
+
+//     getInstructions();
 
 //     return MaterialApp(
+//       scaffoldMessengerKey: rootScaffoldMessengerKey,
 //       title: 'ϕ dpora', // or use Φ
 //       theme: ThemeData.dark(),
 //       home: Scaffold(
@@ -154,7 +295,7 @@
 //                       ),
 //                       TextSpan(
 //                         // pick the first message from list
-//                         text: menuMsgs.first + '\n\n',
+//                         text: menuMessages.first + '\n\n',
 //                         style: TextStyle(
 //                           fontSize: 19,
 //                           color: Colors.black,
@@ -188,7 +329,7 @@
 //                   _dporaWebsite();
 //                   // shuffle order of menu messages list
 //                   setState(() {
-//                     menuMsgs = menuMsgs..shuffle();
+//                     menuMessages = menuMessages..shuffle();
 //                   });
 //                   //close the drawer
 //                   _drawerKey.currentState.openEndDrawer();
@@ -207,7 +348,7 @@
 //                   // Go to web-based dynamic contact form
 //                   _contactForm();
 //                   setState(() {
-//                     menuMsgs = menuMsgs..shuffle();
+//                     menuMessages = menuMessages..shuffle();
 //                   });
 //                   _drawerKey.currentState.openEndDrawer();
 //                 },
@@ -229,15 +370,17 @@
 //                         ),
 //                       ),
 //                       TextSpan(
-//                         text: ''' 
-// dpora needs a device ID to join a group.
-// Yours is $uuid
-                        
-// It will also attempt to parse an IP address
-// in order to guess your country location.
-                        
-// Every post replaces the previous post
-// for that device ID. No posts are saved!
+//                         text: '''
+// This app will guess your country from your
+// internet address but will not save IPs.
+
+// Every post replaces the previous post.
+// No previous posts are saved.
+
+// You were given this random number to jump in.
+// ($uuid) Change it anytime.
+
+// Tap the About button above for more info.
 // ''',
 //                         style: TextStyle(
 //                           fontSize: 12,
@@ -259,7 +402,7 @@
 //                   TextSpan(
 //                     children: <TextSpan>[
 //                       TextSpan(
-//                         text: '\nStats' + '\n\n',
+//                         text: '\nLive Stats' + '\n\n',
 //                         style: TextStyle(
 //                           fontSize: 14,
 //                           color: Colors.white,
@@ -319,7 +462,7 @@
 //                 ),
 //                 onTap: () {
 //                   setState(() {
-//                     menuMsgs = menuMsgs..shuffle();
+//                     menuMessages = menuMessages..shuffle();
 //                   });
 //                   _drawerKey.currentState.openEndDrawer();
 //                 },
@@ -357,6 +500,11 @@
 //   }
 
 //   Widget _stimulus(textSize) {
+//     if (airplaneMode == true) {
+//       // stimText = TODO: Set this back!
+//       retrievedInstructions =
+//           'NO INTERNET CONNECTION!\nAre you in Airplane Mode? Please turn on mobile data, WiFi or both.';
+//     }
 //     return Container(
 //       padding: EdgeInsets.all(10),
 //       margin: EdgeInsets.all(10),
@@ -395,7 +543,8 @@
 //                   padding: EdgeInsets.zero, // need for alignment
 //                   tooltip: 'Share Topic',
 //                   onPressed: () {
-//                     Share.share(stimText + ' \nΦ dpora.com', subject: '');
+//                     Share.share(retrievedInstructions + ' \nΦ dpora.com',
+//                         subject: ''); // TODO: Set this back!
 //                   },
 //                 ),
 //               ),
@@ -443,7 +592,7 @@
 //           child: SingleChildScrollView(
 //             padding: EdgeInsets.fromLTRB(15.0, 5.0, 10.0, 5.0),
 //             child: Text(
-//               stimText,
+//               retrievedInstructions, // TODO: Set this back (to stimText)
 //               style: TextStyle(
 //                 fontSize: textSize,
 //                 color: Colors.yellow, //yellowAccent is too bright
@@ -456,6 +605,8 @@
 //   }
 
 //   Widget _userInput() {
+//     int _timeUntilFade = 20;
+//     int _fadeDuration = 10;
 //     return TextField(
 //         controller: inputController,
 //         style: TextStyle(color: userColor),
@@ -490,19 +641,30 @@
 //         // this is way more than needed but allows for ascii art or venting
 //         autofocus: false,
 //         onEditingComplete: () {
-//           setState(() {
-//             userFadeTime = 0;
-//             userOpacity = 1.0;
-//             submittedText = inputController.text;
-//           });
-//           inputController.clear(); // clear text in input box
-//           Timer(Duration(seconds: 20), () {
-//             // after 20 seconds...
+//           if (waitStatus == true) {
+//             // snackbar reminds user to wait until previous post disappears
+//             rootScaffoldMessengerKey.currentState.showSnackBar(snackBarWait);
+//           } else {
 //             setState(() {
-//               userFadeTime = 10; // fade duration
-//               userOpacity = 0.0;
+//               userFadeTime = 0;
+//               userOpacity = 1.0;
+//               submittedText = inputController.text;
+//               waitStatus = true;
 //             });
-//           });
+//             inputController.clear(); // clear text in input box
+//             Timer(Duration(seconds: _timeUntilFade), () {
+//               // after 20 seconds...
+//               setState(() {
+//                 userFadeTime = _fadeDuration;
+//                 userOpacity = 0.0;
+//               });
+//             });
+//             Timer(Duration(seconds: _timeUntilFade + _fadeDuration), () {
+//               setState(() {
+//                 waitStatus = false;
+//               });
+//             });
+//           }
 //         });
 //   }
 

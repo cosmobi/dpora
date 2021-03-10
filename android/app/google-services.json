@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "803629535263",
+    "project_id": "dporapp",
+    "storage_bucket": "dporapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:803629535263:android:bfd5295c4418e55739c52a",
+        "android_client_info": {
+          "package_name": "com.cosmobi.dpora"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "803629535263-5run8n35rg20jh632u777vapgnk3omt1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVnQ_sM4YHkY9M2aIXZmwxx4VSTZzjpXE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "803629535263-5run8n35rg20jh632u777vapgnk3omt1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
