@@ -8,12 +8,15 @@ import 'package:connectivity/connectivity.dart';
 import 'dart:math';
 // Firebase imports
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 // ignore: import_of_legacy_library_into_null_safe
 import 'package:firebase_database/firebase_database.dart';
 
-// Wrap DporaApp widget within a MaterialApp widget
-void main() {
+// Initialize FlutterFire and also wrap the
+// DporaApp widget within a MaterialApp widget
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MaterialApp(home: DporaApp()));
 }
 
@@ -135,7 +138,7 @@ final snackBarWait2Post = SnackBar(
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 4),
 );
-// alert user when Firebase via FlutterFire is initializing
+// alert user when there is no internet connection
 final snackBarNoInternet = SnackBar(
   content: const Text('No Internet Connection!'),
   shape: RoundedRectangleBorder(
@@ -149,35 +152,36 @@ final snackBarNoInternet = SnackBar(
 );
 
 class _DporaAppState extends State<DporaApp> {
-  // Initializing FlutterFire
-  // Set default `_initialized` and `_error` state to false
-  bool _initialized = false;
-  bool _error = false;
-
-  // Define an async function to initialize FlutterFire
-  void initializeFlutterFire() async {
-    try {
-      // Wait for Firebase to initialize and set `_initialized` state to true
-      await Firebase.initializeApp();
-      setState(() {
-        _initialized = true;
-      });
-    } catch (e) {
-      // Set `_error` state to true if Firebase initialization fails
-      setState(() {
-        _error = true;
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    initializeFlutterFire();
-    super.initState();
-  }
 
   // Firebase realtime database reference
   final firebaseRTDB = FirebaseDatabase.instance.reference();
+
+  // Anonymously authenticate user
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  Future signInAnonymously() async {
+    try {
+      UserCredential userCredential = await auth.signInAnonymously();
+      User user = userCredential.user;
+      return user;
+    } catch (e) {
+      print(e.toString());
+      return null;
+    }
+  }
+
+  // Fetch a new stimulus and its instructions
+  void newStimulus() {
+    // Also get the instructions
+    firebaseRTDB
+        .child('instructions/ponder')
+        .once()
+        .then((DataSnapshot snapshot) {
+      print('Data : ${snapshot.value}');
+      setState(() {
+        stimText = snapshot.value;
+      });
+    });
+  }
 
   // Add user comment
   // TODO: where to push it (2 places?)
@@ -192,23 +196,8 @@ class _DporaAppState extends State<DporaApp> {
         .set({'user': user, 'comment': comment});
   }
 
-  void getInstructions() {
-    firebaseRTDB
-        .child('instructions/ponder')
-        .once()
-        .then((DataSnapshot snapshot) {
-      print('Data : ${snapshot.value}');
-      setState(() {
-        stimText = snapshot.value;
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    // firebase test
-    getInstructions();
-
     // is mobile data and wifi turned off?
     checkConnectivity();
     // detect platform
@@ -235,17 +224,10 @@ class _DporaAppState extends State<DporaApp> {
       }
     }
 
-    // Show error message if Firebase via FlutterFire failed initialization
-    if (_error) {
-      setState(() {
-        stimText = 'Error: initialization failed. Please try again later.';
-      });
-    }
-
-    // Show a loader until Firebase via FlutterFire is initialized
-    if (!_initialized) {
-      return CircularProgressIndicator();
-    }
+    // Sign in user anonymously to follow DB read and write rules
+    signInAnonymously();
+    // Get an intial stimulus and its instructions
+    newStimulus();
 
     return MaterialApp(
       scaffoldMessengerKey: rootScaffoldMessengerKey,
