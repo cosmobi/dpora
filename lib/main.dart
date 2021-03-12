@@ -11,6 +11,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // ignore: import_of_legacy_library_into_null_safe
 import 'package:firebase_database/firebase_database.dart';
+import 'dart:convert'; // for jsonDecode
 
 // Initialize FlutterFire and also wrap the
 // DporaApp widget within a MaterialApp widget
@@ -82,6 +83,12 @@ final String copyright = 'Copyright © ' + nowYear + ' dpora';
 // Default stimulus text
 String stimText = 'Error: dpora is not working. Please try again later.';
 
+// The total number of stimuli in each category
+var stimuliTotals;
+
+// The category of stimuli (games, proverbs, debate, etc)
+String stimuliCategory;
+
 // Default app-wide colors
 Color boxBGColor = Colors.grey[900];
 Color iconColor = Colors.grey[700];
@@ -151,8 +158,47 @@ final snackBarNoInternet = SnackBar(
   duration: const Duration(seconds: 30),
 );
 
-class _DporaAppState extends State<DporaApp> {
+class StimuliTotals {
+  final int games;
+  final int share;
 
+  StimuliTotals(this.games, this.share);
+
+  StimuliTotals.fromJson(Map<String, int> json)
+      : games = json['games'],
+        share = json['share'];
+
+  Map<String, int> toJson() => {
+        'games': games,
+        'share': share,
+      };
+}
+
+class Stimulus {
+  final int flagged;
+  final String author;
+  final String stimulus;
+  final String type;
+
+  Stimulus(this.flagged, this.author, this.stimulus, this.type);
+
+  Stimulus.fromJson(Map<String, dynamic> json)
+      : flagged = json['flagged'],
+        author = json['author'],
+        stimulus = json['stimulus'],
+        type = json['type'];
+
+  Map<String, dynamic> toJson() => {
+        'flagged': flagged,
+        'author': author,
+        'stimulus': stimulus,
+        'type': type,
+      };
+}
+
+// TODO: 4me6vuiRqQnJ*GoToTheMoon!
+
+class _DporaAppState extends State<DporaApp> {
   // Firebase realtime database reference
   final firebaseRTDB = FirebaseDatabase.instance.reference();
 
@@ -169,17 +215,33 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  // Fetch a new stimulus and its instructions
-  void newStimulus() {
-    // Also get the instructions
+  // Get the total number of stimuli in each category
+  void getStimuliTotals() {
+    firebaseRTDB.child('stimuli-totals').once().then((DataSnapshot snapshot) {
+      // print(snapshot.value); // for testing
+      Map<String, int> stimuliTotalsMap =
+          new Map<String, int>.from(snapshot.value);
+      setState(() {
+        stimuliTotals = StimuliTotals.fromJson(stimuliTotalsMap);
+      });
+      // print(stimuliTotals.share); //for testing
+    });
+  }
+
+  // Get the total number of stimuli in each category
+  void getStimulus(stimuliCategory, stimulusID) {
     firebaseRTDB
-        .child('instructions/ponder')
+        .child('stimuli/$stimuliCategory/$stimulusID')
         .once()
         .then((DataSnapshot snapshot) {
-      print('Data : ${snapshot.value}');
+      // print(snapshot.value); // for testing
+      Map<String, dynamic> stimulusMap =
+          new Map<String, dynamic>.from(snapshot.value);
+      var stimulusDetails = Stimulus.fromJson(stimulusMap);
       setState(() {
-        stimText = snapshot.value;
+        stimText = stimulusDetails.stimulus;
       });
+      // print(stimuliTotals.share); //for testing
     });
   }
 
@@ -226,8 +288,21 @@ class _DporaAppState extends State<DporaApp> {
 
     // Sign in user anonymously to follow DB read and write rules
     signInAnonymously();
-    // Get an intial stimulus and its instructions
-    newStimulus();
+    // Get the total number of stimuli in each category
+    getStimuliTotals();
+    // Choose the stimuli category
+    stimuliCategory = 'games'; // ALERT: also change stimuliTotals below to match!
+
+    // Get the stimulus (preferably after stimuli totals are retrieved)
+    if (stimuliTotals != null) {
+      getStimulus(stimuliCategory, stimuliTotals.games);
+    } else {
+      // wait a couple seconds and try anyway
+      Timer(Duration(seconds: 2), () {
+        CircularProgressIndicator();
+        getStimulus(stimuliCategory, stimuliTotals.games);
+      });
+    }
 
     return MaterialApp(
       scaffoldMessengerKey: rootScaffoldMessengerKey,
