@@ -1,55 +1,23 @@
-// import 'dart:convert';
-
 // import 'package:flutter/material.dart';
 // import 'package:flutter/painting.dart';
 // import 'dart:async';
+// import 'local_import.dart'; // my stuff
 // import 'package:share_plus/share_plus.dart';
 // import 'package:flutter/foundation.dart';
 // import 'package:url_launcher/url_launcher.dart';
 // import 'package:connectivity/connectivity.dart';
 // import 'dart:math';
-// //import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase/firebase.dart'; // temp for RTDB Web
-// //import 'package:firebase_database/firebase_database.dart'
-// //    as rtdb; // for Android & iOS
-// //import 'package:firebase_auth/firebase_auth.dart';
+// // Firebase imports
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// // ignore: import_of_legacy_library_into_null_safe
+// import 'package:firebase_database/firebase_database.dart';
 
-// // wrap DporaApp widget within a MaterialApp widget
-// void main() {
-//   initializeApp(
-//       apiKey: "AIzaSyB169KuKIfsRpojQQibSSrxXZuU8aBETsA",
-//       authDomain: "dporapp.firebaseapp.com",
-//       databaseURL: "https://dporapp-default-rtdb.firebaseio.com",
-//       projectId: "dporapp",
-//       storageBucket: "dporapp.appspot.com");
-
-//   Database db = database();
-//   DatabaseReference dbInstructions = db.ref('instructions');
-
-//   dbInstructions.onValue.listen((e) {
-//     DataSnapshot datasnapshot = e.snapshot;
-//     // Do something with datasnapshot
-
-//     String personalInstructions = datasnapshot.child("personal").val();
-//     print(personalInstructions);
-
-//     // String jsonInstructions = datasnapshot.val();
-//     // List<dynamic> listInstructions = jsonDecode(jsonInstructions);
-//     // print(listInstructions);
-//     // //print(listInstructions.length);
-//     // print(listInstructions[3]);
-
-//     //   var allInstructions;
-//     //   Map<dynamic, dynamic> values = datasnapshot.val();
-//     //   values.forEach((key, values) {
-//     //     allInstructions.add(values);
-//     //   });
-//     //   print(allInstructions["personal"]);
-//     //   print(allInstructions[2]);
-//     //   print(allInstructions.length);
-
-//     //   //return CircularProgressIndicator();
-//   });
+// // Initialize FlutterFire and also wrap the
+// // DporaApp widget within a MaterialApp widget
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await Firebase.initializeApp();
 //   runApp(MaterialApp(home: DporaApp()));
 // }
 
@@ -58,7 +26,7 @@
 //   _DporaAppState createState() => _DporaAppState();
 // }
 
-// // if both mobile data or wifi is turned off then tell
+// // If both mobile data or wifi is turned off then tell
 // // the user (as a stimulus) to turn on one or both.
 // bool airplaneMode = false;
 // void checkConnectivity() async {
@@ -68,17 +36,14 @@
 //   }
 // }
 
-// // Will be used to hold platform identification
-// String platform;
-
-// // creating link to main website
+// // Creating link to main website
 // _dporaWebsite() async {
 //   const url = 'https://dpora.com';
 //   if (await canLaunch(url)) {
 //     await launch(
 //       url,
 //       forceWebView:
-//           true, // to open url in-app on android. iOS is in-app by default.
+//           true, // To open url in-app on android. iOS is in-app by default.
 //       // enableJavaScript: true, // uncomment if dpora.com uses javascript
 //     );
 //   } else {
@@ -86,14 +51,14 @@
 //   }
 // }
 
-// // creating link to the web-based dynamic contact form
+// // Creating link to the web-based dynamic contact form
 // _contactForm() async {
 //   const url = 'https://contact.dpora.com';
 //   if (await canLaunch(url)) {
 //     await launch(
 //       url,
 //       forceWebView:
-//           true, // to open url in-app on android. iOS is in-app by default.
+//           true, // To open url in-app on android. iOS is in-app by default.
 //       // enableJavaScript: true, // uncomment if dpora.com uses javascript
 //     );
 //   } else {
@@ -101,7 +66,7 @@
 //   }
 // }
 
-// // generate an UUID
+// // Generate an UUID
 // String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
 // Random generateRandom = new Random();
 // String randomNumber = generateRandom.nextInt(1000000).toString();
@@ -110,72 +75,277 @@
 // // Make updated copyright text
 // DateTime nowDate = new DateTime.now();
 // String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
-// final String copyright = 'Copyright © ' + nowYear + ' dpora';
+// final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
+
+// // Default app-wide colors
+// Color boxBGColor = Colors.grey[900];
+// Color iconColor = Colors.grey[700];
+// Color menuColor = Colors.blueGrey;
+
+// // Default values for the tileText and textColor
+// Color userColor = Colors.greenAccent;
+// String tileTextLT = 'The top left is orange.';
+// Color textColorLT = Colors.orangeAccent;
+// String tileTextLB = 'The bottom left is blue.';
+// Color textColorLB = Colors.blueAccent;
+// String tileTextRT = 'The top right is purple.';
+// Color textColorRT = Colors.purpleAccent;
+// String tileTextRB = 'The bottom right is red.';
+// Color textColorRB = Colors.redAccent;
+
+// // using this to handle inputted text in the textfield
+// TextEditingController inputController = TextEditingController();
+
+// // Use this key to open and close drawer
+// // programically (in addition to swiping)
+// GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
+
+// // Code needed for snackbars
+// final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+//     GlobalKey<ScaffoldMessengerState>();
+// bool waitStatus = false;
+// // alert user when attempting to post prematurely
+// final snackBarWait2Post = SnackBar(
+//   content: const Text('Wait for your last post to disappear!'),
+//   shape: RoundedRectangleBorder(
+//     borderRadius: BorderRadius.only(
+//       topLeft: Radius.circular(10.0),
+//       topRight: Radius.circular(10.0),
+//     ),
+//   ),
+//   backgroundColor: Colors.yellow,
+//   duration: const Duration(seconds: 4),
+// );
+// // alert user when there is no internet connection
+// final snackBarNoInternet = SnackBar(
+//   content: const Text('No Internet Connection!'),
+//   shape: RoundedRectangleBorder(
+//     borderRadius: BorderRadius.only(
+//       topLeft: Radius.circular(10.0),
+//       topRight: Radius.circular(10.0),
+//     ),
+//   ),
+//   backgroundColor: Colors.yellow,
+//   duration: const Duration(seconds: 30),
+// );
+
+// // Choose a random stimuli category with
+// // probability based on its number of stimuli
+// // void randomCategoryPicker() {
+// //   // TODO: ads and news categories excluded for now
+// //   int randomPick = Random().nextInt(104) + 1; // 1 thru 104
+// //   if (randomPick < 12) {
+// //     randomCategory = 'debates';
+// //     randomStimulus = Random().nextInt(stimuliTotals.debates + 1);
+// //   } else if (randomPick == 12) {
+// //     randomCategory = 'games';
+// //     randomStimulus = Random().nextInt(stimuliTotals.games + 1);
+// //   } else if (randomPick > 12 && randomPick < 20) {
+// //     randomCategory = 'jokes';
+// //     randomStimulus = Random().nextInt(stimuliTotals.jokes + 1);
+// //   } else if (randomPick > 19 && randomPick < 22) {
+// //     randomCategory = 'myths';
+// //     randomStimulus = Random().nextInt(stimuliTotals.myths + 1);
+// //   } else if (randomPick > 21 && randomPick < 25) {
+// //     randomCategory = 'passion';
+// //     randomStimulus = Random().nextInt(stimuliTotals.passion + 1);
+// //   } else if (randomPick > 24 && randomPick < 56) {
+// //     randomCategory = 'personal';
+// //     randomStimulus = Random().nextInt(stimuliTotals.personal + 1);
+// //   } else if (randomPick > 55 && randomPick < 66) {
+// //     randomCategory = 'ponder';
+// //     randomStimulus = Random().nextInt(stimuliTotals.ponder + 1);
+// //   } else if (randomPick > 65 && randomPick < 82) {
+// //     randomCategory = 'proverbs';
+// //     randomStimulus = Random().nextInt(stimuliTotals.proverbs + 1);
+// //   } else if (randomPick > 81 && randomPick < 94) {
+// //     randomCategory = 'quotes';
+// //     randomStimulus = Random().nextInt(stimuliTotals.quotes + 1);
+// //   } else if (randomPick > 93 && randomPick < 100) {
+// //     // widened point spread b/c 'share' is important category
+// //     randomCategory = 'share';
+// //     randomStimulus = Random().nextInt(stimuliTotals.share + 1);
+// //   } else {
+// //     // 100 thru 104
+// //     randomCategory = 'trivia';
+// //     randomStimulus = Random().nextInt(stimuliTotals.trivia + 1);
+// //   }
+// // }
+
+// // Select a random stimuli category
+// final randomCats = new Random();
+// String randomCategory = categoryList[randomCats.nextInt(categoryList.length)];
+
+// // To choose a random stimulus number from each category
+// int randomAds = Random().nextInt(stimuliTotals.ads + 1);
+// int randomDebates = Random().nextInt(stimuliTotals.debates + 1);
+// int randomGames = Random().nextInt(stimuliTotals.games + 1);
+// int randomJokes = Random().nextInt(stimuliTotals.jokes + 1);
+// int randomMyths = Random().nextInt(stimuliTotals.myths + 1);
+// int randomNews = Random().nextInt(stimuliTotals.news + 1);
+// int randomPassion = Random().nextInt(stimuliTotals.passion + 1);
+// int randomPersonal = Random().nextInt(stimuliTotals.personal + 1);
+// int randomPonder = Random().nextInt(stimuliTotals.ponder + 1);
+// int randomProverbs = Random().nextInt(stimuliTotals.proverbs + 1);
+// int randomQuotes = Random().nextInt(stimuliTotals.quotes + 1);
+// int randomShare = Random().nextInt(stimuliTotals.share + 1);
+// int randomTrivia = Random().nextInt(stimuliTotals.trivia + 1);
 
 // class _DporaAppState extends State<DporaApp> {
-//   // default app-wide colors
-//   Color boxBGColor = Colors.grey[900];
-//   Color iconColor = Colors.grey[700];
-//   Color menuColor = Colors.blueGrey;
+//   // Firebase realtime database reference
+//   final firebaseRTDB = FirebaseDatabase.instance.reference();
 
-//   // this is updated when user hits Return or Enter on their keyboard
-//   String submittedText = '';
+//   // Anonymously authenticate user
+//   final FirebaseAuth auth = FirebaseAuth.instance;
+//   Future signInAnonymously() async {
+//     try {
+//       UserCredential userCredential = await auth.signInAnonymously();
+//       User user = userCredential.user;
+//       return user;
+//     } catch (e) {
+//       print(e.toString());
+//       return null;
+//     }
+//   }
 
-//   // updatable content from DB
-//   var menuMessages = [
-//     'Have private yet meaningful\nchats with total strangers',
-//     'Speak your mind and gain\nmultiple perspectives',
-//     'Educate and learn with others.\nDisagree and grow together.',
-//   ];
-//   // the list order will shuffle everytime the menu drawer closes
+//   // Get the total number of stimuli in each category
+//   void getStimuliTotals() {
+//     firebaseRTDB.child('stimuli-totals').once().then((DataSnapshot snapshot) {
+//       Map<String, int> stimuliTotalsMap =
+//           new Map<String, int>.from(snapshot.value);
+//       setState(() {
+//         stimuliTotals = StimuliTotals.fromJson(stimuliTotalsMap);
+//       });
+//     });
+//   }
 
-//   String stimText =
-//       'Mind on your money. Money on your mind. Sippin on gin and juice. West Side, yall!';
+//   // Pick a stimulus
+//   void getStimulus(stimuliCategory, stimulusID) {
+//     firebaseRTDB
+//         .child('stimuli/$stimuliCategory/$stimulusID')
+//         .once()
+//         .then((DataSnapshot snapshot) {
+//       Map<String, dynamic> stimulusMap =
+//           new Map<String, dynamic>.from(snapshot.value);
+//       var stimulusDetails = Stimulus.fromJson(stimulusMap);
+//       setState(() {
+//         stimText = stimulusDetails.stimulus;
+//       });
+//     });
+//   }
 
-//   Color userColor = Colors.greenAccent; // userText updated in userOutput below
-//   String tileTextLT = 'left top text here';
-//   Color textColorLT = Colors.orangeAccent;
-//   String tileTextLB = 'left bottom text here';
-//   Color textColorLB = Colors.blueAccent;
-//   String tileTextRT =
-//       'this text is about 25 words or something maybe longer. this text is about 25 words or maybe shorter. this text is about 25 words or so.';
-//   Color textColorRT = Colors.purpleAccent;
-//   String tileTextRB = 'right bottom text here and not there';
-//   Color textColorRB = Colors.redAccent;
+//   // void randomStimulus(categoryChoice) {
+//   //   if (categoryChoice == 'games') {
+//   //     if (stimuliTotals != null)
+//   //       getStimulus(categoryChoice, randomGames);
+//   //   } else if (categoryChoice == 'jokes') {
+//   //     if (stimuliTotals != null)
+//   //       getStimulus(categoryChoice, randomJokes);
+//   //   }
+//   // }
 
-//   // for fading text
-//   double userOpacity = 1.0;
-//   double chatOpacity = 1.0;
-//   int userFadeTime = 10;
-//   int chatFadeTime = 10;
+//   void randomStimulus(categoryChoice) {
+//     // First a safety net to prevent null errors
+//     if (stimuliTotals == null) {
+//       randomAds = 0;
+//       randomDebates = 0;
+//       randomGames = 0;
+//       randomJokes = 0;
+//       randomMyths = 0;
+//       randomNews = 0;
+//       randomPassion = 0;
+//       randomPersonal = 0;
+//       randomPonder = 0;
+//       randomProverbs = 0;
+//       randomQuotes = 0;
+//       randomShare = 0;
+//       randomTrivia = 0;
+//     }
+//     // Now choose a random stimulus based on the random category
+//     if (categoryChoice == 'ads') {
+//       getStimulus(categoryChoice, randomAds);
+//     } else if (categoryChoice == 'debates') {
+//       getStimulus(categoryChoice, randomDebates);
+//     } else if (categoryChoice == 'games') {
+//       getStimulus(categoryChoice, randomGames);
+//     } else if (categoryChoice == 'jokes') {
+//       getStimulus(categoryChoice, randomJokes);
+//     } else if (categoryChoice == 'myths') {
+//       getStimulus(categoryChoice, randomMyths);
+//     } else if (categoryChoice == 'news') {
+//       getStimulus(categoryChoice, randomNews);
+//     } else if (categoryChoice == 'passion') {
+//       getStimulus(categoryChoice, randomPassion);
+//     } else if (categoryChoice == 'personal') {
+//       getStimulus(categoryChoice, randomPersonal);
+//     } else if (categoryChoice == 'ponder') {
+//       getStimulus(categoryChoice, randomPonder);
+//     } else if (categoryChoice == 'proverbs') {
+//       getStimulus(categoryChoice, randomProverbs);
+//     } else if (categoryChoice == 'quotes') {
+//       getStimulus(categoryChoice, randomQuotes);
+//     } else if (categoryChoice == 'share') {
+//       getStimulus(categoryChoice, randomShare);
+//     } else if (categoryChoice == 'trivia') {
+//       getStimulus(categoryChoice, randomTrivia);
+//     }
+//   }
 
-//   // using this key to open and close drawer
-//   // programically (in addition to swiping)
-//   GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
+//   // void randomStimulus(categoryChoice) {
+//   //   if (stimuliTotals != null) {
+//   //     if (categoryChoice == 'ads') {
+//   //       getStimulus(categoryChoice, randomAds);
+//   //     } else if (categoryChoice == 'debates') {
+//   //       getStimulus(categoryChoice, randomDebates);
+//   //     } else if (categoryChoice == 'games') {
+//   //       getStimulus(categoryChoice, randomGames);
+//   //     } else if (categoryChoice == 'jokes') {
+//   //       getStimulus(categoryChoice, randomJokes);
+//   //     } else if (categoryChoice == 'myths') {
+//   //       getStimulus(categoryChoice, randomMyths);
+//   //     } else if (categoryChoice == 'news') {
+//   //       getStimulus(categoryChoice, randomNews);
+//   //     } else if (categoryChoice == 'passion') {
+//   //       getStimulus(categoryChoice, randomPassion);
+//   //     } else if (categoryChoice == 'personal') {
+//   //       getStimulus(categoryChoice, randomPersonal);
+//   //     } else if (categoryChoice == 'ponder') {
+//   //       getStimulus(categoryChoice, randomPonder);
+//   //     } else if (categoryChoice == 'proverbs') {
+//   //       getStimulus(categoryChoice, randomProverbs);
+//   //     } else if (categoryChoice == 'quotes') {
+//   //       getStimulus(categoryChoice, randomQuotes);
+//   //     } else if (categoryChoice == 'share') {
+//   //       getStimulus(categoryChoice, randomShare);
+//   //     } else if (categoryChoice == 'trivia') {
+//   //       getStimulus(categoryChoice, randomTrivia);
+//   //     }
+//   //   } else {
+//   //     CircularProgressIndicator();
+//   //     //
+//   //     // wait and try anyway...
+//   //     //
 
-//   // needed for snackbars
-//   final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
-//       GlobalKey<ScaffoldMessengerState>();
-//   bool waitStatus = false;
-//   final snackBarWait = SnackBar(
-//     content: const Text('Wait for your last post to disappear!'),
-//     shape: RoundedRectangleBorder(
-//       borderRadius: BorderRadius.only(
-//         topLeft: Radius.circular(10),
-//         topRight: Radius.circular(10),
-//       ),
-//     ),
-//     backgroundColor: Colors.yellow,
-//     duration: const Duration(seconds: 4),
-//   );
+//   //   }
+//   // }
 
-//   // using this to handle inputted text in the textfield
-//   TextEditingController inputController = TextEditingController();
+//   // Add user comment
+//   // TODO: where to push it (2 places?)
+//   void addComments(String user, String comment) {
+//     firebaseRTDB
+//         .child('users/comment')
+//         .push()
+//         .set({'user': user, 'comment': comment});
+//     firebaseRTDB
+//         .child('groups/0001/yellow')
+//         .push()
+//         .set({'user': user, 'comment': comment});
+//   }
 
 //   @override
 //   Widget build(BuildContext context) {
 //     // is mobile data and wifi turned off?
-//     // checkConnectivity(); TODO: Fix errors
+//     checkConnectivity();
 //     // detect platform
 //     if (kIsWeb) {
 //       // detect if web app
@@ -199,6 +369,47 @@
 //         platform = 'Unknown';
 //       }
 //     }
+
+//     // Sign in user anonymously to follow DB read and write rules
+//     signInAnonymously();
+//     // Get the total number of stimuli in each category
+//     getStimuliTotals();
+
+//     // Choose a random stimulus
+//     randomStimulus(randomCategory);
+
+//     //randomCategoryPicker();
+
+//     // Get the stimulus (preferably after stimuli totals are retrieved)
+
+// // first test this to see if randomCategory works...
+// // if (stimuliTotals != null) {
+// //         getStimulus(randomCategory, 10);
+// //     }
+// // ...and then comment out and test block below...
+
+//     // randomCategory = 'games';
+
+//     // if (randomCategory == 'games') {
+//     //   if (stimuliTotals != null)
+//     //     getStimulus(randomCategory, randomGames);
+//     // } else {
+//     //   // wait a couple seconds and try anyway
+//     //   CircularProgressIndicator();
+//     //   Timer(Duration(seconds: 2), () {
+//     //     getStimulus(randomCategory, randomGames);
+//     //   });
+//     // }
+
+//     // if (stimuliTotals != null) {
+//     //     getStimulus(randomCategory, 10);
+//     // } else {
+//     //   // wait a couple seconds and try anyway
+//     //   CircularProgressIndicator();
+//     //   Timer(Duration(seconds: 2), () {
+//     //     getStimulus(randomCategory, randomStimulus);
+//     //   });
+//     // }
 
 //     return MaterialApp(
 //       scaffoldMessengerKey: rootScaffoldMessengerKey,
@@ -289,7 +500,7 @@
 //                 thickness: 1,
 //               ),
 //               Container(
-//                 padding: EdgeInsets.only(left: 20),
+//                 padding: EdgeInsets.only(left: 20.0),
 //                 child: Text.rich(
 //                   TextSpan(
 //                     children: <TextSpan>[
@@ -323,12 +534,12 @@
 //                 ),
 //               ),
 //               Divider(
-//                 height: 1,
-//                 thickness: 1,
+//                 height: 1.0,
+//                 thickness: 1.0,
 //               ),
 //               // need to tap the DB to dynamically update the stats
 //               Container(
-//                 padding: EdgeInsets.only(left: 20),
+//                 padding: EdgeInsets.only(left: 20.0),
 //                 child: Text.rich(
 //                   TextSpan(
 //                     children: <TextSpan>[
@@ -379,8 +590,8 @@
 //                 ),
 //               ),
 //               Divider(
-//                 height: 1,
-//                 thickness: 1,
+//                 height: 1.0,
+//                 thickness: 1.0,
 //               ),
 //               ListTile(
 //                 leading: Icon(Icons.arrow_back_outlined),
@@ -432,15 +643,19 @@
 
 //   Widget _stimulus(textSize) {
 //     if (airplaneMode == true) {
-//       stimText =
-//           'NO INTERNET CONNECTION!\nAre you in Airplane Mode? Please turn on mobile data, WiFi or both.';
+//       // snackbar reminds user to wait until previous post disappears
+//       rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
+//       setState(() {
+//         stimText =
+//             'Are you in Airplane Mode? Please turn on mobile data, WiFi or both.';
+//       });
 //     }
 //     return Container(
-//       padding: EdgeInsets.all(10),
-//       margin: EdgeInsets.all(10),
+//       padding: EdgeInsets.all(10.0),
+//       margin: EdgeInsets.all(10.0),
 //       decoration: BoxDecoration(
 //         border: Border.all(color: Colors.yellow),
-//         borderRadius: BorderRadius.all(Radius.circular(20)),
+//         borderRadius: BorderRadius.all(Radius.circular(20.0)),
 //         color: boxBGColor,
 //       ),
 //       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -449,8 +664,8 @@
 //             mainAxisAlignment: MainAxisAlignment.spaceAround,
 //             children: [
 //               SizedBox(
-//                 height: 20,
-//                 width: 20,
+//                 height: 20.0,
+//                 width: 20.0,
 //                 child: IconButton(
 //                   icon: Icon(
 //                     Icons.menu_rounded,
@@ -463,8 +678,8 @@
 //                 ),
 //               ),
 //               SizedBox(
-//                 height: 20,
-//                 width: 20,
+//                 height: 20.0,
+//                 width: 20.0,
 //                 child: IconButton(
 //                   icon: Icon(
 //                     Icons.share_rounded,
@@ -478,8 +693,8 @@
 //                 ),
 //               ),
 //               SizedBox(
-//                 height: 20,
-//                 width: 20,
+//                 height: 20.0,
+//                 width: 20.0,
 //                 child: IconButton(
 //                   icon: Icon(
 //                     Icons.threesixty_rounded,
@@ -492,8 +707,8 @@
 //               ),
 //               Column(children: [
 //                 SizedBox(
-//                   height: 20,
-//                   width: 20,
+//                   height: 20.0,
+//                   width: 20.0,
 //                   child: IconButton(
 //                     icon: Icon(
 //                       Icons.cancel_presentation_rounded,
@@ -505,12 +720,12 @@
 //                   ),
 //                 ),
 //                 SizedBox(
-//                   height: 4, // create some space between
+//                   height: 4.0, // create some space between
 //                 ),
 //                 Text(
 //                   '0', // no need for counter here, rather update from DB
 //                   style: TextStyle(
-//                     fontSize: 12,
+//                     fontSize: 12.0,
 //                     color: iconColor,
 //                   ),
 //                   textAlign: TextAlign.center,
@@ -552,17 +767,16 @@
 //           ),
 //           fillColor: boxBGColor,
 //           filled: true,
-//           labelText:
-//               'Select this box to type, then hit enter on your keyboard.',
+//           labelText: 'Tap here, type, then hit enter on keyboard.',
 //           labelStyle: TextStyle(color: userColor),
-//           hintText: 'Responses disappear after 30 seconds. Be brief!',
+//           hintText: 'Text disappears after 30 seconds. Be brief!',
 //           hintStyle: TextStyle(color: iconColor),
 //           // cancel text button
 //           suffixIcon: IconButton(
 //             onPressed: () => inputController.clear(),
 //             icon: Icon(
 //               Icons.clear,
-//               size: 10,
+//               size: 10.0,
 //             ),
 //           ),
 //         ),
@@ -572,7 +786,8 @@
 //         onEditingComplete: () {
 //           if (waitStatus == true) {
 //             // snackbar reminds user to wait until previous post disappears
-//             rootScaffoldMessengerKey.currentState.showSnackBar(snackBarWait);
+//             rootScaffoldMessengerKey.currentState
+//                 .showSnackBar(snackBarWait2Post);
 //           } else {
 //             setState(() {
 //               userFadeTime = 0;
@@ -599,8 +814,8 @@
 
 //   Widget _userOutput(textSize) {
 //     return Container(
-//       padding: EdgeInsets.all(10),
-//       margin: EdgeInsets.all(10),
+//       padding: EdgeInsets.all(10.0),
+//       margin: EdgeInsets.all(10.0),
 //       decoration: BoxDecoration(
 //         border: Border.all(color: userColor),
 //         borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -634,8 +849,8 @@
 //     return Container(
 //       height: MediaQuery.of(context).size.height * tileHeight,
 //       width: MediaQuery.of(context).size.width * tileWidth,
-//       padding: EdgeInsets.all(10),
-//       margin: EdgeInsets.all(10),
+//       padding: EdgeInsets.all(10.0),
+//       margin: EdgeInsets.all(10.0),
 //       decoration: BoxDecoration(
 //         border: Border.all(color: textColor),
 //         borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -682,8 +897,8 @@
 //                     ),
 //                   ),
 //                   SizedBox(
-//                     height: 20,
-//                     width: 20,
+//                     height: 20.0,
+//                     width: 20.0,
 //                     child: IconButton(
 //                       icon: Icon(
 //                         Icons.person_remove_outlined,
@@ -724,14 +939,14 @@
 //   ) {
 //     final allTileHeight = 0.2; // 20% screen height
 //     final allTileWidth = 0.45; // 45% screen width
-//     final allTextSize = 18; // 18 font size
+//     final allTextSize = 18.0; // 18 font size
 //     return Column(
 //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 //       children: [
 //         Container(
 //           height: MediaQuery.of(context).size.height * 0.23, //23%
 //           width: MediaQuery.of(context).size.width, //100%
-//           child: _stimulus(24),
+//           child: _stimulus(24.0),
 //         ),
 //         // build the chat titles, the left column (top & bottom) and right
 //         Row(
@@ -778,10 +993,10 @@
 //         ),
 //         Container(
 //           width: MediaQuery.of(context).size.width,
-//           child: _userOutput(18), // font size 18
+//           child: _userOutput(18.0), // font size 18
 //         ),
 //         Container(
-//           padding: EdgeInsets.all(10),
+//           padding: EdgeInsets.all(10.0),
 //           width: MediaQuery.of(context).size.width,
 //           child: _userInput(),
 //         ),
@@ -801,7 +1016,7 @@
 //   ) {
 //     final allTileHeight = 0.33; // 33% screen height
 //     final allTileWidth = 0.21; // 21% screen width
-//     final allTextSize = 26; // 26 font size
+//     final allTextSize = 26.0; // 26 font size
 //     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
 //       Row(
 //         mainAxisAlignment: MainAxisAlignment.center,
@@ -811,13 +1026,13 @@
 //             children: [
 //               Container(
 //                 height: MediaQuery.of(context).size.height * 0.355, //35.5%
-//                 width: MediaQuery.of(context).size.width / 2,
-//                 child: _stimulus(32),
+//                 width: MediaQuery.of(context).size.width / 2.0,
+//                 child: _stimulus(32.0),
 //               ),
 //               Container(
 //                 height: MediaQuery.of(context).size.height * 0.355,
-//                 width: MediaQuery.of(context).size.width / 2,
-//                 child: _userOutput(26), // font size 26
+//                 width: MediaQuery.of(context).size.width / 2.0,
+//                 child: _userOutput(26.0), // font size 26
 //               ),
 //             ],
 //           ),
@@ -871,7 +1086,7 @@
 //       ),
 //       Container(
 //         width: MediaQuery.of(context).size.width * 0.95, //95%
-//         padding: EdgeInsets.all(10),
+//         padding: EdgeInsets.all(10.0),
 //         child: _userInput(),
 //       ),
 //     ]);

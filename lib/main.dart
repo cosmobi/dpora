@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
 import 'dart:async';
+import 'local_import.dart'; // my stuff
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:connectivity/connectivity.dart';
-import 'dart:math';
-// Firebase imports
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // ignore: import_of_legacy_library_into_null_safe
 import 'package:firebase_database/firebase_database.dart';
-import 'dart:convert'; // for jsonDecode
 
 // Initialize FlutterFire and also wrap the
 // DporaApp widget within a MaterialApp widget
@@ -25,19 +21,6 @@ class DporaApp extends StatefulWidget {
   @override
   _DporaAppState createState() => _DporaAppState();
 }
-
-// If both mobile data or wifi is turned off then tell
-// the user (as a stimulus) to turn on one or both.
-bool airplaneMode = false;
-void checkConnectivity() async {
-  var connectivityResult = await (Connectivity().checkConnectivity());
-  if (connectivityResult == ConnectivityResult.none) {
-    airplaneMode = true;
-  }
-}
-
-// Will be used to hold platform identification
-String platform;
 
 // Creating link to main website
 _dporaWebsite() async {
@@ -69,41 +52,10 @@ _contactForm() async {
   }
 }
 
-// Generate an UUID
-String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
-Random generateRandom = new Random();
-String randomNumber = generateRandom.nextInt(1000000).toString();
-final String uuid = randomNumber + milliseconds;
-
-// Make updated copyright text
-DateTime nowDate = new DateTime.now();
-String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
-final String copyright = 'Copyright © ' + nowYear + ' dpora';
-
-// Default stimulus text
-String stimText = 'Error: dpora is not working. Please try again later.';
-
-// The total number of stimuli in each category
-var stimuliTotals;
-
-// The category of stimuli (games, proverbs, debate, etc)
-String stimuliCategory;
-
 // Default app-wide colors
 Color boxBGColor = Colors.grey[900];
 Color iconColor = Colors.grey[700];
 Color menuColor = Colors.blueGrey;
-
-// This is updated when user hits Return or Enter on their keyboard
-String submittedText = '';
-
-// TODO: later, pull this array content from the DB
-// This list order will shuffle everytime the menu drawer closes
-var menuMessages = [
-  'Have private yet meaningful\nchats with total strangers',
-  'Speak your mind and gain\nmultiple perspectives',
-  'Educate and learn with others.\nDisagree and grow together.',
-];
 
 // Default values for the tileText and textColor
 Color userColor = Colors.greenAccent;
@@ -115,12 +67,6 @@ String tileTextRT = 'The top right is purple.';
 Color textColorRT = Colors.purpleAccent;
 String tileTextRB = 'The bottom right is red.';
 Color textColorRB = Colors.redAccent;
-
-// Set the opacity and duration for fading text
-double userOpacity = 1.0;
-double chatOpacity = 1.0;
-int userFadeTime = 10; // in seconds
-int chatFadeTime = 10;
 
 // using this to handle inputted text in the textfield
 TextEditingController inputController = TextEditingController();
@@ -158,46 +104,6 @@ final snackBarNoInternet = SnackBar(
   duration: const Duration(seconds: 30),
 );
 
-class StimuliTotals {
-  final int games;
-  final int share;
-
-  StimuliTotals(this.games, this.share);
-
-  StimuliTotals.fromJson(Map<String, int> json)
-      : games = json['games'],
-        share = json['share'];
-
-  Map<String, int> toJson() => {
-        'games': games,
-        'share': share,
-      };
-}
-
-class Stimulus {
-  final int flagged;
-  final String author;
-  final String stimulus;
-  final String type;
-
-  Stimulus(this.flagged, this.author, this.stimulus, this.type);
-
-  Stimulus.fromJson(Map<String, dynamic> json)
-      : flagged = json['flagged'],
-        author = json['author'],
-        stimulus = json['stimulus'],
-        type = json['type'];
-
-  Map<String, dynamic> toJson() => {
-        'flagged': flagged,
-        'author': author,
-        'stimulus': stimulus,
-        'type': type,
-      };
-}
-
-// TODO: 4me6vuiRqQnJ*GoToTheMoon!
-
 class _DporaAppState extends State<DporaApp> {
   // Firebase realtime database reference
   final firebaseRTDB = FirebaseDatabase.instance.reference();
@@ -215,34 +121,126 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  // Get the total number of stimuli in each category
-  void getStimuliTotals() {
-    firebaseRTDB.child('stimuli-totals').once().then((DataSnapshot snapshot) {
-      // print(snapshot.value); // for testing
-      Map<String, int> stimuliTotalsMap =
-          new Map<String, int>.from(snapshot.value);
-      setState(() {
-        stimuliTotals = StimuliTotals.fromJson(stimuliTotalsMap);
-      });
-      // print(stimuliTotals.share); //for testing
-    });
-  }
-
-  // Get the total number of stimuli in each category
+  // Pick a stimulus
   void getStimulus(stimuliCategory, stimulusID) {
     firebaseRTDB
         .child('stimuli/$stimuliCategory/$stimulusID')
         .once()
         .then((DataSnapshot snapshot) {
-      // print(snapshot.value); // for testing
       Map<String, dynamic> stimulusMap =
           new Map<String, dynamic>.from(snapshot.value);
       var stimulusDetails = Stimulus.fromJson(stimulusMap);
       setState(() {
         stimText = stimulusDetails.stimulus;
       });
-      // print(stimuliTotals.share); //for testing
     });
+  }
+
+  void chooseCategory() {
+    int _startTotal = 0;
+    int _endTotal = totalAds;
+    if (dieRoll < _endTotal) {
+      categoryChoice = 'ads';
+    } else {
+      _startTotal = _endTotal;
+      _endTotal = _endTotal + totalDebates;
+      if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+        categoryChoice = 'debates';
+      } else {
+        _startTotal = _endTotal;
+        _endTotal = _endTotal + totalGames;
+        if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+          categoryChoice = 'games';
+        } else {
+          _startTotal = _endTotal;
+          _endTotal = _endTotal + totalJokes;
+          if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+            categoryChoice = 'jokes';
+          } else {
+            _startTotal = _endTotal;
+            _endTotal = _endTotal + totalMyths;
+            if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+              categoryChoice = 'myths';
+            } else {
+              _startTotal = _endTotal;
+              _endTotal = _endTotal + totalNews;
+              if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+                categoryChoice = 'news';
+              } else {
+                _startTotal = _endTotal;
+                _endTotal = _endTotal + totalPassion;
+                if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+                  categoryChoice = 'passion';
+                } else {
+                  _startTotal = _endTotal;
+                  _endTotal = _endTotal + totalPersonal;
+                  if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+                    categoryChoice = 'personal';
+                  } else {
+                    _startTotal = _endTotal;
+                    _endTotal = _endTotal + totalPonder;
+                    if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+                      categoryChoice = 'ponder';
+                    } else {
+                      _startTotal = _endTotal;
+                      _endTotal = _endTotal + totalProverbs;
+                      if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+                        categoryChoice = 'proverbs';
+                      } else {
+                        _startTotal = _endTotal;
+                        _endTotal = _endTotal + totalQuotes;
+                        if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+                          categoryChoice = 'quotes';
+                        } else {
+                          _startTotal = _endTotal;
+                          _endTotal = _endTotal + totalShare;
+                          if (dieRoll >= _startTotal && dieRoll < _endTotal) {
+                            categoryChoice = 'share';
+                          } else {
+                            //if dieRoll >= _endTotal
+                              categoryChoice = 'trivia';
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void randomStimulus() {
+    if (categoryChoice == 'ads') {
+      getStimulus(categoryChoice, randomAds);
+    } else if (categoryChoice == 'debates') {
+      getStimulus(categoryChoice, randomDebates);
+    } else if (categoryChoice == 'games') {
+      getStimulus(categoryChoice, randomGames);
+    } else if (categoryChoice == 'jokes') {
+      getStimulus(categoryChoice, randomJokes);
+    } else if (categoryChoice == 'myths') {
+      getStimulus(categoryChoice, randomMyths);
+    } else if (categoryChoice == 'news') {
+      getStimulus(categoryChoice, randomNews);
+    } else if (categoryChoice == 'passion') {
+      getStimulus(categoryChoice, randomPassion);
+    } else if (categoryChoice == 'personal') {
+      getStimulus(categoryChoice, randomPersonal);
+    } else if (categoryChoice == 'ponder') {
+      getStimulus(categoryChoice, randomPonder);
+    } else if (categoryChoice == 'proverbs') {
+      getStimulus(categoryChoice, randomProverbs);
+    } else if (categoryChoice == 'quotes') {
+      getStimulus(categoryChoice, randomQuotes);
+    } else if (categoryChoice == 'share') {
+      getStimulus(categoryChoice, randomShare);
+    } else if (categoryChoice == 'trivia') {
+      getStimulus(categoryChoice, randomTrivia);
+    }
   }
 
   // Add user comment
@@ -288,21 +286,12 @@ class _DporaAppState extends State<DporaApp> {
 
     // Sign in user anonymously to follow DB read and write rules
     signInAnonymously();
-    // Get the total number of stimuli in each category
-    getStimuliTotals();
-    // Choose the stimuli category
-    stimuliCategory = 'games'; // ALERT: also change stimuliTotals below to match!
 
-    // Get the stimulus (preferably after stimuli totals are retrieved)
-    if (stimuliTotals != null) {
-      getStimulus(stimuliCategory, stimuliTotals.games);
-    } else {
-      // wait a couple seconds and try anyway
-      Timer(Duration(seconds: 2), () {
-        CircularProgressIndicator();
-        getStimulus(stimuliCategory, stimuliTotals.games);
-      });
-    }
+    // Choose a random category
+    chooseCategory();
+
+    // Choose a random stimulus
+    randomStimulus();
 
     return MaterialApp(
       scaffoldMessengerKey: rootScaffoldMessengerKey,
