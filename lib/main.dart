@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'local_import.dart'; // my stuff
+import 'local_import.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -136,7 +136,26 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  void chooseCategory() {
+  void shuffleDecks() {
+    // Shuffle category selection
+    stimuliDeck.shuffle();
+    // Shuffle stimuli in each category
+    adsDeck.shuffle();
+    debatesDeck.shuffle();
+    gamesDeck.shuffle();
+    jokesDeck.shuffle();
+    mythsDeck.shuffle();
+    newsDeck.shuffle();
+    passionDeck.shuffle();
+    personalDeck.shuffle();
+    ponderDeck.shuffle();
+    proverbsDeck.shuffle();
+    quotesDeck.shuffle();
+    shareDeck.shuffle();
+    triviaDeck.shuffle();
+  }
+
+  void chooseCategory(dieRoll) {
     int _startTotal = 0;
     int _endTotal = totalAds;
     if (dieRoll < _endTotal) {
@@ -198,7 +217,7 @@ class _DporaAppState extends State<DporaApp> {
                             categoryChoice = 'share';
                           } else {
                             //if dieRoll >= _endTotal
-                              categoryChoice = 'trivia';
+                            categoryChoice = 'trivia';
                           }
                         }
                       }
@@ -215,31 +234,37 @@ class _DporaAppState extends State<DporaApp> {
 
   void randomStimulus() {
     if (categoryChoice == 'ads') {
-      getStimulus(categoryChoice, randomAds);
+      getStimulus(categoryChoice, shareDeck[0]);
+      // TODO: set above to adsDeck[0] once we have ads
     } else if (categoryChoice == 'debates') {
-      getStimulus(categoryChoice, randomDebates);
+      getStimulus(categoryChoice, debatesDeck[0]);
     } else if (categoryChoice == 'games') {
-      getStimulus(categoryChoice, randomGames);
+      getStimulus(categoryChoice, gamesDeck[0]);
     } else if (categoryChoice == 'jokes') {
-      getStimulus(categoryChoice, randomJokes);
+      getStimulus(categoryChoice, jokesDeck[0]);
     } else if (categoryChoice == 'myths') {
-      getStimulus(categoryChoice, randomMyths);
+      getStimulus(categoryChoice, mythsDeck[0]);
     } else if (categoryChoice == 'news') {
-      getStimulus(categoryChoice, randomNews);
+      getStimulus(categoryChoice, shareDeck[1]);
+      // TODO: set above to newsDeck[0] once we have news
     } else if (categoryChoice == 'passion') {
-      getStimulus(categoryChoice, randomPassion);
+      getStimulus(categoryChoice, passionDeck[0]);
     } else if (categoryChoice == 'personal') {
-      getStimulus(categoryChoice, randomPersonal);
+      getStimulus(categoryChoice, personalDeck[0]);
     } else if (categoryChoice == 'ponder') {
-      getStimulus(categoryChoice, randomPonder);
+      getStimulus(categoryChoice, ponderDeck[0]);
     } else if (categoryChoice == 'proverbs') {
-      getStimulus(categoryChoice, randomProverbs);
+      getStimulus(categoryChoice, proverbsDeck[0]);
     } else if (categoryChoice == 'quotes') {
-      getStimulus(categoryChoice, randomQuotes);
+      getStimulus(categoryChoice, quotesDeck[0]);
     } else if (categoryChoice == 'share') {
-      getStimulus(categoryChoice, randomShare);
+      getStimulus(categoryChoice, shareDeck[4]);
     } else if (categoryChoice == 'trivia') {
-      getStimulus(categoryChoice, randomTrivia);
+      getStimulus(categoryChoice, triviaDeck[0]);
+    } else {
+      // This is the default if random choices don't work
+      // "What's on your mind?"
+      getStimulus('share', 5);
     }
   }
 
@@ -287,8 +312,10 @@ class _DporaAppState extends State<DporaApp> {
     // Sign in user anonymously to follow DB read and write rules
     signInAnonymously();
 
-    // Choose a random category
-    chooseCategory();
+    // Choose a category
+    chooseCategory(stimuliDeck[2290]);
+    // The default 2290 falls in the range of the 'share' category
+    // and the default stimulus there is set to "What's on your mind?"
 
     // Choose a random stimulus
     randomStimulus();
@@ -395,11 +422,7 @@ class _DporaAppState extends State<DporaApp> {
                       ),
                       TextSpan(
                         text: '''
-This app will guess your country from your
-internet address but will not save IPs.
-
-Every post replaces the previous post.
-No previous posts are saved.
+Once a comment disappears, it's gone!
 
 You were given this random number to jump in.
 ($uuid) Change it anytime.
@@ -419,40 +442,39 @@ Tap the About button above for more info.
                 height: 1.0,
                 thickness: 1.0,
               ),
-              // need to tap the DB to dynamically update the stats
               Container(
                 padding: EdgeInsets.only(left: 20.0),
                 child: Text.rich(
                   TextSpan(
                     children: <TextSpan>[
-                      TextSpan(
-                        text: '\nLive Stats' + '\n\n',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '100 devices detected' + '\n\n',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '10 countries represented' + '\n\n',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '1000 posts per minute' + '\n\n',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
-                      ),
+                      // TextSpan(
+                      //   text: '\nLive Stats' + '\n\n',
+                      //   style: TextStyle(
+                      //     fontSize: 14,
+                      //     color: Colors.white,
+                      //   ),
+                      // ),
+                      // TextSpan(
+                      //   text: 'Over 100 devices detected' + '\n\n',
+                      //   style: TextStyle(
+                      //     fontSize: 12,
+                      //     color: Colors.white70,
+                      //   ),
+                      // ),
+                      // TextSpan(
+                      //   text: 'Over 10 countries represented' + '\n\n',
+                      //   style: TextStyle(
+                      //     fontSize: 12,
+                      //     color: Colors.white70,
+                      //   ),
+                      // ),
+                      // TextSpan(
+                      //   text: 'About 1000 posts per minute' + '\n\n',
+                      //   style: TextStyle(
+                      //     fontSize: 12,
+                      //     color: Colors.white70,
+                      //   ),
+                      // ),
                       TextSpan(
                         text: platform + ' Version 0.0.1' + '\n',
                         style: TextStyle(
@@ -460,13 +482,13 @@ Tap the About button above for more info.
                           color: Colors.white54,
                         ),
                       ),
-                      TextSpan(
-                        text: '2021-03-14' + '\n',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.white54,
-                        ),
-                      ),
+                      // TextSpan(
+                      //   text: '2021-03-14' + '\n',
+                      //   style: TextStyle(
+                      //     fontSize: 10,
+                      //     color: Colors.white54,
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -525,7 +547,7 @@ Tap the About button above for more info.
 
   Widget _stimulus(textSize) {
     if (airplaneMode == true) {
-      // snackbar reminds user to wait until previous post disappears
+      // snackbar notice if no internet connection is found
       rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
       setState(() {
         stimText =
@@ -541,6 +563,7 @@ Tap the About button above for more info.
         color: boxBGColor,
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        // Menu button and other icons here
         Column(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -574,6 +597,41 @@ Tap the About button above for more info.
                   },
                 ),
               ),
+              // SizedBox(
+              //   height: 20.0,
+              //   width: 20.0,
+              //   child: IconButton(
+              //     icon: Icon(
+              //       Icons.threesixty_rounded,
+              //       color: iconColor,
+              //     ),
+              //     padding: EdgeInsets.zero, // need for alignment
+              //     tooltip: 'New Group & Topic',
+              //     onPressed: () {
+              //      // maybe just restart app ? maybe using
+              //      //  https://pub.dev/packages/flutter_phoenix
+              //     },
+              //   ),
+              // ),
+            ]),
+        // Stimulus is displayed here
+        Flexible(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(15.0, 5.0, 10.0, 5.0),
+            child: Text(
+              stimText,
+              style: TextStyle(
+                fontSize: textSize,
+                color: Colors.yellow, //yellowAccent is too bright
+              ),
+            ),
+          ),
+        ),
+        // Instructions and Next button in this column
+        Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
               SizedBox(
                 height: 20.0,
                 width: 20.0,
@@ -598,7 +656,10 @@ Tap the About button above for more info.
                     ),
                     padding: EdgeInsets.zero, // need for alignment
                     tooltip: 'Same Group, New Topic',
-                    onPressed: () {},
+                    onPressed: () {
+                      // shuffle all decks and therefore show a new stimulus
+                      shuffleDecks();
+                    },
                   ),
                 ),
                 SizedBox(
@@ -614,18 +675,6 @@ Tap the About button above for more info.
                 ),
               ]),
             ]),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(15.0, 5.0, 10.0, 5.0),
-            child: Text(
-              stimText,
-              style: TextStyle(
-                fontSize: textSize,
-                color: Colors.yellow, //yellowAccent is too bright
-              ),
-            ),
-          ),
-        ),
       ]),
     );
   }
@@ -828,7 +877,7 @@ Tap the About button above for more info.
         Container(
           height: MediaQuery.of(context).size.height * 0.23, //23%
           width: MediaQuery.of(context).size.width, //100%
-          child: _stimulus(24.0),
+          child: _stimulus(20.0),
         ),
         // build the chat titles, the left column (top & bottom) and right
         Row(

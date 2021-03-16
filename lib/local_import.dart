@@ -1,8 +1,6 @@
 import 'package:connectivity/connectivity.dart';
 import 'dart:math';
 
-// Random ID: 4me6vuiRqQnJ*GoToTheMoon!
-
 // TODO: Stimuli totals need to be updated before every app release!
 final int totalAds = 1;
 final int totalDebates = 266;
@@ -20,24 +18,13 @@ final int totalTrivia = 131;
 final int totalStimuli = 2452; // Total Sum
 // *******************************************************
 
-// Used to select a random stimuli category
-int dieRoll = Random().nextInt(totalStimuli); // starts at zero
-String categoryChoice;
+// Generate an UUID
+String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
+Random generateRandom = new Random();
+String randomNumber = generateRandom.nextInt(1000000).toString();
+final String uuid = randomNumber + milliseconds;
 
-// // To choose a random stimulus number from each category (includes zero IDs)
-int randomAds = Random().nextInt(totalAds);
-int randomDebates = Random().nextInt(totalDebates);
-int randomGames = Random().nextInt(totalGames);
-int randomJokes = Random().nextInt(totalJokes);
-int randomMyths = Random().nextInt(totalMyths);
-int randomNews = Random().nextInt(totalNews);
-int randomPassion = Random().nextInt(totalPassion);
-int randomPersonal = Random().nextInt(totalPersonal);
-int randomPonder = Random().nextInt(totalPonder);
-int randomProverbs = Random().nextInt(totalProverbs);
-int randomQuotes = Random().nextInt(totalQuotes);
-int randomShare = Random().nextInt(totalShare);
-int randomTrivia = Random().nextInt(totalTrivia);
+// Random ID example: r4me6vuiRqQnJ*GoToTheMoon!
 
 // If mobile data and/or wifi are turned off then tell the
 // user (as a stimulus and snackbar) to turn on one or both.
@@ -52,12 +39,6 @@ void checkConnectivity() async {
 // Will be used to hold platform identification
 String platform;
 
-// Generate an UUID
-String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
-Random generateRandom = new Random();
-String randomNumber = generateRandom.nextInt(1000000).toString();
-final String uuid = randomNumber + milliseconds;
-
 // Make updated copyright text
 DateTime nowDate = new DateTime.now();
 String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
@@ -68,6 +49,25 @@ double userOpacity = 1.0;
 double chatOpacity = 1.0;
 int userFadeTime = 10; // in seconds
 int chatFadeTime = 10;
+
+// Create lists (decks) containing all the stimuli counts
+// These decks will be shuffled later to choose a random entry
+List<int> adsDeck = new List<int>.generate(totalAds, (i) => i + 1);
+List<int> debatesDeck = new List<int>.generate(totalDebates, (i) => i + 1);
+List<int> gamesDeck = new List<int>.generate(totalGames, (i) => i + 1);
+List<int> jokesDeck = new List<int>.generate(totalJokes, (i) => i + 1);
+List<int> mythsDeck = new List<int>.generate(totalMyths, (i) => i + 1);
+List<int> newsDeck = new List<int>.generate(totalNews, (i) => i + 1);
+List<int> passionDeck = new List<int>.generate(totalPassion, (i) => i + 1);
+List<int> personalDeck = new List<int>.generate(totalPersonal, (i) => i + 1);
+List<int> ponderDeck = new List<int>.generate(totalPonder, (i) => i + 1);
+List<int> proverbsDeck = new List<int>.generate(totalProverbs, (i) => i + 1);
+List<int> quotesDeck = new List<int>.generate(totalQuotes, (i) => i + 1);
+List<int> shareDeck = new List<int>.generate(totalShare, (i) => i + 1);
+List<int> triviaDeck = new List<int>.generate(totalTrivia, (i) => i + 1);
+List<int> stimuliDeck = new List<int>.generate(totalStimuli, (i) => i + 1);
+
+String categoryChoice;
 
 // Default stimulus text must be empty like this
 // so transitions between reloads are smoother
@@ -82,6 +82,7 @@ var menuMessages = [
   'Have private yet meaningful\nchats with total strangers',
   'Speak your mind and gain\nmultiple perspectives',
   'Educate and learn with others.\nDisagree and grow together.',
+  'Be social and be private.\nThe best of both worlds.'
 ];
 
 // Used for serialization of json-formatted stimuli to and from the database
