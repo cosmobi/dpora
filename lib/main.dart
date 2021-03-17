@@ -131,7 +131,8 @@ class _DporaAppState extends State<DporaApp> {
           new Map<String, dynamic>.from(snapshot.value);
       var stimulusDetails = Stimulus.fromJson(stimulusMap);
       setState(() {
-        stimText = stimulusDetails.stimulus;
+        stimulusText = stimulusDetails.stimulus;
+        // TODO: categoryText = ?
       });
     });
   }
@@ -234,8 +235,7 @@ class _DporaAppState extends State<DporaApp> {
 
   void randomStimulus() {
     if (categoryChoice == 'ads') {
-      getStimulus(categoryChoice, shareDeck[0]);
-      // TODO: set above to adsDeck[0] once we have ads
+      getStimulus(categoryChoice, adsDeck[0]);
     } else if (categoryChoice == 'debates') {
       getStimulus(categoryChoice, debatesDeck[0]);
     } else if (categoryChoice == 'games') {
@@ -245,8 +245,7 @@ class _DporaAppState extends State<DporaApp> {
     } else if (categoryChoice == 'myths') {
       getStimulus(categoryChoice, mythsDeck[0]);
     } else if (categoryChoice == 'news') {
-      getStimulus(categoryChoice, shareDeck[1]);
-      // TODO: set above to newsDeck[0] once we have news
+      getStimulus(categoryChoice, newsDeck[0]);
     } else if (categoryChoice == 'passion') {
       getStimulus(categoryChoice, passionDeck[0]);
     } else if (categoryChoice == 'personal') {
@@ -264,6 +263,7 @@ class _DporaAppState extends State<DporaApp> {
     } else {
       // This is the default if random choices don't work
       // "What's on your mind?"
+      // It is the same as shareDeck[4] default above
       getStimulus('share', 5);
     }
   }
@@ -550,8 +550,8 @@ Tap the About button above for more info.
       // snackbar notice if no internet connection is found
       rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
       setState(() {
-        stimText =
-            'Are you in Airplane Mode? Please turn on mobile data, WiFi or both.';
+        stimulusText = 'Please turn on mobile data, WiFi or both.';
+        categoryText = 'Are you in Airplane Mode?';
       });
     }
     return Container(
@@ -593,33 +593,43 @@ Tap the About button above for more info.
                   padding: EdgeInsets.zero, // need for alignment
                   tooltip: 'Share Topic',
                   onPressed: () {
-                    Share.share(stimText + ' \nΦ dpora.com', subject: '');
+                    Share.share(stimulusText + ' \nΦ dpora.com', subject: categoryText);
                   },
                 ),
               ),
-              // SizedBox(
-              //   height: 20.0,
-              //   width: 20.0,
-              //   child: IconButton(
-              //     icon: Icon(
-              //       Icons.threesixty_rounded,
-              //       color: iconColor,
-              //     ),
-              //     padding: EdgeInsets.zero, // need for alignment
-              //     tooltip: 'New Group & Topic',
-              //     onPressed: () {
-              //      // maybe just restart app ? maybe using
-              //      //  https://pub.dev/packages/flutter_phoenix
-              //     },
-              //   ),
-              // ),
+              // TODO: Add this later, somewhere else
+                // child: IconButton(
+                //   icon: Icon(
+                //     Icons.threesixty_rounded,
+                //     color: iconColor,
+                //   ),
+                //   padding: EdgeInsets.zero, // need for alignment
+                //   tooltip: 'New Group & Topic',
+                //   onPressed: () {}, // maybe just restart app? maybe using
+                //            //  https://pub.dev/packages/flutter_phoenix
+                // ),
+              SizedBox(
+                height: 20.0,
+                width: 20.0,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.not_interested_rounded,
+                    color: iconColor,
+                  ),
+                  padding: EdgeInsets.zero, // need for alignment
+                  tooltip: 'Flag As Inappropriate',
+                  onPressed: () {
+                   // up the flag counter for this stimulus
+                  },
+                ),
+              ),
             ]),
         // Stimulus is displayed here
         Flexible(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(15.0, 5.0, 10.0, 5.0),
             child: Text(
-              stimText,
+              stimulusText,
               style: TextStyle(
                 fontSize: textSize,
                 color: Colors.yellow, //yellowAccent is too bright
@@ -632,47 +642,63 @@ Tap the About button above for more info.
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              SizedBox(
-                height: 20.0,
-                width: 20.0,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.threesixty_rounded,
-                    color: iconColor,
+              Icon(
+                Icons.emoji_people_rounded,
+                color: Colors.yellow,
+              ),
+              Container(
+                padding: EdgeInsets.all(7.0),
+                decoration: BoxDecoration(
+                border: Border.all(color: Colors.yellow),
+                borderRadius: BorderRadius.all(Radius.circular(20)),
+                color: Colors.grey[900],
+                ),
+                height: 70.0,
+                width: 90.0,
+                child: Text(
+                  'All about you',
+                  style: TextStyle(
+                  // instructions text is 5 points smaller than stimulus text
+                  fontSize: textSize - 5,
+                  color: Colors.yellow, //yellowAccent is too bright
                   ),
-                  padding: EdgeInsets.zero, // need for alignment
-                  tooltip: 'New Group & Topic',
-                  onPressed: () {}, // maybe just restart app?
                 ),
               ),
-              Column(children: [
+              Row(children: [
+                Text(
+                  'Next', // no need for counter here, rather update from DB
+                  style: TextStyle(
+                    fontSize: textSize,
+                    color: iconColor,
+                    //letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 SizedBox(
-                  height: 20.0,
-                  width: 20.0,
+                  height: 30.0,
+                  width: 30.0,
                   child: IconButton(
                     icon: Icon(
-                      Icons.cancel_presentation_rounded,
-                      color: iconColor,
+                      Icons.forward_rounded,
+                      color: Colors.yellow,
                     ),
                     padding: EdgeInsets.zero, // need for alignment
-                    tooltip: 'Same Group, New Topic',
+                    tooltip: 'Next Topic',
                     onPressed: () {
                       // shuffle all decks and therefore show a new stimulus
                       shuffleDecks();
                     },
                   ),
                 ),
-                SizedBox(
-                  height: 4.0, // create some space between
-                ),
                 Text(
-                  '0', // no need for counter here, rather update from DB
-                  style: TextStyle(
-                    fontSize: 12.0,
-                    color: iconColor,
+                    '0', // no need for counter here, rather update from DB
+                    //
+                    style: TextStyle(
+                      fontSize: textSize - 2,
+                      color: iconColor,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
               ]),
             ]),
       ]),
@@ -789,71 +815,60 @@ Tap the About button above for more info.
       ),
       child:
           Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Flexible(
-          child: SingleChildScrollView(
-            child: AnimatedOpacity(
-              duration: Duration(seconds: chatFadeTime), // fade duration
-              opacity: chatOpacity,
-              child: Text(
-                tileText,
-                style: TextStyle(fontSize: textSize, color: textColor),
-              ),
-            ),
-          ),
-        ),
-        Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Flexible(
-                child: Text(
-                  'USA',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                    color: iconColor,
+            Flexible(
+              child: SingleChildScrollView(
+                child: AnimatedOpacity(
+                  duration: Duration(seconds: chatFadeTime), // fade duration
+                  opacity: chatOpacity,
+                  child: Text(
+                    tileText,
+                    style: TextStyle(fontSize: textSize, color: textColor),
                   ),
-                  overflow: TextOverflow.ellipsis, // truncates, not scrollable
                 ),
               ),
-              Row(
-                children: [
-                  //
-                  Text(
-                    '0', // no need for counter here, rather update from DB
-                    //
-                    style: TextStyle(
-                      fontSize: 12,
+            ),
+            Row(
+              children: [
+                SizedBox(
+                  height: 20.0,
+                  width: 20.0,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.not_interested_rounded,
                       color: iconColor,
                     ),
-                  ),
-                  SizedBox(
-                    height: 20.0,
-                    width: 20.0,
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.person_remove_outlined,
-                        color: iconColor,
-                      ),
-                      padding: EdgeInsets.zero, // need for alignment
-                      tooltip: 'Mute Person',
-                      onPressed: () {
+                    padding: EdgeInsets.zero, // need for alignment
+                    tooltip: 'Mute Person',
+                    onPressed: () {
+                      setState(() {
+                        chatFadeTime = 1; // set to quick fade
+                        chatOpacity = 0.0;
+                        // reset fade duration
+                      });
+                      Timer(Duration(seconds: 1), () {
                         setState(() {
-                          chatFadeTime = 1; // set to quick fade
-                          chatOpacity = 0.0;
-                          // reset fade duration
+                          chatFadeTime = 10;
                         });
-                        Timer(Duration(seconds: 1), () {
-                          setState(() {
-                            chatFadeTime = 10;
-                          });
-                        });
-                      },
-                    ),
+                      });
+                    },
                   ),
-                ],
-              ),
-            ]),
+                ),
+                // spacer box
+                SizedBox(
+                  height: 5.0,
+                  width: 5.0,
+                  ),
+                Text(
+                  '0', // no need for counter here, rather update from DB
+                  //
+                  style: TextStyle(
+                    fontSize: textSize,
+                    color: iconColor,
+                  ),
+                ),
+              ],
+            ),
+            //]),
       ]),
     );
   }

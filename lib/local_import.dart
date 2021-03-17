@@ -7,7 +7,7 @@ final int totalDebates = 266;
 final int totalGames = 33;
 final int totalJokes = 152;
 final int totalMyths = 59;
-final int totalNews = 1;
+final int totalNews = 4;
 final int totalPassion = 65;
 final int totalPersonal = 757;
 final int totalPonder = 262;
@@ -15,7 +15,7 @@ final int totalProverbs = 394;
 final int totalQuotes = 297;
 final int totalShare = 34;
 final int totalTrivia = 131;
-final int totalStimuli = 2452; // Total Sum
+final int totalStimuli = 2455; // Total Sum
 // *******************************************************
 
 // Generate an UUID
@@ -71,7 +71,10 @@ String categoryChoice;
 
 // Default stimulus text must be empty like this
 // so transitions between reloads are smoother
-String stimText = '';
+String stimulusText = '';
+
+// Displays the category instructions
+String categoryText = '';
 
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
