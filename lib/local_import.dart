@@ -67,14 +67,31 @@ List<int> shareDeck = new List<int>.generate(totalShare, (i) => i + 1);
 List<int> triviaDeck = new List<int>.generate(totalTrivia, (i) => i + 1);
 List<int> stimuliDeck = new List<int>.generate(totalStimuli, (i) => i + 1);
 
-String categoryChoice;
+String categoryChoice = '';
+//new Icon categoryIcon = 'Icon.emoji_people_rounded';
 
 // Default stimulus text must be empty like this
 // so transitions between reloads are smoother
 String stimulusText = '';
 
-// Displays the category instructions
-String categoryText = '';
+// These will hold the stimuli category instructions
+String instructAds = '';
+String instructDebates = '';
+String instructGames = '';
+String instructJokes = '';
+String instructMyths = '';
+String instructNews = '';
+String instructPassion = '';
+String instructPersonal = '';
+String instructPonder = '';
+String instructProverbs = '';
+String instructQuotes = '';
+String instructShare = '';
+String instructTrivia = '';
+// And this will hold the currently selected category
+String instructStimulus = '';
+
+Map<String, dynamic> categoryInstructions;
 
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
@@ -88,7 +105,9 @@ var menuMessages = [
   'Be social and be private.\nThe best of both worlds.'
 ];
 
-// Used for serialization of json-formatted stimuli to and from the database
+// Classes below are for the serialization of
+// json-formatted data to and from the database
+
 class Stimulus {
   final int flagged;
   final String author;
@@ -108,5 +127,67 @@ class Stimulus {
         'author': author,
         'stimulus': stimulus,
         'type': type,
+      };
+}
+
+class Instruct {
+  final String ads;
+  final String debates;
+  final String games;
+  final String jokes;
+  final String myths;
+  final String news;
+  final String passion;
+  final String personal;
+  final String ponder;
+  final String proverbs;
+  final String quotes;
+  final String share;
+  final String trivia;
+
+  Instruct(
+      this.ads,
+      this.debates,
+      this.games,
+      this.jokes,
+      this.myths,
+      this.news,
+      this.passion,
+      this.personal,
+      this.ponder,
+      this.proverbs,
+      this.quotes,
+      this.share,
+      this.trivia);
+
+  Instruct.fromJson(Map<String, dynamic> json)
+      : ads = json['ads'],
+        debates = json['debates'],
+        games = json['games'],
+        jokes = json['jokes'],
+        myths = json['myths'],
+        news = json['news'],
+        passion = json['passion'],
+        personal = json['personal'],
+        ponder = json['ponder'],
+        proverbs = json['proverbs'],
+        quotes = json['quotes'],
+        share = json['share'],
+        trivia = json['trivia'];
+
+  Map<String, dynamic> toJson() => {
+        'ads': ads,
+        'debates': debates,
+        'games': games,
+        'jokes': jokes,
+        'myths': myths,
+        'news': news,
+        'passion': passion,
+        'personal': personal,
+        'ponder': ponder,
+        'proverbs': proverbs,
+        'quotes': quotes,
+        'share': share,
+        'trivia': trivia,
       };
 }

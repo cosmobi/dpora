@@ -132,7 +132,30 @@ class _DporaAppState extends State<DporaApp> {
       var stimulusDetails = Stimulus.fromJson(stimulusMap);
       setState(() {
         stimulusText = stimulusDetails.stimulus;
-        // TODO: categoryText = ?
+      });
+    });
+  }
+
+  // Ge the stimuli catetory instructions
+  void getInstructions() {
+    firebaseRTDB.child('instructions').once().then((DataSnapshot snapshot) {
+      Map<String, dynamic> instructMap =
+          new Map<String, dynamic>.from(snapshot.value);
+      var categoryInstructions = Instruct.fromJson(instructMap);
+      setState(() {
+        instructAds = categoryInstructions.ads;
+        instructDebates = categoryInstructions.debates;
+        instructGames = categoryInstructions.games;
+        instructJokes = categoryInstructions.jokes;
+        instructMyths = categoryInstructions.myths;
+        instructNews = categoryInstructions.news;
+        instructPassion = categoryInstructions.passion;
+        instructPersonal = categoryInstructions.personal;
+        instructPonder = categoryInstructions.ponder;
+        instructProverbs = categoryInstructions.proverbs;
+        instructQuotes = categoryInstructions.quotes;
+        instructShare = categoryInstructions.share;
+        instructTrivia = categoryInstructions.trivia;
       });
     });
   }
@@ -161,64 +184,77 @@ class _DporaAppState extends State<DporaApp> {
     int _endTotal = totalAds;
     if (dieRoll < _endTotal) {
       categoryChoice = 'ads';
+      instructStimulus = instructAds;
     } else {
       _startTotal = _endTotal;
       _endTotal = _endTotal + totalDebates;
       if (dieRoll >= _startTotal && dieRoll < _endTotal) {
         categoryChoice = 'debates';
+        instructStimulus = instructDebates;
       } else {
         _startTotal = _endTotal;
         _endTotal = _endTotal + totalGames;
         if (dieRoll >= _startTotal && dieRoll < _endTotal) {
           categoryChoice = 'games';
+          instructStimulus = instructGames;
         } else {
           _startTotal = _endTotal;
           _endTotal = _endTotal + totalJokes;
           if (dieRoll >= _startTotal && dieRoll < _endTotal) {
             categoryChoice = 'jokes';
+            instructStimulus = instructJokes;
           } else {
             _startTotal = _endTotal;
             _endTotal = _endTotal + totalMyths;
             if (dieRoll >= _startTotal && dieRoll < _endTotal) {
               categoryChoice = 'myths';
+              instructStimulus = instructMyths;
             } else {
               _startTotal = _endTotal;
               _endTotal = _endTotal + totalNews;
               if (dieRoll >= _startTotal && dieRoll < _endTotal) {
                 categoryChoice = 'news';
+                instructStimulus = instructNews;
               } else {
                 _startTotal = _endTotal;
                 _endTotal = _endTotal + totalPassion;
                 if (dieRoll >= _startTotal && dieRoll < _endTotal) {
                   categoryChoice = 'passion';
+                  instructStimulus = instructPassion;
                 } else {
                   _startTotal = _endTotal;
                   _endTotal = _endTotal + totalPersonal;
                   if (dieRoll >= _startTotal && dieRoll < _endTotal) {
                     categoryChoice = 'personal';
+                    instructStimulus = instructPersonal;
                   } else {
                     _startTotal = _endTotal;
                     _endTotal = _endTotal + totalPonder;
                     if (dieRoll >= _startTotal && dieRoll < _endTotal) {
                       categoryChoice = 'ponder';
+                      instructStimulus = instructPonder;
                     } else {
                       _startTotal = _endTotal;
                       _endTotal = _endTotal + totalProverbs;
                       if (dieRoll >= _startTotal && dieRoll < _endTotal) {
                         categoryChoice = 'proverbs';
+                        instructStimulus = instructProverbs;
                       } else {
                         _startTotal = _endTotal;
                         _endTotal = _endTotal + totalQuotes;
                         if (dieRoll >= _startTotal && dieRoll < _endTotal) {
                           categoryChoice = 'quotes';
+                          instructStimulus = instructQuotes;
                         } else {
                           _startTotal = _endTotal;
                           _endTotal = _endTotal + totalShare;
                           if (dieRoll >= _startTotal && dieRoll < _endTotal) {
                             categoryChoice = 'share';
+                            instructStimulus = instructShare;
                           } else {
                             //if dieRoll >= _endTotal
                             categoryChoice = 'trivia';
+                            instructStimulus = instructTrivia;
                           }
                         }
                       }
@@ -268,18 +304,18 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  // Add user comment
-  // TODO: where to push it (2 places?)
-  void addComments(String user, String comment) {
-    firebaseRTDB
-        .child('users/comment')
-        .push()
-        .set({'user': user, 'comment': comment});
-    firebaseRTDB
-        .child('groups/0001/yellow')
-        .push()
-        .set({'user': user, 'comment': comment});
-  }
+  // // Add user comment
+  // // TODO: where to push it (2 places?)
+  // void addComments(String user, String comment) {
+  //   firebaseRTDB
+  //       .child('users/comment')
+  //       .push()
+  //       .set({'user': user, 'comment': comment});
+  //   firebaseRTDB
+  //       .child('groups/0001/yellow')
+  //       .push()
+  //       .set({'user': user, 'comment': comment});
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -311,6 +347,9 @@ class _DporaAppState extends State<DporaApp> {
 
     // Sign in user anonymously to follow DB read and write rules
     signInAnonymously();
+
+    // Load all stimlui category instructions
+    getInstructions();
 
     // Choose a category
     chooseCategory(stimuliDeck[2290]);
@@ -545,13 +584,101 @@ Tap the About button above for more info.
     );
   }
 
+  // Show the appropriate icon for each stimuli category
+  Widget _icon(categoryChoice) {
+    if (categoryChoice == 'ads') {
+      return 
+      Icon(
+        Icons.local_offer_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'debates') {
+      return 
+      Icon(
+        Icons.gavel_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'games') {
+      return 
+      Icon(
+        Icons.casino_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'jokes') {
+      return 
+      Icon(
+        Icons.emoji_emotions_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'myths') {
+      return 
+      Icon(
+        Icons.fact_check_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'news') {
+      return 
+      Icon(
+        Icons.speaker_notes_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'passion') {
+      return 
+      Icon(
+        Icons.thumbs_up_down_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'personal') {
+      return 
+      Icon(
+        Icons.emoji_people_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'ponder') {
+      return 
+      Icon(
+        Icons.psychology_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'proverbs') {
+      return 
+      Icon(
+        Icons.history_edu_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'quotes') {
+      return 
+      Icon(
+        Icons.format_quote_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'share') {
+      return 
+      Icon(
+        Icons.group_rounded,
+        color: Colors.yellow,
+      );
+    } else if (categoryChoice == 'trivia') {
+      return 
+      Icon(
+        Icons.fact_check_rounded,
+        color: Colors.yellow,
+      );
+    } else {
+      return Icon(
+        Icons.emoji_people_rounded,
+        color: Colors.yellow,
+      );
+    }
+  }
+
   Widget _stimulus(textSize) {
     if (airplaneMode == true) {
       // snackbar notice if no internet connection is found
       rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
       setState(() {
         stimulusText = 'Please turn on mobile data, WiFi or both.';
-        categoryText = 'Are you in Airplane Mode?';
+        instructStimulus = 'Are you in Airplane Mode?';
       });
     }
     return Container(
@@ -593,21 +720,22 @@ Tap the About button above for more info.
                   padding: EdgeInsets.zero, // need for alignment
                   tooltip: 'Share Topic',
                   onPressed: () {
-                    Share.share(stimulusText + ' \nΦ dpora.com', subject: categoryText);
+                    Share.share(stimulusText + ' \nΦ dpora.com',
+                        subject: instructStimulus);
                   },
                 ),
               ),
               // TODO: Add this later, somewhere else
-                // child: IconButton(
-                //   icon: Icon(
-                //     Icons.threesixty_rounded,
-                //     color: iconColor,
-                //   ),
-                //   padding: EdgeInsets.zero, // need for alignment
-                //   tooltip: 'New Group & Topic',
-                //   onPressed: () {}, // maybe just restart app? maybe using
-                //            //  https://pub.dev/packages/flutter_phoenix
-                // ),
+              // child: IconButton(
+              //   icon: Icon(
+              //     Icons.threesixty_rounded,
+              //     color: iconColor,
+              //   ),
+              //   padding: EdgeInsets.zero, // need for alignment
+              //   tooltip: 'New Group & Topic',
+              //   onPressed: () {}, // maybe just restart app? maybe using
+              //            //  https://pub.dev/packages/flutter_phoenix
+              // ),
               SizedBox(
                 height: 20.0,
                 width: 20.0,
@@ -617,9 +745,10 @@ Tap the About button above for more info.
                     color: iconColor,
                   ),
                   padding: EdgeInsets.zero, // need for alignment
-                  tooltip: 'Flag As Inappropriate',
+                  tooltip: 'Something is wrong!',
                   onPressed: () {
-                   // up the flag counter for this stimulus
+                    // up the flag counter for this stimulus
+                    // offensive material, spelling error, etc
                   },
                 ),
               ),
@@ -642,31 +771,28 @@ Tap the About button above for more info.
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Icon(
-                Icons.emoji_people_rounded,
-                color: Colors.yellow,
-              ),
+              _icon(categoryChoice), // Shows the appropriate icon
               Container(
                 padding: EdgeInsets.all(7.0),
                 decoration: BoxDecoration(
-                border: Border.all(color: Colors.yellow),
-                borderRadius: BorderRadius.all(Radius.circular(20)),
-                color: Colors.grey[900],
+                  border: Border.all(color: Colors.yellow),
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  color: Colors.grey[900],
                 ),
                 height: 70.0,
                 width: 90.0,
                 child: Text(
-                  'All about you',
+                  instructStimulus,
                   style: TextStyle(
-                  // instructions text is 5 points smaller than stimulus text
-                  fontSize: textSize - 5,
-                  color: Colors.yellow, //yellowAccent is too bright
+                    // instructions text is 5 points smaller than stimulus text
+                    fontSize: textSize - 5,
+                    color: Colors.yellow, //yellowAccent is too bright
                   ),
                 ),
               ),
               Row(children: [
                 Text(
-                  'Next', // no need for counter here, rather update from DB
+                  'Next',
                   style: TextStyle(
                     fontSize: textSize,
                     color: iconColor,
@@ -692,13 +818,13 @@ Tap the About button above for more info.
                   ),
                 ),
                 Text(
-                    '0', // no need for counter here, rather update from DB
-                    //
-                    style: TextStyle(
-                      fontSize: textSize - 2,
-                      color: iconColor,
-                    ),
+                  '0', // no need for counter here, rather update from DB
+                  //
+                  style: TextStyle(
+                    fontSize: textSize - 2,
+                    color: iconColor,
                   ),
+                ),
               ]),
             ]),
       ]),
@@ -815,60 +941,60 @@ Tap the About button above for more info.
       ),
       child:
           Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Flexible(
-              child: SingleChildScrollView(
-                child: AnimatedOpacity(
-                  duration: Duration(seconds: chatFadeTime), // fade duration
-                  opacity: chatOpacity,
-                  child: Text(
-                    tileText,
-                    style: TextStyle(fontSize: textSize, color: textColor),
-                  ),
-                ),
+        Flexible(
+          child: SingleChildScrollView(
+            child: AnimatedOpacity(
+              duration: Duration(seconds: chatFadeTime), // fade duration
+              opacity: chatOpacity,
+              child: Text(
+                tileText,
+                style: TextStyle(fontSize: textSize, color: textColor),
               ),
             ),
-            Row(
-              children: [
-                SizedBox(
-                  height: 20.0,
-                  width: 20.0,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.not_interested_rounded,
-                      color: iconColor,
-                    ),
-                    padding: EdgeInsets.zero, // need for alignment
-                    tooltip: 'Mute Person',
-                    onPressed: () {
-                      setState(() {
-                        chatFadeTime = 1; // set to quick fade
-                        chatOpacity = 0.0;
-                        // reset fade duration
-                      });
-                      Timer(Duration(seconds: 1), () {
-                        setState(() {
-                          chatFadeTime = 10;
-                        });
-                      });
-                    },
-                  ),
+          ),
+        ),
+        Row(
+          children: [
+            SizedBox(
+              height: 20.0,
+              width: 20.0,
+              child: IconButton(
+                icon: Icon(
+                  Icons.not_interested_rounded,
+                  color: iconColor,
                 ),
-                // spacer box
-                SizedBox(
-                  height: 5.0,
-                  width: 5.0,
-                  ),
-                Text(
-                  '0', // no need for counter here, rather update from DB
-                  //
-                  style: TextStyle(
-                    fontSize: textSize,
-                    color: iconColor,
-                  ),
-                ),
-              ],
+                padding: EdgeInsets.zero, // need for alignment
+                tooltip: 'Mute Person',
+                onPressed: () {
+                  setState(() {
+                    chatFadeTime = 1; // set to quick fade
+                    chatOpacity = 0.0;
+                    // reset fade duration
+                  });
+                  Timer(Duration(seconds: 1), () {
+                    setState(() {
+                      chatFadeTime = 10;
+                    });
+                  });
+                },
+              ),
             ),
-            //]),
+            // spacer box
+            SizedBox(
+              height: 5.0,
+              width: 5.0,
+            ),
+            Text(
+              '0', // no need for counter here, rather update from DB
+              //
+              style: TextStyle(
+                fontSize: textSize,
+                color: iconColor,
+              ),
+            ),
+          ],
+        ),
+        //]),
       ]),
     );
   }
