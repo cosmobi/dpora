@@ -1,5 +1,3 @@
-import 'package:connectivity/connectivity.dart';
-import 'dart:math';
 
 // TODO: Stimuli totals need to be updated before every app release!
 final int totalAds = 1;
@@ -18,23 +16,12 @@ final int totalTrivia = 132;
 final int totalStimuli = 2456; // Total Sum
 // *******************************************************
 
-// Generate an UUID
-String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
-Random generateRandom = new Random();
-String randomNumber = generateRandom.nextInt(1000000).toString();
-final String uuid = randomNumber + milliseconds;
-
-// Random ID example: r4me6vuiRqQnJ*GoToTheMoon!
-
-// If mobile data and/or wifi are turned off then tell the
-// user (as a stimulus and snackbar) to turn on one or both.
-bool airplaneMode = false;
-void checkConnectivity() async {
-  var connectivityResult = await (Connectivity().checkConnectivity());
-  if (connectivityResult == ConnectivityResult.none) {
-    airplaneMode = true;
-  }
-}
+// To generate an UID (eg, r4me6vuiRqQnJ*GoToTheMoon), if needed...
+// then import 'dart:math'; at the top and uncomment these lines...
+// String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
+// Random generateRandom = new Random();
+// String randomNumber = generateRandom.nextInt(1000000).toString();
+// final String uid = randomNumber + milliseconds;
 
 // Will be used to hold platform identification
 String platform;
@@ -43,12 +30,20 @@ String platform;
 DateTime nowDate = new DateTime.now();
 String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
 final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
+// And use this as default timestamp
+int milliEpoch = nowDate.millisecondsSinceEpoch;
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
 double chatOpacity = 1.0;
 int userFadeTime = 10; // in seconds
 int chatFadeTime = 10;
+
+// dporian info
+int userBoots = 0;
+int userBootstamp = milliEpoch;
+String userColorString = '';
+String userGroup = '';
 
 // Create lists (decks) containing all the stimuli counts
 // These decks will be shuffled later to choose a random entry
@@ -91,29 +86,26 @@ String instructTrivia = '';
 // And this will hold the currently selected category
 String instructStimulus = '';
 
-// TODO: Delete this Map definition if it works without it
-//Map<String, dynamic> categoryInstructions;
-
 // These variables hold all the chat activity
 String blueContent = '';
 int blueStrikes = 0;
-int blueTimestamp = 0;
+int blueTimestamp = milliEpoch;
 bool blueVacancy = false;
 String greenContent = '';
 int greenStrikes = 0;
-int greenTimestamp = 0;
+int greenTimestamp = milliEpoch;
 bool greenVacancy = false;
 String orangeContent = '';
 int orangeStrikes = 0;
-int orangeTimestamp = 0;
+int orangeTimestamp = milliEpoch;
 bool orangeVacancy = false;
 String purpleContent = '';
 int purpleStrikes = 0;
-int purpleTimestamp = 0;
+int purpleTimestamp = milliEpoch;
 bool purpleVacancy = false;
 String redContent = '';
 int redStrikes = 0;
-int redTimestamp = 0;
+int redTimestamp = milliEpoch;
 bool redVacancy = false;
 int groupSize = 0;
 
@@ -132,6 +124,28 @@ var menuMessages = [
 
 // Classes below are for the serialization of
 // json-formatted data to and from the database
+
+class Dporian {
+  final int boots;
+  final int bootstamp;
+  final String color;
+  final String group;
+
+  Dporian(this.boots, this.bootstamp, this.color, this.group);
+
+  Dporian.fromJson(Map<String, dynamic> json)
+      : boots = json['boots'],
+        bootstamp = json['bootstamp'],
+        color = json['color'],
+        group = json['group'];
+
+  Map<String, dynamic> toJson() => {
+        'boots': boots,
+        'bootstamp': bootstamp,
+        'color': color,
+        'group': group,
+      };
+}
 
 class Stimulus {
   final int flagged;

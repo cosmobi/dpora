@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'local_import.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -52,21 +53,31 @@ _contactForm() async {
   }
 }
 
+// If mobile data and/or wifi are turned off then tell the
+// user (as a stimulus and snackbar) to turn on one or both.
+bool airplaneMode = false;
+void checkConnectivity() async {
+  var connectivityResult = await (Connectivity().checkConnectivity());
+  if (connectivityResult == ConnectivityResult.none) {
+    airplaneMode = true;
+  }
+}
+
 // Default app-wide colors
 Color boxBGColor = Colors.grey[900];
 Color iconColor = Colors.grey[700];
 Color menuColor = Colors.blueGrey;
 
-// Default values for the tileText and textColor
-Color userColor = Colors.greenAccent;
-String tileTextLT = 'You must be 13 years old to use this app (dpora).';
-Color textColorLT = Colors.orangeAccent;
-String tileTextLB = 'dpora does not save user-created chat content.';
-Color textColorLB = Colors.blueAccent;
-String tileTextRT = 'dpora is not responsible for user-created chat content.';
-Color textColorRT = Colors.purpleAccent;
-String tileTextRB = 'dpora is not liable for any consequences attributed to the use of this app.';
-Color textColorRB = Colors.redAccent;
+// Empty default values for the tileText and textColor
+Color userColor = Colors.black;
+String tileTextLT = '';
+Color textColorLT = Colors.black;
+String tileTextLB = '';
+Color textColorLB = Colors.black;
+String tileTextRT = '';
+Color textColorRT = Colors.black;
+String tileTextRB = '';
+Color textColorRB = Colors.black;
 
 // using this to handle inputted text in the textfield
 TextEditingController inputController = TextEditingController();
@@ -119,6 +130,24 @@ class _DporaAppState extends State<DporaApp> {
       print(e.toString());
       return null;
     }
+  }
+
+  // Get user info
+  void getUser(dporian) {
+    firebaseRTDB
+        .child('dporians/$dporian')
+        .once()
+        .then((DataSnapshot snapshot) {
+      Map<String, dynamic> userMap =
+          new Map<String, dynamic>.from(snapshot.value);
+      var userDetails = Dporian.fromJson(userMap);
+      setState(() {
+        userBoots = userDetails.boots;
+        userBootstamp = userDetails.bootstamp;
+        userColorString = userDetails.color;
+        userGroup = userDetails.group;
+      });
+    });
   }
 
   // Pick a stimulus
@@ -337,9 +366,10 @@ class _DporaAppState extends State<DporaApp> {
   }
 
   // Assign chat content and colors to their boxes
-  void assignChatBoxes(userColor) {
-    if (userColor == 'blue') {
+  void assignChatBoxes(userColorString) {
+    if (userColorString == 'blue') {
       setState(() {
+        userColor = Colors.blueAccent;
         tileTextLT = orangeContent;
         textColorLT = Colors.orangeAccent;
         tileTextLB = greenContent;
@@ -349,8 +379,21 @@ class _DporaAppState extends State<DporaApp> {
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
       });
-    } else if (userColor == 'orange') {
+    } else if (userColorString == 'green') {
       setState(() {
+        userColor = Colors.greenAccent;
+        tileTextLT = orangeContent;
+        textColorLT = Colors.orangeAccent;
+        tileTextLB = blueContent;
+        textColorLB = Colors.blueAccent;
+        tileTextRT = purpleContent;
+        textColorRT = Colors.purpleAccent;
+        tileTextRB = redContent;
+        textColorRB = Colors.redAccent;
+      });
+    } else if (userColorString == 'orange') {
+      setState(() {
+        userColor = Colors.orangeAccent;
         tileTextLT = greenContent;
         textColorLT = Colors.greenAccent;
         tileTextLB = blueContent;
@@ -360,8 +403,9 @@ class _DporaAppState extends State<DporaApp> {
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
       });
-    } else if (userColor == 'purple') {
+    } else if (userColorString == 'purple') {
       setState(() {
+        userColor = Colors.purpleAccent;
         tileTextLT = orangeContent;
         textColorLT = Colors.orangeAccent;
         tileTextLB = blueContent;
@@ -371,8 +415,9 @@ class _DporaAppState extends State<DporaApp> {
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
       });
-    } else if (userColor == 'red') {
+    } else if (userColorString == 'red') {
       setState(() {
+        userColor = Colors.redAccent;
         tileTextLT = orangeContent;
         textColorLT = Colors.orangeAccent;
         tileTextLB = blueContent;
@@ -381,18 +426,6 @@ class _DporaAppState extends State<DporaApp> {
         textColorRT = Colors.purpleAccent;
         tileTextRB = greenContent;
         textColorRB = Colors.greenAccent;
-      });
-    } else {
-      // userColor is green (or null)
-      setState(() {
-        tileTextLT = orangeContent;
-        textColorLT = Colors.orangeAccent;
-        tileTextLB = blueContent;
-        textColorLB = Colors.blueAccent;
-        tileTextRT = purpleContent;
-        textColorRT = Colors.purpleAccent;
-        tileTextRB = redContent;
-        textColorRB = Colors.redAccent;
       });
     }
   }
@@ -446,10 +479,12 @@ class _DporaAppState extends State<DporaApp> {
     // print(auth.currentUser.metadata.creationTime);
     // Use... FirebaseAuth.instance.signOut(); ...to sign out a user
 
-    // right now, the test user is zM26iXLzhghCYHg9vddgBK0tokl2
-
     // if already signed in...
     if (auth.currentUser != null) {
+      //
+      // Fetch user info
+      getUser(auth.currentUser.uid);
+      
       // TODO: assign to a group if not assigned already
 
       // Load all stimlui category instructions
@@ -463,19 +498,32 @@ class _DporaAppState extends State<DporaApp> {
       // Choose a random stimulus
       randomStimulus();
 
-      // Connect to group content
-      getComments('baleebalaa');
+      // Connect to group content, after userGroup was found
+      if (userGroup != "") {
+        getComments(userGroup);
+      } else {
+        CircularProgressIndicator();
+      }
 
       // Assign group to appropriate chat boxes
-      assignChatBoxes(userColor);
+      assignChatBoxes(userColorString);
       //
     } else {
       stimulusText =
           'Tap the yellow arrow button on the right to continue, and to accept these terms and conditions.';
       instructStimulus = 'Terms and Conditions';
+      // This sets up the basic Terms and Conditions screen before login
+      userColor = Colors.black; // to hide it
+      tileTextLT = 'You must be 13 years old to use this app (dpora).';
+      textColorLT = Colors.orangeAccent;
+      tileTextLB = 'dpora does not save user-created chat content.';
+      textColorLB = Colors.blueAccent;
+      tileTextRT = 'dpora is not responsible for user-created chat content.';
+      textColorRT = Colors.purpleAccent;
+      tileTextRB =
+          'dpora is not liable for any consequences attributed to the use of this app.';
+      textColorRB = Colors.redAccent;
     }
-
-    // Assign chat boxes
 
     return MaterialApp(
       scaffoldMessengerKey: rootScaffoldMessengerKey,
@@ -528,7 +576,7 @@ class _DporaAppState extends State<DporaApp> {
                 title: Text(
                   'About',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 18,
                     color: Colors.white,
                   ),
                 ),
@@ -548,7 +596,7 @@ class _DporaAppState extends State<DporaApp> {
                 title: Text(
                   'Contact',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 18,
                     color: Colors.white,
                   ),
                 ),
@@ -573,21 +621,26 @@ class _DporaAppState extends State<DporaApp> {
                       TextSpan(
                         text: '\nPrivacy' + '\n\n',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 18,
                           color: Colors.white,
                         ),
                       ),
                       TextSpan(
                         text: '''
-Once a comment disappears, it's gone!
+The topic is in yellow.
 
-You were given this random number to jump in.
-($uuid) Change it anytime.
+You are matched with other 
+people who may be anywhere  
+in the world. Once a comment 
+disappears, it's gone! So talk 
+openly, but be respectful.
 
-Tap the About button above for more info.
+When 3 people tap the yellow arrow,
+the next topic will appear. Tap the 
+About link above for more info.
 ''',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 16,
                           color: Colors.white70,
                         ),
                       ),
@@ -635,7 +688,7 @@ Tap the About button above for more info.
                       TextSpan(
                         text: platform + ' Version 0.0.1' + '\n',
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: Colors.white54,
                         ),
                       ),
@@ -659,7 +712,7 @@ Tap the About button above for more info.
                 title: Text(
                   'Back',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     color: Colors.white,
                   ),
                 ),
@@ -677,6 +730,7 @@ Tap the About button above for more info.
           builder: (context, orientation) {
             return orientation == Orientation.portrait
                 ? _buildVerticalLayout(
+                    userColor,
                     tileTextLT,
                     textColorLT,
                     tileTextLB,
@@ -687,6 +741,7 @@ Tap the About button above for more info.
                     textColorRB,
                   )
                 : _buildHorizontalLayout(
+                    userColor,
                     tileTextLT,
                     textColorLT,
                     tileTextLB,
@@ -724,11 +779,6 @@ Tap the About button above for more info.
         Icons.emoji_emotions_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'myths') {
-      return Icon(
-        Icons.fact_check_rounded,
-        color: Colors.yellow,
-      );
     } else if (categoryChoice == 'news') {
       return Icon(
         Icons.speaker_notes_rounded,
@@ -764,15 +814,12 @@ Tap the About button above for more info.
         Icons.group_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'trivia') {
+    } else {
+      // Trivia or Myths
+      // Terms and Conditions
+      // No Internet Connection
       return Icon(
         Icons.fact_check_rounded,
-        color: Colors.yellow,
-      );
-    } else {
-      // Terms and Conditions
-      return Icon(
-        Icons.gavel_rounded,
         color: Colors.yellow,
       );
     }
@@ -943,7 +990,7 @@ Tap the About button above for more info.
     );
   }
 
-  Widget _userInput() {
+  Widget _userInput(userColor) {
     int _timeUntilFade = 20;
     int _fadeDuration = 10;
     return TextField(
@@ -1112,6 +1159,7 @@ Tap the About button above for more info.
   }
 
   Widget _buildVerticalLayout(
+    userColor,
     tileTextLT,
     textColorLT,
     tileTextLB,
@@ -1182,13 +1230,14 @@ Tap the About button above for more info.
         Container(
           padding: EdgeInsets.all(10.0),
           width: MediaQuery.of(context).size.width,
-          child: _userInput(),
+          child: _userInput(userColor),
         ),
       ],
     );
   }
 
   Widget _buildHorizontalLayout(
+    userColor,
     tileTextLT,
     textColorLT,
     tileTextLB,
@@ -1271,7 +1320,7 @@ Tap the About button above for more info.
       Container(
         width: MediaQuery.of(context).size.width * 0.95, //95%
         padding: EdgeInsets.all(10.0),
-        child: _userInput(),
+        child: _userInput(userColor),
       ),
     ]);
   }
