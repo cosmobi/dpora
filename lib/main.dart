@@ -59,13 +59,13 @@ Color menuColor = Colors.blueGrey;
 
 // Default values for the tileText and textColor
 Color userColor = Colors.greenAccent;
-String tileTextLT = 'The top left is orange.';
+String tileTextLT = 'You must be 13 years old to use this app (dpora).';
 Color textColorLT = Colors.orangeAccent;
-String tileTextLB = 'The bottom left is blue.';
+String tileTextLB = 'dpora does not save user-created chat content.';
 Color textColorLB = Colors.blueAccent;
-String tileTextRT = 'The top right is purple.';
+String tileTextRT = 'dpora is not responsible for user-created chat content.';
 Color textColorRT = Colors.purpleAccent;
-String tileTextRB = 'The bottom right is red.';
+String tileTextRB = 'dpora is not liable for any consequences attributed to the use of this app.';
 Color textColorRB = Colors.redAccent;
 
 // using this to handle inputted text in the textfield
@@ -304,6 +304,99 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
+// Relay all the chat activity
+  void getComments(groupID) {
+    firebaseRTDB.child('groups/$groupID').once().then((DataSnapshot snapshot) {
+      Map<String, dynamic> groupMap =
+          new Map<String, dynamic>.from(snapshot.value);
+      var groupDetails = Comments.fromJson(groupMap);
+      setState(() {
+        blueContent = groupDetails.blueContent;
+        blueStrikes = groupDetails.blueStrikes;
+        blueTimestamp = groupDetails.blueTimestamp;
+        blueVacancy = groupDetails.blueVacancy;
+        greenContent = groupDetails.greenContent;
+        greenStrikes = groupDetails.greenStrikes;
+        greenTimestamp = groupDetails.greenTimestamp;
+        greenVacancy = groupDetails.greenVacancy;
+        orangeContent = groupDetails.orangeContent;
+        orangeStrikes = groupDetails.orangeStrikes;
+        orangeTimestamp = groupDetails.orangeTimestamp;
+        orangeVacancy = groupDetails.orangeVacancy;
+        purpleContent = groupDetails.purpleContent;
+        purpleStrikes = groupDetails.purpleStrikes;
+        purpleTimestamp = groupDetails.purpleTimestamp;
+        purpleVacancy = groupDetails.purpleVacancy;
+        redContent = groupDetails.redContent;
+        redStrikes = groupDetails.redStrikes;
+        redTimestamp = groupDetails.redTimestamp;
+        redVacancy = groupDetails.redVacancy;
+        groupSize = groupDetails.groupSize;
+      });
+    });
+  }
+
+  // Assign chat content and colors to their boxes
+  void assignChatBoxes(userColor) {
+    if (userColor == 'blue') {
+      setState(() {
+        tileTextLT = orangeContent;
+        textColorLT = Colors.orangeAccent;
+        tileTextLB = greenContent;
+        textColorLB = Colors.greenAccent;
+        tileTextRT = purpleContent;
+        textColorRT = Colors.purpleAccent;
+        tileTextRB = redContent;
+        textColorRB = Colors.redAccent;
+      });
+    } else if (userColor == 'orange') {
+      setState(() {
+        tileTextLT = greenContent;
+        textColorLT = Colors.greenAccent;
+        tileTextLB = blueContent;
+        textColorLB = Colors.blueAccent;
+        tileTextRT = purpleContent;
+        textColorRT = Colors.purpleAccent;
+        tileTextRB = redContent;
+        textColorRB = Colors.redAccent;
+      });
+    } else if (userColor == 'purple') {
+      setState(() {
+        tileTextLT = orangeContent;
+        textColorLT = Colors.orangeAccent;
+        tileTextLB = blueContent;
+        textColorLB = Colors.blueAccent;
+        tileTextRT = greenContent;
+        textColorRT = Colors.greenAccent;
+        tileTextRB = redContent;
+        textColorRB = Colors.redAccent;
+      });
+    } else if (userColor == 'red') {
+      setState(() {
+        tileTextLT = orangeContent;
+        textColorLT = Colors.orangeAccent;
+        tileTextLB = blueContent;
+        textColorLB = Colors.blueAccent;
+        tileTextRT = purpleContent;
+        textColorRT = Colors.purpleAccent;
+        tileTextRB = greenContent;
+        textColorRB = Colors.greenAccent;
+      });
+    } else {
+      // userColor is green (or null)
+      setState(() {
+        tileTextLT = orangeContent;
+        textColorLT = Colors.orangeAccent;
+        tileTextLB = blueContent;
+        textColorLB = Colors.blueAccent;
+        tileTextRT = purpleContent;
+        textColorRT = Colors.purpleAccent;
+        tileTextRB = redContent;
+        textColorRB = Colors.redAccent;
+      });
+    }
+  }
+
   // // Add user comment
   // // TODO: where to push it (2 places?)
   // void addComments(String user, String comment) {
@@ -345,19 +438,44 @@ class _DporaAppState extends State<DporaApp> {
       }
     }
 
-    // Sign in user anonymously to follow DB read and write rules
-    signInAnonymously();
+    // When users anonymously sign-in, here is some data captured:
+    //print(auth.currentUser.uid);
+    //print(auth.languageCode); null
+    //print(auth.currentUser.isAnonymous); true
+    // print(auth.currentUser.displayName); can set to something
+    // print(auth.currentUser.metadata.creationTime);
+    // Use... FirebaseAuth.instance.signOut(); ...to sign out a user
 
-    // Load all stimlui category instructions
-    getInstructions();
+    // right now, the test user is zM26iXLzhghCYHg9vddgBK0tokl2
 
-    // Choose a category
-    chooseCategory(stimuliDeck[2290]);
-    // The default 2290 falls in the range of the 'share' category
-    // and the default stimulus there is set to "What's on your mind?"
+    // if already signed in...
+    if (auth.currentUser != null) {
+      // TODO: assign to a group if not assigned already
 
-    // Choose a random stimulus
-    randomStimulus();
+      // Load all stimlui category instructions
+      getInstructions();
+
+      // Choose a category
+      chooseCategory(stimuliDeck[2295]);
+      // The default 2295 falls in the range of the 'share' category
+      // and the default stimulus there is set to "What's on your mind?"
+
+      // Choose a random stimulus
+      randomStimulus();
+
+      // Connect to group content
+      getComments('baleebalaa');
+
+      // Assign group to appropriate chat boxes
+      assignChatBoxes(userColor);
+      //
+    } else {
+      stimulusText =
+          'Tap the yellow arrow button on the right to continue, and to accept these terms and conditions.';
+      instructStimulus = 'Terms and Conditions';
+    }
+
+    // Assign chat boxes
 
     return MaterialApp(
       scaffoldMessengerKey: rootScaffoldMessengerKey,
@@ -587,86 +705,74 @@ Tap the About button above for more info.
   // Show the appropriate icon for each stimuli category
   Widget _icon(categoryChoice) {
     if (categoryChoice == 'ads') {
-      return 
-      Icon(
+      return Icon(
         Icons.local_offer_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'debates') {
-      return 
-      Icon(
+      return Icon(
         Icons.gavel_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'games') {
-      return 
-      Icon(
+      return Icon(
         Icons.casino_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'jokes') {
-      return 
-      Icon(
+      return Icon(
         Icons.emoji_emotions_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'myths') {
-      return 
-      Icon(
+      return Icon(
         Icons.fact_check_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'news') {
-      return 
-      Icon(
+      return Icon(
         Icons.speaker_notes_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'passion') {
-      return 
-      Icon(
+      return Icon(
         Icons.thumbs_up_down_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'personal') {
-      return 
-      Icon(
+      return Icon(
         Icons.emoji_people_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'ponder') {
-      return 
-      Icon(
+      return Icon(
         Icons.psychology_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'proverbs') {
-      return 
-      Icon(
+      return Icon(
         Icons.history_edu_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'quotes') {
-      return 
-      Icon(
+      return Icon(
         Icons.format_quote_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'share') {
-      return 
-      Icon(
+      return Icon(
         Icons.group_rounded,
         color: Colors.yellow,
       );
     } else if (categoryChoice == 'trivia') {
-      return 
-      Icon(
+      return Icon(
         Icons.fact_check_rounded,
         color: Colors.yellow,
       );
     } else {
+      // Terms and Conditions
       return Icon(
-        Icons.emoji_people_rounded,
+        Icons.gavel_rounded,
         color: Colors.yellow,
       );
     }
@@ -812,13 +918,19 @@ Tap the About button above for more info.
                     padding: EdgeInsets.zero, // need for alignment
                     tooltip: 'Next Topic',
                     onPressed: () {
-                      // shuffle all decks and therefore show a new stimulus
-                      shuffleDecks();
+                      if (auth.currentUser != null) {
+                        // if user is signed-in, shuffle all decks
+                        // and therefore show a new stimulus
+                        shuffleDecks();
+                      } else {
+                        // Otherwise, sign the user in anonymously
+                        signInAnonymously();
+                      }
                     },
                   ),
                 ),
                 Text(
-                  '0', // no need for counter here, rather update from DB
+                  '0' + '/3', // no need for counter here, rather update from DB
                   //
                   style: TextStyle(
                     fontSize: textSize - 2,
@@ -982,13 +1094,13 @@ Tap the About button above for more info.
             // spacer box
             SizedBox(
               height: 5.0,
-              width: 5.0,
+              width: 8.0,
             ),
             Text(
-              '0', // no need for counter here, rather update from DB
+              '0' + '/3', // no need for counter here, rather update from DB
               //
               style: TextStyle(
-                fontSize: textSize,
+                fontSize: textSize - 2,
                 color: iconColor,
               ),
             ),

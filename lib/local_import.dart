@@ -14,8 +14,8 @@ final int totalPonder = 262;
 final int totalProverbs = 394;
 final int totalQuotes = 297;
 final int totalShare = 34;
-final int totalTrivia = 131;
-final int totalStimuli = 2455; // Total Sum
+final int totalTrivia = 132;
+final int totalStimuli = 2456; // Total Sum
 // *******************************************************
 
 // Generate an UUID
@@ -91,7 +91,31 @@ String instructTrivia = '';
 // And this will hold the currently selected category
 String instructStimulus = '';
 
-Map<String, dynamic> categoryInstructions;
+// TODO: Delete this Map definition if it works without it
+//Map<String, dynamic> categoryInstructions;
+
+// These variables hold all the chat activity
+String blueContent = '';
+int blueStrikes = 0;
+int blueTimestamp = 0;
+bool blueVacancy = false;
+String greenContent = '';
+int greenStrikes = 0;
+int greenTimestamp = 0;
+bool greenVacancy = false;
+String orangeContent = '';
+int orangeStrikes = 0;
+int orangeTimestamp = 0;
+bool orangeVacancy = false;
+String purpleContent = '';
+int purpleStrikes = 0;
+int purpleTimestamp = 0;
+bool purpleVacancy = false;
+String redContent = '';
+int redStrikes = 0;
+int redTimestamp = 0;
+bool redVacancy = false;
+int groupSize = 0;
 
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
@@ -102,7 +126,8 @@ var menuMessages = [
   'Have private yet meaningful\nchats with total strangers',
   'Speak your mind and gain\nmultiple perspectives',
   'Educate and learn with others.\nDisagree and grow together.',
-  'Be social and be private.\nThe best of both worlds.'
+  'Be social and be private.\nThe best of both worlds.',
+  'Totally social. Totally private.\nTotally awesome!'
 ];
 
 // Classes below are for the serialization of
@@ -189,5 +214,99 @@ class Instruct {
         'quotes': quotes,
         'share': share,
         'trivia': trivia,
+      };
+}
+
+class Comments {
+  final String blueContent;
+  final int blueStrikes;
+  final int blueTimestamp;
+  final bool blueVacancy;
+  final String greenContent;
+  final int greenStrikes;
+  final int greenTimestamp;
+  final bool greenVacancy;
+  final String orangeContent;
+  final int orangeStrikes;
+  final int orangeTimestamp;
+  final bool orangeVacancy;
+  final String purpleContent;
+  final int purpleStrikes;
+  final int purpleTimestamp;
+  final bool purpleVacancy;
+  final String redContent;
+  final int redStrikes;
+  final int redTimestamp;
+  final bool redVacancy;
+  final int groupSize;
+
+  Comments(
+      this.blueContent,
+      this.blueStrikes,
+      this.blueTimestamp,
+      this.blueVacancy,
+      this.greenContent,
+      this.greenStrikes,
+      this.greenTimestamp,
+      this.greenVacancy,
+      this.orangeContent,
+      this.orangeStrikes,
+      this.orangeTimestamp,
+      this.orangeVacancy,
+      this.purpleContent,
+      this.purpleStrikes,
+      this.purpleTimestamp,
+      this.purpleVacancy,
+      this.redContent,
+      this.redStrikes,
+      this.redTimestamp,
+      this.redVacancy,
+      this.groupSize);
+
+  Comments.fromJson(Map<String, dynamic> json)
+      : blueContent = json['blue-content'],
+        blueStrikes = json['blue-strikes'],
+        blueTimestamp = json['blue-timestamp'],
+        blueVacancy = json['blue-vacancy'],
+        greenContent = json['green-content'],
+        greenStrikes = json['green-strikes'],
+        greenTimestamp = json['green-timestamp'],
+        greenVacancy = json['green-vacancy'],
+        orangeContent = json['orange-content'],
+        orangeStrikes = json['orange-strikes'],
+        orangeTimestamp = json['orange-timestamp'],
+        orangeVacancy = json['orange-vacancy'],
+        purpleContent = json['purple-content'],
+        purpleStrikes = json['purple-strikes'],
+        purpleTimestamp = json['purple-timestamp'],
+        purpleVacancy = json['purple-vacancy'],
+        redContent = json['red-content'],
+        redStrikes = json['red-strikes'],
+        redTimestamp = json['red-timestamp'],
+        redVacancy = json['red-vacancy'],
+        groupSize = json['occupancy'];
+
+  Map<String, dynamic> toJson() => {
+        'blue-content': blueContent,
+        'blue-strikes': blueStrikes,
+        'blue-timestamp': blueTimestamp,
+        'blue-vacancy': blueVacancy,
+        'green-content': greenContent,
+        'green-strikes': greenStrikes,
+        'green-timestamp': greenTimestamp,
+        'green-vacancy': greenVacancy,
+        'orange-content': orangeContent,
+        'orange-strikes': orangeStrikes,
+        'orange-timestamp': orangeTimestamp,
+        'orange-vacancy': orangeVacancy,
+        'purple-content': purpleContent,
+        'purple-strikes': purpleStrikes,
+        'purple-timestamp': purpleTimestamp,
+        'purple-vacancy': purpleVacancy,
+        'red-content': redContent,
+        'red-strikes': redStrikes,
+        'red-timestamp': redTimestamp,
+        'red-vacancy': redVacancy,
+        'occupancy': groupSize,
       };
 }
