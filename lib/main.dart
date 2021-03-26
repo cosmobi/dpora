@@ -90,6 +90,18 @@ GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 bool waitStatus = false;
+// successfully assigned to new group
+final snackBarNewGroup = SnackBar(
+  content: const Text('Successfully entered new group!'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 2),
+);
 // alert user when attempting to post prematurely
 final snackBarWait2Post = SnackBar(
   content: const Text('Wait for your last post to disappear!'),
@@ -132,28 +144,217 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
+  // Find or create a group that has a vacancy
+  void findVacantGroup() {
+    String groupName = '';
+    int openSeats = 0;
+    firebaseRTDB.child('vacancies').once().then((DataSnapshot snapshotGroups) {
+      var vacancyCheck = new Map<String, dynamic>.from(snapshotGroups.value);
+      // First gather some keys before assigning one in priority order
+      var key4 = vacancyCheck.keys
+          .firstWhere((k4) => vacancyCheck[k4] == 4, orElse: () => null);
+      var key3 = vacancyCheck.keys
+          .firstWhere((k3) => vacancyCheck[k3] == 3, orElse: () => null);
+      var key2 = vacancyCheck.keys
+          .firstWhere((k2) => vacancyCheck[k2] == 2, orElse: () => null);
+      var key1 = vacancyCheck.keys
+          .firstWhere((k1) => vacancyCheck[k1] == 1, orElse: () => null);
+      var key5 = vacancyCheck.keys
+          .firstWhere((k5) => vacancyCheck[k5] == 5, orElse: () => null);
+      if (key4 != null) {
+        // only 1 other person in group, so priority assignment is here
+        groupName = key4;
+        openSeats = 4;
+      } else if (key3 != null) {
+        groupName = key3;
+        openSeats = 3;
+      } else if (key2 != null) {
+        groupName = key2;
+        openSeats = 2;
+      } else if (key1 != null) {
+        groupName = key1;
+        openSeats = 1;
+      } else if (key5 != null) {
+        // empty group, assign first person there
+        groupName = key5;
+        openSeats = 5;
+      } else {
+        // new group is needed, first create a new group name/uid
+        groupName = firebaseRTDB.child('groups').push().key;
+        // Now use this to add the key/value pairs
+        firebaseRTDB.child('groups').child('$groupName').set({
+          'blue-content': '',
+          'blue-strikes': 0,
+          'blue-timestamp': milliEpoch,
+          'blue-vacancy': true,
+          'green-content': '',
+          'green-strikes': 0,
+          'green-timestamp': milliEpoch,
+          'green-vacancy': true,
+          'orange-content': '',
+          'orange-strikes': 0,
+          'orange-timestamp': milliEpoch,
+          'orange-vacancy': true,
+          'purple-content': '',
+          'purple-strikes': 0,
+          'purple-timestamp': milliEpoch,
+          'purple-vacancy': true,
+          'red-content': '',
+          'red-strikes': 0,
+          'red-timestamp': milliEpoch,
+          'red-vacancy': true
+        }).then((_) {
+          // update the vacancy status in vacancies node
+          firebaseRTDB
+              .child('vacancies')
+              .update({'$groupName': 5}).catchError((onError) {
+            print(onError);
+          });
+        });
+      }
+      // And now assign a vacant seat in that group
+      assignVacantColor(groupName, openSeats);
+    });
+  }
+
+  void assignVacantColor(groupName, openSeats) {
+    // Looking for a vacant color (an open seat)
+    var seatColor = ''; // The color in that group
+    firebaseRTDB
+        .child('groups')
+        .child('$groupName')
+        .once()
+        .then((DataSnapshot snapshotColors) {
+      var colorVacancies = new Map<String, dynamic>.from(snapshotColors.value);
+      var blueSeat = colorVacancies['blue-vacancy'];
+      // if blueSeat gave error, try = colorVacancies[groupName]['blue-vacancy']
+      // because the json result might be nested (as it happened before)
+      if (blueSeat == true) {
+        seatColor = 'blue';
+      } else {
+        var greenSeat = colorVacancies['green-vacancy'];
+        if (greenSeat == true) {
+          seatColor = 'green';
+        } else {
+          var orangeSeat = colorVacancies['orange-vacancy'];
+          if (orangeSeat == true) {
+            seatColor = 'orange';
+          } else {
+            var purpleSeat = colorVacancies['purple-vacancy'];
+            if (purpleSeat == true) {
+              seatColor = 'purple';
+            } else {
+              var redSeat = colorVacancies['red-vacancy'];
+              if (redSeat == true) {
+                seatColor = 'red';
+              }
+            }
+          }
+        }
+      }
+      // just in case someone snatched the last seat as it was being assigned
+      if (seatColor == '') {
+        CircularProgressIndicator();
+        Timer(Duration(seconds: 1), () {
+          // wait a sec and see if a new position opens somewhere else
+        });
+      } else {
+        // Then assign the open seat (group and color) to the user
+        // TODO: Make sure this does not reset a user's boot count
+        firebaseRTDB
+            .child('dporians')
+            .child(auth.currentUser.uid)
+            .update({'boots': '$userBoots', 'bootstamp': '$userBootstamp', 'color': '$seatColor', 'group': '$groupName'}).then((_) {
+          // update group vacancy status
+          updateVacancy(groupName, seatColor, openSeats, false);
+          // show success
+          rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNewGroup);
+        }).catchError((onError) {
+          print(onError);
+        });
+      }
+    });
+  }
+
+  void updateVacancy(groupName, seatColor, seatCount, v) {
+    // prep the variables
+    String seatKey = seatColor + '-vacancy';
+    if (v == false) {
+      seatCount--; // decrement
+    } else {
+      seatCount++; // increment
+    }
+    // update the vacancy in vacancies node
+    firebaseRTDB.child('vacancies').update({'$groupName': '$seatCount'}).then((_) {
+      // update the vacancy in groups node
+      firebaseRTDB
+          .child('groups')
+          .child('$groupName')
+          .update({'$seatKey': '$v'}).catchError((onErrorGroups) {
+        print(onErrorGroups);
+      });
+    }).catchError((onErrorVacancies) {
+      print(onErrorVacancies);
+    });
+  }
+
+  // Create new user data
+  void createUser(uuid) {
+    // Create user data that links to that group and color
+    firebaseRTDB.child('dporians').child('$uuid').set({
+      'boots': 0,
+      'bootstamp': '$milliEpoch',
+      'color': 'black',
+      'group': 'none'
+    }).catchError((onError) {
+      print(onError);
+    });
+  }
+
   // Get user info
   void getUser(dporian) {
     firebaseRTDB
-        .child('dporians/$dporian')
+        .child('dporians')
+        .child('$dporian') // TODO: remove quotes on all of these calls
         .once()
         .then((DataSnapshot snapshot) {
       Map<String, dynamic> userMap =
           new Map<String, dynamic>.from(snapshot.value);
       var userDetails = Dporian.fromJson(userMap);
+      if (userDetails.boots >= 0) {
+        setState(() {
+          registered = true;
+        });
+        if (userDetails.boots > 2) {
+          // TODO: not playing nice, take a break
+          // In the DB, make this dporian's color='' and group=''
+        } else {
+          // all good
+          setState(() {
+            userBoots = userDetails.boots;
+            userBootstamp = userDetails.bootstamp;
+            userColorString = userDetails.color;
+            groupName = userDetails.group;
+          });
+        }
+      } else {
+        setState(() {
+          registered = false;
+        });
+      }
+    }).catchError((onError) {
       setState(() {
-        userBoots = userDetails.boots;
-        userBootstamp = userDetails.bootstamp;
-        userColorString = userDetails.color;
-        userGroup = userDetails.group;
-      });
+          registered = false;
+        });
     });
   }
 
   // Pick a stimulus
   void getStimulus(stimuliCategory, stimulusID) {
     firebaseRTDB
-        .child('stimuli/$stimuliCategory/$stimulusID')
+        .child('stimuli')
+        .child('$stimuliCategory')
+        .child('$stimulusID')
         .once()
         .then((DataSnapshot snapshot) {
       Map<String, dynamic> stimulusMap =
@@ -335,7 +536,11 @@ class _DporaAppState extends State<DporaApp> {
 
 // Relay all the chat activity
   void getComments(groupID) {
-    firebaseRTDB.child('groups/$groupID').once().then((DataSnapshot snapshot) {
+    firebaseRTDB
+        .child('groups')
+        .child('$groupID')
+        .once()
+        .then((DataSnapshot snapshot) {
       Map<String, dynamic> groupMap =
           new Map<String, dynamic>.from(snapshot.value);
       var groupDetails = Comments.fromJson(groupMap);
@@ -360,7 +565,6 @@ class _DporaAppState extends State<DporaApp> {
         redStrikes = groupDetails.redStrikes;
         redTimestamp = groupDetails.redTimestamp;
         redVacancy = groupDetails.redVacancy;
-        groupSize = groupDetails.groupSize;
       });
     });
   }
@@ -430,17 +634,9 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  // // Add user comment
-  // // TODO: where to push it (2 places?)
-  // void addComments(String user, String comment) {
-  //   firebaseRTDB
-  //       .child('users/comment')
-  //       .push()
-  //       .set({'user': user, 'comment': comment});
-  //   firebaseRTDB
-  //       .child('groups/0001/yellow')
-  //       .push()
-  //       .set({'user': user, 'comment': comment});
+  // void deleteData() {
+  //   // only use if needed to surgically delete erroneous data
+  //   firebaseRTDB.child('dporians/rMW_ogUVuBS14jAk_jy1').remove();
   // }
 
   @override
@@ -475,17 +671,32 @@ class _DporaAppState extends State<DporaApp> {
     //print(auth.currentUser.uid);
     //print(auth.languageCode); null
     //print(auth.currentUser.isAnonymous); true
-    // print(auth.currentUser.displayName); can set to something
+    // print(auth.currentUser.displayName); null if anonymous
     // print(auth.currentUser.metadata.creationTime);
     // Use... FirebaseAuth.instance.signOut(); ...to sign out a user
 
     // if already signed in...
     if (auth.currentUser != null) {
       //
+      //FirebaseAuth.instance.signOut(); // Take out!
+
       // Fetch user info
       getUser(auth.currentUser.uid);
+
+      if (registered == false) {
+        createUser(auth.currentUser.uid);
+      }
       
-      // TODO: assign to a group if not assigned already
+      if (groupName == 'none') {
+        // User needs to be assigned to a group
+        findVacantGroup();
+      }
+      
+      if (groupName != '' && groupName != 'none') {
+        getComments(groupName);
+        // Assign comments to appropriate color boxes
+        assignChatBoxes(userColorString);
+      }
 
       // Load all stimlui category instructions
       getInstructions();
@@ -497,17 +708,6 @@ class _DporaAppState extends State<DporaApp> {
 
       // Choose a random stimulus
       randomStimulus();
-
-      // Connect to group content, after userGroup was found
-      if (userGroup != "") {
-        getComments(userGroup);
-      } else {
-        CircularProgressIndicator();
-      }
-
-      // Assign group to appropriate chat boxes
-      assignChatBoxes(userColorString);
-      //
     } else {
       stimulusText =
           'Tap the yellow arrow button on the right to continue, and to accept these terms and conditions.';

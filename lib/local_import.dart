@@ -1,4 +1,3 @@
-
 // TODO: Stimuli totals need to be updated before every app release!
 final int totalAds = 1;
 final int totalDebates = 266;
@@ -43,7 +42,8 @@ int chatFadeTime = 10;
 int userBoots = 0;
 int userBootstamp = milliEpoch;
 String userColorString = '';
-String userGroup = '';
+String groupName = '';
+var registered; // check the registration status
 
 // Create lists (decks) containing all the stimuli counts
 // These decks will be shuffled later to choose a random entry
@@ -107,7 +107,6 @@ String redContent = '';
 int redStrikes = 0;
 int redTimestamp = milliEpoch;
 bool redVacancy = false;
-int groupSize = 0;
 
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
@@ -119,7 +118,8 @@ var menuMessages = [
   'Speak your mind and gain\nmultiple perspectives',
   'Educate and learn with others.\nDisagree and grow together.',
   'Be social and be private.\nThe best of both worlds.',
-  'Totally social. Totally private.\nTotally awesome!'
+  'Totally social. Totally private.\nTotally awesome!',
+  'No registration. No spam\nNo data mining. No way!'
 ];
 
 // Classes below are for the serialization of
@@ -252,7 +252,6 @@ class Comments {
   final int redStrikes;
   final int redTimestamp;
   final bool redVacancy;
-  final int groupSize;
 
   Comments(
       this.blueContent,
@@ -274,8 +273,7 @@ class Comments {
       this.redContent,
       this.redStrikes,
       this.redTimestamp,
-      this.redVacancy,
-      this.groupSize);
+      this.redVacancy);
 
   Comments.fromJson(Map<String, dynamic> json)
       : blueContent = json['blue-content'],
@@ -297,8 +295,7 @@ class Comments {
         redContent = json['red-content'],
         redStrikes = json['red-strikes'],
         redTimestamp = json['red-timestamp'],
-        redVacancy = json['red-vacancy'],
-        groupSize = json['occupancy'];
+        redVacancy = json['red-vacancy'];
 
   Map<String, dynamic> toJson() => {
         'blue-content': blueContent,
@@ -320,7 +317,6 @@ class Comments {
         'red-content': redContent,
         'red-strikes': redStrikes,
         'red-timestamp': redTimestamp,
-        'red-vacancy': redVacancy,
-        'occupancy': groupSize,
+        'red-vacancy': redVacancy
       };
 }
