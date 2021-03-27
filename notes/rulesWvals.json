@@ -1,0 +1,103 @@
+  {
+    "rules": {
+      "dporians": {
+        ".write": "auth != null",
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "boots": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          },
+          "bootstamp": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "color": {
+            ".validate": "newData.val() == '' || newData.val() == 'black' || newData.val() == 'blue' || newData.val() == 'green' || newData.val() == 'orange' || newData.val() == 'purple' || newData.val() == 'red'"
+          },
+          "group": {
+            ".validate": "newData.isString() || newData.val() == ''"
+          }
+        }
+      },
+      "groups": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$uid": {
+          "blue-content": {
+            ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          },
+          "blue-strikes": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          },
+          "blue-timestamp": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "blue-vacancy": {
+            ".validate": "newData.isBoolean()"
+          },
+          "green-content": {
+            ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          },
+          "green-strikes": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          },
+          "green-timestamp": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "green-vacancy": {
+            ".validate": "newData.isBoolean()"
+          },
+          "orange-content": {
+            ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          },
+          "orange-strikes": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          },
+          "orange-timestamp": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "orange-vacancy": {
+            ".validate": "newData.isBoolean()"
+          },
+          "purple-content": {
+            ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          },
+          "purple-strikes": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          },
+          "purple-timestamp": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "purple-vacancy": {
+            ".validate": "newData.isBoolean()"
+          },
+          "red-content": {
+            ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          },
+          "red-strikes": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          },
+          "red-timestamp": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "red-vacancy": {
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      },
+      "stimuli": {
+        ".read": "auth != null",
+        ".write": false
+      },
+      "instructions": {
+        ".read": "auth != null",
+        ".write": false
+      },
+      "vacancies": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$uid": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5"
+        }
+      }
+    }
+  }

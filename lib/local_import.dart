@@ -39,7 +39,7 @@ int userFadeTime = 10; // in seconds
 int chatFadeTime = 10;
 
 // dporian info
-int userBoots = 0;
+int userBoots = 0; // TODO: Maybe using zero always resets it on launch?
 int userBootstamp = milliEpoch;
 String userColorString = '';
 String groupName = '';

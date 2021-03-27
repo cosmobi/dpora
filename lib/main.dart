@@ -127,6 +127,37 @@ final snackBarNoInternet = SnackBar(
   duration: const Duration(seconds: 30),
 );
 
+// Circular process indicator while registering users
+showAlertDialog(BuildContext context) {
+  AlertDialog alert = AlertDialog(
+    content: new Row(
+      children: [
+        CircularProgressIndicator(
+          strokeWidth: 10,
+          valueColor: new AlwaysStoppedAnimation<Color>(Colors.greenAccent[700]),
+        ),
+        SizedBox(
+              height: 1.0,
+              width: 10.0,
+            ),
+        Container(
+            margin: EdgeInsets.only(left: 5),
+            child: Text('Welcome to dpora!',
+              style: TextStyle(
+                fontSize: 20,
+              ),)),
+      ],
+    ),
+  );
+  showDialog(
+    barrierDismissible: false,
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
+}
+
 class _DporaAppState extends State<DporaApp> {
   // Firebase realtime database reference
   final firebaseRTDB = FirebaseDatabase.instance.reference();
@@ -135,8 +166,10 @@ class _DporaAppState extends State<DporaApp> {
   final FirebaseAuth auth = FirebaseAuth.instance;
   Future signInAnonymously() async {
     try {
+      showAlertDialog(context); // start standby msg
       UserCredential userCredential = await auth.signInAnonymously();
       User user = userCredential.user;
+      Navigator.pop(context); // end standby msg
       return user;
     } catch (e) {
       print(e.toString());
@@ -254,17 +287,15 @@ class _DporaAppState extends State<DporaApp> {
       }
       // just in case someone snatched the last seat as it was being assigned
       if (seatColor == '') {
-        CircularProgressIndicator();
-        Timer(Duration(seconds: 1), () {
-          // wait a sec and see if a new position opens somewhere else
+        Timer(Duration(seconds: 2), () {
+          // wait a couple secs and see if a new position opens somewhere else
         });
       } else {
         // Then assign the open seat (group and color) to the user
-        // TODO: Make sure this does not reset a user's boot count
-        firebaseRTDB
-            .child('dporians')
-            .child(auth.currentUser.uid)
-            .update({'boots': '$userBoots', 'bootstamp': '$userBootstamp', 'color': '$seatColor', 'group': '$groupName'}).then((_) {
+        firebaseRTDB.child('dporians').child(auth.currentUser.uid).update({
+          'color': '$seatColor',
+          'group': '$groupName'
+        }).then((_) {
           // update group vacancy status
           updateVacancy(groupName, seatColor, openSeats, false);
           // show success
@@ -285,12 +316,14 @@ class _DporaAppState extends State<DporaApp> {
       seatCount++; // increment
     }
     // update the vacancy in vacancies node
-    firebaseRTDB.child('vacancies').update({'$groupName': '$seatCount'}).then((_) {
+    firebaseRTDB
+        .child('vacancies')
+        .update({'$groupName': seatCount}).then((_) {
       // update the vacancy in groups node
       firebaseRTDB
           .child('groups')
           .child('$groupName')
-          .update({'$seatKey': '$v'}).catchError((onErrorGroups) {
+          .update({'$seatKey': v}).catchError((onErrorGroups) {
         print(onErrorGroups);
       });
     }).catchError((onErrorVacancies) {
@@ -303,7 +336,7 @@ class _DporaAppState extends State<DporaApp> {
     // Create user data that links to that group and color
     firebaseRTDB.child('dporians').child('$uuid').set({
       'boots': 0,
-      'bootstamp': '$milliEpoch',
+      'bootstamp': milliEpoch,
       'color': 'black',
       'group': 'none'
     }).catchError((onError) {
@@ -315,37 +348,24 @@ class _DporaAppState extends State<DporaApp> {
   void getUser(dporian) {
     firebaseRTDB
         .child('dporians')
-        .child('$dporian') // TODO: remove quotes on all of these calls
+        .child('$dporian')
         .once()
         .then((DataSnapshot snapshot) {
       Map<String, dynamic> userMap =
           new Map<String, dynamic>.from(snapshot.value);
       var userDetails = Dporian.fromJson(userMap);
-      if (userDetails.boots >= 0) {
-        setState(() {
-          registered = true;
-        });
-        if (userDetails.boots > 2) {
-          // TODO: not playing nice, take a break
-          // In the DB, make this dporian's color='' and group=''
-        } else {
-          // all good
-          setState(() {
-            userBoots = userDetails.boots;
-            userBootstamp = userDetails.bootstamp;
-            userColorString = userDetails.color;
-            groupName = userDetails.group;
-          });
-        }
-      } else {
-        setState(() {
-          registered = false;
-        });
-      }
-    }).catchError((onError) {
       setState(() {
-          registered = false;
-        });
+        userBoots = userDetails.boots;
+        userBootstamp = userDetails.bootstamp;
+        userColorString = userDetails.color;
+        groupName = userDetails.group;
+        registered = true;
+      });
+    }).catchError((onError) {
+      print(onError);
+      setState(() {
+        registered = false;
+      });
     });
   }
 
@@ -683,15 +703,22 @@ class _DporaAppState extends State<DporaApp> {
       // Fetch user info
       getUser(auth.currentUser.uid);
 
+      // print(auth.currentUser.uid);
+      // print('userBoots = ' + userBoots.toString());
+      // print('userBootstamp = ' + userBootstamp.toString());
+      // print('userColorString = ' + userColorString);
+      // print('groupName = ' + groupName);
+      // print('registered = ' + registered);
+
       if (registered == false) {
         createUser(auth.currentUser.uid);
       }
-      
-      if (groupName == 'none') {
+
+      if (userColorString == 'black' || groupName == 'none') {
         // User needs to be assigned to a group
         findVacantGroup();
       }
-      
+
       if (groupName != '' && groupName != 'none') {
         getComments(groupName);
         // Assign comments to appropriate color boxes
