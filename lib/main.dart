@@ -134,18 +134,21 @@ showAlertDialog(BuildContext context) {
       children: [
         CircularProgressIndicator(
           strokeWidth: 10,
-          valueColor: new AlwaysStoppedAnimation<Color>(Colors.greenAccent[700]),
+          valueColor:
+              new AlwaysStoppedAnimation<Color>(Colors.greenAccent[700]),
         ),
         SizedBox(
-              height: 1.0,
-              width: 10.0,
-            ),
+          height: 1.0,
+          width: 10.0,
+        ),
         Container(
             margin: EdgeInsets.only(left: 5),
-            child: Text('Welcome to dpora!',
+            child: Text(
+              'Welcome to dpora!',
               style: TextStyle(
                 fontSize: 20,
-              ),)),
+              ),
+            )),
       ],
     ),
   );
@@ -175,6 +178,19 @@ class _DporaAppState extends State<DporaApp> {
       print(e.toString());
       return null;
     }
+  }
+
+  // Get slogans to display in the menu drawer
+  void getSlogans() {
+    firebaseRTDB.child('slogans').once().then((DataSnapshot snapshot) {
+      List<String> sloganList = new List<String>.from(snapshot.value);
+      setState(() {
+        slogans = sloganList;
+        sMax = sloganList.length;
+      });
+    }).catchError((onError) {
+      print(onError);
+    });
   }
 
   // Find or create a group that has a vacancy
@@ -292,10 +308,10 @@ class _DporaAppState extends State<DporaApp> {
         });
       } else {
         // Then assign the open seat (group and color) to the user
-        firebaseRTDB.child('dporians').child(auth.currentUser.uid).update({
-          'color': '$seatColor',
-          'group': '$groupName'
-        }).then((_) {
+        firebaseRTDB
+            .child('dporians')
+            .child(auth.currentUser.uid)
+            .update({'color': '$seatColor', 'group': '$groupName'}).then((_) {
           // update group vacancy status
           updateVacancy(groupName, seatColor, openSeats, false);
           // show success
@@ -316,9 +332,7 @@ class _DporaAppState extends State<DporaApp> {
       seatCount++; // increment
     }
     // update the vacancy in vacancies node
-    firebaseRTDB
-        .child('vacancies')
-        .update({'$groupName': seatCount}).then((_) {
+    firebaseRTDB.child('vacancies').update({'$groupName': seatCount}).then((_) {
       // update the vacancy in groups node
       firebaseRTDB
           .child('groups')
@@ -687,18 +701,18 @@ class _DporaAppState extends State<DporaApp> {
       }
     }
 
-    // When users anonymously sign-in, here is some data captured:
-    //print(auth.currentUser.uid);
-    //print(auth.languageCode); null
-    //print(auth.currentUser.isAnonymous); true
-    // print(auth.currentUser.displayName); null if anonymous
-    // print(auth.currentUser.metadata.creationTime);
-    // Use... FirebaseAuth.instance.signOut(); ...to sign out a user
+    // Get slogans to show in menu drawer
+    getSlogans();
 
     // if already signed in...
     if (auth.currentUser != null) {
-      //
-      //FirebaseAuth.instance.signOut(); // Take out!
+      // When users anonymously sign-in, here is some data captured:
+      // print(auth.currentUser.uid);
+      // print(auth.languageCode); null
+      // print(auth.currentUser.isAnonymous); true
+      // print(auth.currentUser.displayName); null if anonymous
+      // print(auth.currentUser.metadata.creationTime);
+      // Use... FirebaseAuth.instance.signOut(); ...to sign out a user
 
       // Fetch user info
       getUser(auth.currentUser.uid);
@@ -777,8 +791,8 @@ class _DporaAppState extends State<DporaApp> {
                         ),
                       ),
                       TextSpan(
-                        // pick the first message from list
-                        text: menuMessages.first + '\n\n',
+                        // pick a slogan from the list
+                        text: slogans[sNum] + '\n\n',
                         style: TextStyle(
                           fontSize: 19,
                           color: Colors.black,
@@ -810,10 +824,12 @@ class _DporaAppState extends State<DporaApp> {
                 onTap: () {
                   // Go to dpora.com
                   _dporaWebsite();
-                  // shuffle order of menu messages list
-                  setState(() {
-                    menuMessages = menuMessages..shuffle();
-                  });
+                  // Prep the next slogan to show
+                  sNum++;
+                  if (sNum == sMax) {
+                    // Start over, don't exceed range
+                    sNum = 0;
+                  }
                   //close the drawer
                   _drawerKey.currentState.openEndDrawer();
                 },
@@ -830,9 +846,10 @@ class _DporaAppState extends State<DporaApp> {
                 onTap: () {
                   // Go to web-based dynamic contact form
                   _contactForm();
-                  setState(() {
-                    menuMessages = menuMessages..shuffle();
-                  });
+                  sNum++;
+                  if (sNum == sMax) {
+                    sNum = 0;
+                  }
                   _drawerKey.currentState.openEndDrawer();
                 },
               ),
@@ -944,9 +961,10 @@ About link above for more info.
                   ),
                 ),
                 onTap: () {
-                  setState(() {
-                    menuMessages = menuMessages..shuffle();
-                  });
+                  sNum++;
+                  if (sNum == sMax) {
+                    sNum = 0;
+                  }
                   _drawerKey.currentState.openEndDrawer();
                 },
               ),

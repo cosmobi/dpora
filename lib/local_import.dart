@@ -39,7 +39,7 @@ int userFadeTime = 10; // in seconds
 int chatFadeTime = 10;
 
 // dporian info
-int userBoots = 0; // TODO: Maybe using zero always resets it on launch?
+int userBoots;
 int userBootstamp = milliEpoch;
 String userColorString = '';
 String groupName = '';
@@ -111,16 +111,12 @@ bool redVacancy = false;
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
 
-// TODO: later, pull this array content from the DB
-// This list order will shuffle everytime the menu drawer closes
-var menuMessages = [
+// The values of slogans and sMax will get updated from the DB
+List<String> slogans = [
   'Have private yet meaningful\nchats with total strangers',
-  'Speak your mind and gain\nmultiple perspectives',
-  'Educate and learn with others.\nDisagree and grow together.',
-  'Be social and be private.\nThe best of both worlds.',
-  'Totally social. Totally private.\nTotally awesome!',
-  'No registration. No spam\nNo data mining. No way!'
 ];
+int sNum = 0;
+int sMax = 1;
 
 // Classes below are for the serialization of
 // json-formatted data to and from the database
