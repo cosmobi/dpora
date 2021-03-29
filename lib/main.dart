@@ -100,7 +100,7 @@ final snackBarNewGroup = SnackBar(
     ),
   ),
   backgroundColor: Colors.yellow,
-  duration: const Duration(seconds: 2),
+  duration: const Duration(seconds: 4),
 );
 // alert user when attempting to post prematurely
 final snackBarWait2Post = SnackBar(
@@ -125,6 +125,30 @@ final snackBarNoInternet = SnackBar(
   ),
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 30),
+);
+// alert user when stimulus was striked
+final snackBarStrikedStimulus = SnackBar(
+  content: const Text('Topic changes after 3 people hit Next.'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 4),
+);
+// alert user when stimulus was changed
+final snackBarNextStimulus = SnackBar(
+  content: const Text('We have a new topic!'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 4),
 );
 
 // Circular process indicator while registering users
@@ -193,6 +217,21 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
+  // Keep the stats in the menu updated in realtime
+  void liveStats() {
+    firebaseRTDB.child('statistics').once().then((DataSnapshot snapshot) {
+      Map<String, dynamic> statMap =
+          new Map<String, dynamic>.from(snapshot.value);
+      var liveStatistics = Stats.fromJson(statMap);
+      setState(() {
+        commentsPosted = liveStatistics.comments;
+        countriesRepresented = liveStatistics.countries;
+        devicesDetected = liveStatistics.devices;
+        version = liveStatistics.version;
+      });
+    });
+  }
+
   // Find or create a group that has a vacancy
   void findVacantGroup() {
     String groupName = '';
@@ -251,7 +290,11 @@ class _DporaAppState extends State<DporaApp> {
           'red-content': '',
           'red-strikes': 0,
           'red-timestamp': milliEpoch,
-          'red-vacancy': true
+          'red-vacancy': true,
+          'stimulus-category': '',
+          'stimulus-content': 'What would you like to talk about?',
+          'stimulus-instructions': 'All about you',
+          'stimulus-strikes': 0
         }).then((_) {
           // update the vacancy status in vacancies node
           firebaseRTDB
@@ -353,6 +396,14 @@ class _DporaAppState extends State<DporaApp> {
       'bootstamp': milliEpoch,
       'color': 'black',
       'group': 'none'
+    }).then((_) {
+      // update the live stats for devices detected
+      firebaseRTDB
+          .child('statistics')
+          .update({'devices': devicesDetected + 1})
+          .catchError((onErrorGroups) {
+          print(onErrorGroups);
+      });
     }).catchError((onError) {
       print(onError);
     });
@@ -395,7 +446,7 @@ class _DporaAppState extends State<DporaApp> {
           new Map<String, dynamic>.from(snapshot.value);
       var stimulusDetails = Stimulus.fromJson(stimulusMap);
       setState(() {
-        stimulusText = stimulusDetails.stimulus;
+        nextStimulusContent = stimulusDetails.stimulus;
       });
     });
   }
@@ -422,6 +473,38 @@ class _DporaAppState extends State<DporaApp> {
         instructTrivia = categoryInstructions.trivia;
       });
     });
+  }
+
+  void strikedStimulus() {
+    if (stimulusStrikes > 1) {
+      // Show next stimulus content
+      firebaseRTDB.child('groups').child('$groupName').update({
+        'stimulus-category': '$categoryChoice',
+        'stimulus-content': '$nextStimulusContent',
+        'stimulus-instructions': '$instructStimulus',
+        'stimulus-strikes': 0
+      }).then((_) {
+        // show success
+        rootScaffoldMessengerKey.currentState
+            .showSnackBar(snackBarNextStimulus);
+      }).catchError((onErrorNext) {
+        print(onErrorNext);
+      });
+    } else {
+      // Increment the counter
+      int striked = stimulusStrikes + 1;
+      // Update DB
+      firebaseRTDB
+          .child('groups')
+          .child('$groupName')
+          .update({'stimulus-strikes': striked}).then((_) {
+        // show success
+        rootScaffoldMessengerKey.currentState
+            .showSnackBar(snackBarStrikedStimulus);
+      }).catchError((onErrorStriked) {
+        print(onErrorStriked);
+      });
+    }
   }
 
   void shuffleDecks() {
@@ -568,8 +651,8 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-// Relay all the chat activity
-  void getComments(groupID) {
+// Relay all the group content
+  void getContent(groupID) {
     firebaseRTDB
         .child('groups')
         .child('$groupID')
@@ -577,7 +660,7 @@ class _DporaAppState extends State<DporaApp> {
         .then((DataSnapshot snapshot) {
       Map<String, dynamic> groupMap =
           new Map<String, dynamic>.from(snapshot.value);
-      var groupDetails = Comments.fromJson(groupMap);
+      var groupDetails = Content.fromJson(groupMap);
       setState(() {
         blueContent = groupDetails.blueContent;
         blueStrikes = groupDetails.blueStrikes;
@@ -599,6 +682,10 @@ class _DporaAppState extends State<DporaApp> {
         redStrikes = groupDetails.redStrikes;
         redTimestamp = groupDetails.redTimestamp;
         redVacancy = groupDetails.redVacancy;
+        stimulusCategory = groupDetails.stimulusCategory;
+        stimulusContent = groupDetails.stimulusContent;
+        stimulusInstructions = groupDetails.stimulusInstructions;
+        stimulusStrikes = groupDetails.stimulusStrikes;
       });
     });
   }
@@ -704,6 +791,9 @@ class _DporaAppState extends State<DporaApp> {
     // Get slogans to show in menu drawer
     getSlogans();
 
+    // Get the latest stats to show in menu drawer
+    liveStats();
+
     // if already signed in...
     if (auth.currentUser != null) {
       // When users anonymously sign-in, here is some data captured:
@@ -717,13 +807,6 @@ class _DporaAppState extends State<DporaApp> {
       // Fetch user info
       getUser(auth.currentUser.uid);
 
-      // print(auth.currentUser.uid);
-      // print('userBoots = ' + userBoots.toString());
-      // print('userBootstamp = ' + userBootstamp.toString());
-      // print('userColorString = ' + userColorString);
-      // print('groupName = ' + groupName);
-      // print('registered = ' + registered);
-
       if (registered == false) {
         createUser(auth.currentUser.uid);
       }
@@ -734,7 +817,7 @@ class _DporaAppState extends State<DporaApp> {
       }
 
       if (groupName != '' && groupName != 'none') {
-        getComments(groupName);
+        getContent(groupName);
         // Assign comments to appropriate color boxes
         assignChatBoxes(userColorString);
       }
@@ -750,9 +833,9 @@ class _DporaAppState extends State<DporaApp> {
       // Choose a random stimulus
       randomStimulus();
     } else {
-      stimulusText =
+      stimulusContent =
           'Tap the yellow arrow button on the right to continue, and to accept these terms and conditions.';
-      instructStimulus = 'Terms and Conditions';
+      stimulusInstructions = 'Terms and Conditions';
       // This sets up the basic Terms and Conditions screen before login
       userColor = Colors.black; // to hide it
       tileTextLT = 'You must be 13 years old to use this app (dpora).';
@@ -901,48 +984,51 @@ About link above for more info.
                 child: Text.rich(
                   TextSpan(
                     children: <TextSpan>[
-                      // TextSpan(
-                      //   text: '\nLive Stats' + '\n\n',
-                      //   style: TextStyle(
-                      //     fontSize: 14,
-                      //     color: Colors.white,
-                      //   ),
-                      // ),
-                      // TextSpan(
-                      //   text: 'Over 100 devices detected' + '\n\n',
-                      //   style: TextStyle(
-                      //     fontSize: 12,
-                      //     color: Colors.white70,
-                      //   ),
-                      // ),
-                      // TextSpan(
-                      //   text: 'Over 10 countries represented' + '\n\n',
-                      //   style: TextStyle(
-                      //     fontSize: 12,
-                      //     color: Colors.white70,
-                      //   ),
-                      // ),
-                      // TextSpan(
-                      //   text: 'About 1000 posts per minute' + '\n\n',
-                      //   style: TextStyle(
-                      //     fontSize: 12,
-                      //     color: Colors.white70,
-                      //   ),
-                      // ),
                       TextSpan(
-                        text: platform + ' Version 0.0.1' + '\n',
+                        text: '\nLive Stats' + '\n\n',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white54,
+                          fontSize: 18,
+                          color: Colors.white,
                         ),
                       ),
-                      // TextSpan(
-                      //   text: '2021-03-14' + '\n',
-                      //   style: TextStyle(
-                      //     fontSize: 10,
-                      //     color: Colors.white54,
-                      //   ),
-                      // ),
+                      TextSpan(
+                        text: 'Over ' +
+                            devicesDetected.toString() +
+                            ' devices detected' +
+                            '\n',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Over ' +
+                            countriesRepresented.toString() +
+                            ' countries represented' +
+                            '\n',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Over ' +
+                            commentsPosted.toString() +
+                            ' comments posted' +
+                            '\n\n',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      TextSpan(
+                        text:
+                            platform + ' Version ' + version.toString() + '\n',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white38,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1003,58 +1089,58 @@ About link above for more info.
   }
 
   // Show the appropriate icon for each stimuli category
-  Widget _icon(categoryChoice) {
-    if (categoryChoice == 'ads') {
+  Widget _icon(stimulusCategory) {
+    if (stimulusCategory == 'ads') {
       return Icon(
         Icons.local_offer_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'debates') {
+    } else if (stimulusCategory == 'debates') {
       return Icon(
         Icons.gavel_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'games') {
+    } else if (stimulusCategory == 'games') {
       return Icon(
         Icons.casino_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'jokes') {
+    } else if (stimulusCategory == 'jokes') {
       return Icon(
         Icons.emoji_emotions_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'news') {
+    } else if (stimulusCategory == 'news') {
       return Icon(
         Icons.speaker_notes_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'passion') {
+    } else if (stimulusCategory == 'passion') {
       return Icon(
         Icons.thumbs_up_down_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'personal') {
+    } else if (stimulusCategory == 'personal') {
       return Icon(
         Icons.emoji_people_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'ponder') {
+    } else if (stimulusCategory == 'ponder') {
       return Icon(
         Icons.psychology_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'proverbs') {
+    } else if (stimulusCategory == 'proverbs') {
       return Icon(
         Icons.history_edu_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'quotes') {
+    } else if (stimulusCategory == 'quotes') {
       return Icon(
         Icons.format_quote_rounded,
         color: Colors.yellow,
       );
-    } else if (categoryChoice == 'share') {
+    } else if (stimulusCategory == 'share') {
       return Icon(
         Icons.group_rounded,
         color: Colors.yellow,
@@ -1075,8 +1161,8 @@ About link above for more info.
       // snackbar notice if no internet connection is found
       rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
       setState(() {
-        stimulusText = 'Please turn on mobile data, WiFi or both.';
-        instructStimulus = 'Are you in Airplane Mode?';
+        stimulusContent = 'Please turn on mobile data, WiFi or both.';
+        stimulusInstructions = 'Are you in Airplane Mode?';
       });
     }
     return Container(
@@ -1118,12 +1204,13 @@ About link above for more info.
                   padding: EdgeInsets.zero, // need for alignment
                   tooltip: 'Share Topic',
                   onPressed: () {
-                    Share.share(stimulusText + ' \nΦ dpora.com',
-                        subject: instructStimulus);
+                    Share.share(stimulusContent + ' \nΦ dpora.com',
+                        subject: stimulusInstructions);
                   },
                 ),
               ),
-              // TODO: Add this later, somewhere else
+              // TODO: add Change Group feature later, when
+              // there are always a few live groups to switch to
               // child: IconButton(
               //   icon: Icon(
               //     Icons.threesixty_rounded,
@@ -1131,32 +1218,32 @@ About link above for more info.
               //   ),
               //   padding: EdgeInsets.zero, // need for alignment
               //   tooltip: 'New Group & Topic',
-              //   onPressed: () {}, // maybe just restart app? maybe using
-              //            //  https://pub.dev/packages/flutter_phoenix
+              //   onPressed: () {},
+              // //set dporian groupName to 'none' and update vacancies and group data
               // ),
-              SizedBox(
-                height: 20.0,
-                width: 20.0,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.not_interested_rounded,
-                    color: iconColor,
-                  ),
-                  padding: EdgeInsets.zero, // need for alignment
-                  tooltip: 'Something is wrong!',
-                  onPressed: () {
-                    // up the flag counter for this stimulus
-                    // offensive material, spelling error, etc
-                  },
-                ),
-              ),
+              // SizedBox(
+              //   height: 20.0,
+              //   width: 20.0,
+              //   child: IconButton(
+              //     icon: Icon(
+              //       Icons.not_interested_rounded,
+              //       color: iconColor,
+              //     ),
+              //     padding: EdgeInsets.zero, // need for alignment
+              //     tooltip: 'Something is wrong!',
+              //     onPressed: () {
+              //       // TODO: stimulus is offensive, misspelled, incorrect, outdated,
+              //       // dumb, etc. The simpliest solution is to url over to a web form
+              //     },
+              //   ),
+              // ),
             ]),
         // Stimulus is displayed here
         Flexible(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(15.0, 5.0, 10.0, 5.0),
             child: Text(
-              stimulusText,
+              stimulusContent,
               style: TextStyle(
                 fontSize: textSize,
                 color: Colors.yellow, //yellowAccent is too bright
@@ -1169,7 +1256,7 @@ About link above for more info.
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _icon(categoryChoice), // Shows the appropriate icon
+              _icon(stimulusCategory), // Shows the appropriate icon
               Container(
                 padding: EdgeInsets.all(7.0),
                 decoration: BoxDecoration(
@@ -1180,7 +1267,7 @@ About link above for more info.
                 height: 70.0,
                 width: 90.0,
                 child: Text(
-                  instructStimulus,
+                  stimulusInstructions,
                   style: TextStyle(
                     // instructions text is 5 points smaller than stimulus text
                     fontSize: textSize - 5,
@@ -1214,6 +1301,7 @@ About link above for more info.
                         // if user is signed-in, shuffle all decks
                         // and therefore show a new stimulus
                         shuffleDecks();
+                        strikedStimulus();
                       } else {
                         // Otherwise, sign the user in anonymously
                         signInAnonymously();
@@ -1222,7 +1310,7 @@ About link above for more info.
                   ),
                 ),
                 Text(
-                  '0' + '/3', // no need for counter here, rather update from DB
+                  stimulusStrikes.toString() + '/3',
                   //
                   style: TextStyle(
                     fontSize: textSize - 2,

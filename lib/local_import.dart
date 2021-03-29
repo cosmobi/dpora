@@ -32,6 +32,12 @@ final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
 // And use this as default timestamp
 int milliEpoch = nowDate.millisecondsSinceEpoch;
 
+// Live Stats gets their latest numbers from the DB
+int devicesDetected = 2;
+int countriesRepresented = 2;
+int commentsPosted = 2;
+double version = 0.0;
+
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
 double chatOpacity = 1.0;
@@ -63,11 +69,14 @@ List<int> triviaDeck = new List<int>.generate(totalTrivia, (i) => i + 1);
 List<int> stimuliDeck = new List<int>.generate(totalStimuli, (i) => i + 1);
 
 String categoryChoice = '';
-//new Icon categoryIcon = 'Icon.emoji_people_rounded';
 
 // Default stimulus text must be empty like this
 // so transitions between reloads are smoother
-String stimulusText = '';
+String stimulusContent = '';
+String nextStimulusContent = '';
+int stimulusStrikes = 0;
+String stimulusCategory = '';
+String stimulusInstructions = '';
 
 // These will hold the stimuli category instructions
 String instructAds = '';
@@ -120,6 +129,28 @@ int sMax = 1;
 
 // Classes below are for the serialization of
 // json-formatted data to and from the database
+
+class Stats {
+  final int comments;
+  final int countries;
+  final int devices;
+  final double version;
+
+  Stats(this.comments, this.countries, this.devices, this.version);
+
+  Stats.fromJson(Map<String, dynamic> json)
+      : comments = json['comments'],
+        countries = json['countries'],
+        devices = json['devices'],
+        version = json['version'];
+
+  Map<String, dynamic> toJson() => {
+        'comments': comments,
+        'countries': countries,
+        'devices': devices,
+        'version': version,
+      };
+}
 
 class Dporian {
   final int boots;
@@ -227,7 +258,7 @@ class Instruct {
       };
 }
 
-class Comments {
+class Content {
   final String blueContent;
   final int blueStrikes;
   final int blueTimestamp;
@@ -248,8 +279,12 @@ class Comments {
   final int redStrikes;
   final int redTimestamp;
   final bool redVacancy;
+  final String stimulusCategory;
+  final String stimulusContent;
+  final String stimulusInstructions;
+  final int stimulusStrikes;
 
-  Comments(
+  Content(
       this.blueContent,
       this.blueStrikes,
       this.blueTimestamp,
@@ -269,9 +304,13 @@ class Comments {
       this.redContent,
       this.redStrikes,
       this.redTimestamp,
-      this.redVacancy);
+      this.redVacancy,
+      this.stimulusCategory,
+      this.stimulusContent,
+      this.stimulusInstructions,
+      this.stimulusStrikes);
 
-  Comments.fromJson(Map<String, dynamic> json)
+  Content.fromJson(Map<String, dynamic> json)
       : blueContent = json['blue-content'],
         blueStrikes = json['blue-strikes'],
         blueTimestamp = json['blue-timestamp'],
@@ -291,7 +330,11 @@ class Comments {
         redContent = json['red-content'],
         redStrikes = json['red-strikes'],
         redTimestamp = json['red-timestamp'],
-        redVacancy = json['red-vacancy'];
+        redVacancy = json['red-vacancy'],
+        stimulusCategory = json['stimulus-category'],
+        stimulusContent = json['stimulus-content'],
+        stimulusInstructions = json['stimulus-instructions'],
+        stimulusStrikes = json['stimulus-strikes'];
 
   Map<String, dynamic> toJson() => {
         'blue-content': blueContent,
@@ -313,6 +356,10 @@ class Comments {
         'red-content': redContent,
         'red-strikes': redStrikes,
         'red-timestamp': redTimestamp,
-        'red-vacancy': redVacancy
+        'red-vacancy': redVacancy,
+        'stimulus-category': stimulusCategory,
+        'stimulus-content': stimulusContent,
+        'stimulus-instructions': stimulusInstructions,
+        'stimulus-strikes': stimulusStrikes
       };
 }
