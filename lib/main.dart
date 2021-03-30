@@ -79,9 +79,6 @@ Color textColorRT = Colors.black;
 String tileTextRB = '';
 Color textColorRB = Colors.black;
 
-// using this to handle inputted text in the textfield
-TextEditingController inputController = TextEditingController();
-
 // Use this key to open and close drawer
 // programically (in addition to swiping)
 GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
@@ -186,6 +183,9 @@ showAlertDialog(BuildContext context) {
 }
 
 class _DporaAppState extends State<DporaApp> {
+  // using this to handle inputted text in the textfield
+  TextEditingController inputController = TextEditingController();
+
   // Firebase realtime database reference
   final firebaseRTDB = FirebaseDatabase.instance.reference();
 
@@ -236,6 +236,7 @@ class _DporaAppState extends State<DporaApp> {
   void findVacantGroup() {
     String groupName = '';
     int openSeats = 0;
+    int milliEpoch = DateTime.now().millisecondsSinceEpoch;
     firebaseRTDB.child('vacancies').once().then((DataSnapshot snapshotGroups) {
       var vacancyCheck = new Map<String, dynamic>.from(snapshotGroups.value);
       // First gather some keys before assigning one in priority order
@@ -368,19 +369,27 @@ class _DporaAppState extends State<DporaApp> {
 
   void updateVacancy(groupName, seatColor, seatCount, v) {
     // prep the variables
+    String colorContent = seatColor + '-content';
+    String colorStrikes = seatColor + '-strikes';
+    String userStatus = '[ ' + seatColor;
+    String colorTimestamp = seatColor + '-timestamp';
     String seatKey = seatColor + '-vacancy';
     if (v == false) {
       seatCount--; // decrement
+      userStatus = userStatus + ' entered ]';
     } else {
       seatCount++; // increment
+      userStatus = userStatus + ' exited ]';
     }
     // update the vacancy in vacancies node
     firebaseRTDB.child('vacancies').update({'$groupName': seatCount}).then((_) {
       // update the vacancy in groups node
-      firebaseRTDB
-          .child('groups')
-          .child('$groupName')
-          .update({'$seatKey': v}).catchError((onErrorGroups) {
+      firebaseRTDB.child('groups').child('$groupName').update({
+        '$colorContent': '$userStatus',
+        '$colorStrikes': 0, // reset
+        '$colorTimestamp': DateTime.now().millisecondsSinceEpoch,
+        '$seatKey': v
+      }).catchError((onErrorGroups) {
         print(onErrorGroups);
       });
     }).catchError((onErrorVacancies) {
@@ -393,7 +402,7 @@ class _DporaAppState extends State<DporaApp> {
     // Create user data that links to that group and color
     firebaseRTDB.child('dporians').child('$uuid').set({
       'boots': 0,
-      'bootstamp': milliEpoch,
+      'bootstamp': DateTime.now().millisecondsSinceEpoch,
       'color': 'black',
       'group': 'none',
       'striked': 'never have i ever'
@@ -502,10 +511,10 @@ class _DporaAppState extends State<DporaApp> {
         // Note this user striked that content to prevent
         // multiple strikes on same content by same user
         firebaseRTDB
-          .child('dporians')
-          .child('$uuid')
-          .update({'striked': stimulusContent}).catchError((onErrorGroups) {
-        print(onErrorGroups);
+            .child('dporians')
+            .child('$uuid')
+            .update({'striked': stimulusContent}).catchError((onErrorGroups) {
+          print(onErrorGroups);
         });
         // show success
         rootScaffoldMessengerKey.currentState
@@ -764,6 +773,59 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
+  // Keep track of current total vacancies in group
+  void myGroupVacancyStatus() {
+    firebaseRTDB
+        .child('vacancies')
+        .child('$groupName')
+        .once()
+        .then((DataSnapshot pinpoint) {
+      setState(() {
+        myGroupVacancy = pinpoint.value;
+      });
+    }).catchError((onError) {
+      print(onError);
+    });
+  }
+
+  void postComment(submitted) {
+    int milliEpoch = DateTime.now().millisecondsSinceEpoch;
+    var colorContent = userColorString + '-content';
+    var colorTimestamp = userColorString + '-timestamp';
+    firebaseRTDB.child('groups').child('$groupName').update({
+      '$colorContent': '$submitted',
+      '$colorTimestamp': milliEpoch
+    }).then((_) {
+      // update live stats
+      firebaseRTDB
+          .child('statistics')
+          .update({'comments': commentsPosted + 1}).then((_) {
+        // unassign inactive users of the group
+        var tenMinutes = 10 * 60 * 1000;
+        var beingActive = milliEpoch - tenMinutes;
+        if (blueTimestamp < beingActive) {
+          updateVacancy(groupName, 'blue', myGroupVacancy, true);
+        }
+        if (greenTimestamp < beingActive) {
+          updateVacancy(groupName, 'green', myGroupVacancy, true);
+        }
+        if (orangeTimestamp < beingActive) {
+          updateVacancy(groupName, 'orange', myGroupVacancy, true);
+        }
+        if (purpleTimestamp < beingActive) {
+          updateVacancy(groupName, 'purple', myGroupVacancy, true);
+        }
+        if (redTimestamp < beingActive) {
+          updateVacancy(groupName, 'red', myGroupVacancy, true);
+        }
+      }).catchError((onErrorStats) {
+        print(onErrorStats);
+      });
+    }).catchError((onErrorNext) {
+      print(onErrorNext);
+    });
+  }
+
   // void deleteData() {
   //   // only use if needed to surgically delete erroneous data
   //   firebaseRTDB.child('dporians/rMW_ogUVuBS14jAk_jy1').remove();
@@ -829,6 +891,8 @@ class _DporaAppState extends State<DporaApp> {
         getContent(groupName);
         // Assign comments to appropriate color boxes
         assignChatBoxes(userColorString);
+        // To keep the myGroupVacancy integer updated
+        myGroupVacancyStatus();
       }
 
       // Load all stimlui category instructions
@@ -1339,12 +1403,15 @@ About link above for more info.
   }
 
   Widget _userInput(userColor) {
+    // TODO: Fix bug of physical keyboard backspace not working
     int _timeUntilFade = 20;
     int _fadeDuration = 10;
     return TextField(
         controller: inputController,
         style: TextStyle(color: userColor),
         cursorColor: userColor,
+        // show Send instead of Enter with onscreen keyboards
+        textInputAction: TextInputAction.send,
         decoration: InputDecoration(
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(color: userColor),
@@ -1363,7 +1430,9 @@ About link above for more info.
           hintStyle: TextStyle(color: iconColor),
           // cancel text button
           suffixIcon: IconButton(
-            onPressed: () => inputController.clear(),
+            onPressed: () {
+              inputController.clear();
+            },
             icon: Icon(
               Icons.clear,
               size: 10.0,
@@ -1385,7 +1454,10 @@ About link above for more info.
               submittedText = inputController.text;
               waitStatus = true;
             });
-            inputController.clear(); // clear text in input box
+            // post to group
+            postComment(submittedText);
+            // clear text in input box
+            inputController.clear();
             Timer(Duration(seconds: _timeUntilFade), () {
               // after 20 seconds...
               setState(() {

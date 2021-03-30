@@ -15,6 +15,9 @@
         },
         "group": {
           ".validate": "newData.isString() || newData.val() == ''"
+        },
+        "striked": {
+          ".validate": "newData.isString() && newData.val().length < 256"
         }
       }
     },

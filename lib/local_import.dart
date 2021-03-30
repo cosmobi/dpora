@@ -29,8 +29,6 @@ String platform;
 DateTime nowDate = new DateTime.now();
 String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
 final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
-// And use this as default timestamp
-int milliEpoch = nowDate.millisecondsSinceEpoch;
 
 // Live Stats gets their latest numbers from the DB
 int devicesDetected = 2;
@@ -46,9 +44,10 @@ int chatFadeTime = 10;
 
 // dporian info
 int userBoots;
-int userBootstamp = milliEpoch;
+int userBootstamp;
 String userColorString = '';
 String groupName = '';
+int myGroupVacancy;
 String strikedContent = '';
 var registered; // check the registration status
 
@@ -99,23 +98,23 @@ String instructStimulus = '';
 // These variables hold all the chat activity
 String blueContent = '';
 int blueStrikes = 0;
-int blueTimestamp = milliEpoch;
+int blueTimestamp;
 bool blueVacancy = false;
 String greenContent = '';
 int greenStrikes = 0;
-int greenTimestamp = milliEpoch;
+int greenTimestamp;
 bool greenVacancy = false;
 String orangeContent = '';
 int orangeStrikes = 0;
-int orangeTimestamp = milliEpoch;
+int orangeTimestamp;
 bool orangeVacancy = false;
 String purpleContent = '';
 int purpleStrikes = 0;
-int purpleTimestamp = milliEpoch;
+int purpleTimestamp;
 bool purpleVacancy = false;
 String redContent = '';
 int redStrikes = 0;
-int redTimestamp = milliEpoch;
+int redTimestamp;
 bool redVacancy = false;
 
 // This is updated when user hits Return or Enter on their keyboard
