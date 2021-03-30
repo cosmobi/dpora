@@ -395,14 +395,14 @@ class _DporaAppState extends State<DporaApp> {
       'boots': 0,
       'bootstamp': milliEpoch,
       'color': 'black',
-      'group': 'none'
+      'group': 'none',
+      'striked': 'never have i ever'
     }).then((_) {
       // update the live stats for devices detected
       firebaseRTDB
           .child('statistics')
-          .update({'devices': devicesDetected + 1})
-          .catchError((onErrorGroups) {
-          print(onErrorGroups);
+          .update({'devices': devicesDetected + 1}).catchError((onErrorGroups) {
+        print(onErrorGroups);
       });
     }).catchError((onError) {
       print(onError);
@@ -424,6 +424,7 @@ class _DporaAppState extends State<DporaApp> {
         userBootstamp = userDetails.bootstamp;
         userColorString = userDetails.color;
         groupName = userDetails.group;
+        strikedContent = userDetails.striked;
         registered = true;
       });
     }).catchError((onError) {
@@ -475,7 +476,7 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  void strikedStimulus() {
+  void strikedStimulus(uuid) {
     if (stimulusStrikes > 1) {
       // Show next stimulus content
       firebaseRTDB.child('groups').child('$groupName').update({
@@ -498,6 +499,14 @@ class _DporaAppState extends State<DporaApp> {
           .child('groups')
           .child('$groupName')
           .update({'stimulus-strikes': striked}).then((_) {
+        // Note this user striked that content to prevent
+        // multiple strikes on same content by same user
+        firebaseRTDB
+          .child('dporians')
+          .child('$uuid')
+          .update({'striked': stimulusContent}).catchError((onErrorGroups) {
+        print(onErrorGroups);
+        });
         // show success
         rootScaffoldMessengerKey.currentState
             .showSnackBar(snackBarStrikedStimulus);
@@ -1298,10 +1307,16 @@ About link above for more info.
                     tooltip: 'Next Topic',
                     onPressed: () {
                       if (auth.currentUser != null) {
-                        // if user is signed-in, shuffle all decks
-                        // and therefore show a new stimulus
-                        shuffleDecks();
-                        strikedStimulus();
+                        if (strikedContent == stimulusContent) {
+                          // show snackbar about topic change process
+                          rootScaffoldMessengerKey.currentState
+                              .showSnackBar(snackBarStrikedStimulus);
+                        } else {
+                          // shuffle category and stimulus decks
+                          shuffleDecks();
+                          // update stimulus strike count or stimulus
+                          strikedStimulus(auth.currentUser.uid);
+                        }
                       } else {
                         // Otherwise, sign the user in anonymously
                         signInAnonymously();

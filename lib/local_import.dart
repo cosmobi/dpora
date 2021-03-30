@@ -49,6 +49,7 @@ int userBoots;
 int userBootstamp = milliEpoch;
 String userColorString = '';
 String groupName = '';
+String strikedContent = '';
 var registered; // check the registration status
 
 // Create lists (decks) containing all the stimuli counts
@@ -148,7 +149,7 @@ class Stats {
         'comments': comments,
         'countries': countries,
         'devices': devices,
-        'version': version,
+        'version': version
       };
 }
 
@@ -157,20 +158,23 @@ class Dporian {
   final int bootstamp;
   final String color;
   final String group;
+  final String striked;
 
-  Dporian(this.boots, this.bootstamp, this.color, this.group);
+  Dporian(this.boots, this.bootstamp, this.color, this.group, this.striked);
 
   Dporian.fromJson(Map<String, dynamic> json)
       : boots = json['boots'],
         bootstamp = json['bootstamp'],
         color = json['color'],
-        group = json['group'];
+        group = json['group'],
+        striked = json['striked'];
 
   Map<String, dynamic> toJson() => {
         'boots': boots,
         'bootstamp': bootstamp,
         'color': color,
         'group': group,
+        'striked': striked
       };
 }
 
@@ -192,7 +196,7 @@ class Stimulus {
         'flagged': flagged,
         'author': author,
         'stimulus': stimulus,
-        'type': type,
+        'type': type
       };
 }
 
@@ -254,7 +258,7 @@ class Instruct {
         'proverbs': proverbs,
         'quotes': quotes,
         'share': share,
-        'trivia': trivia,
+        'trivia': trivia
       };
 }
 
