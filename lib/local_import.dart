@@ -35,6 +35,11 @@ int devicesDetected = 2;
 int countriesRepresented = 2;
 int commentsPosted = 2;
 double version = 0.0;
+double versionHardcoded = 0.1; // TODO: Update before every app release (on DB too)
+String versionStatus = '';
+String liveDevices = 'After agreeing to the\n';
+String liveCountries = 'Terms and Conditions\n,';
+String liveComments = 'live stats will show here!\n';
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
@@ -74,7 +79,8 @@ String categoryChoice = '';
 // so transitions between reloads are smoother
 String stimulusContent = '';
 String nextStimulusContent = '';
-int stimulusStrikes = 0;
+int stimulusStrikes = 2; 
+// Starts at 2 so the 'Terms of service' only needs one more
 String stimulusCategory = '';
 String stimulusInstructions = '';
 

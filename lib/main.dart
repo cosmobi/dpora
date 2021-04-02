@@ -72,12 +72,20 @@ Color menuColor = Colors.blueGrey;
 Color userColor = Colors.black;
 String tileTextLT = '';
 Color textColorLT = Colors.black;
+int postTimeLT = DateTime.now().millisecondsSinceEpoch;
+bool tileVacancyLT = false;
 String tileTextLB = '';
 Color textColorLB = Colors.black;
+int postTimeLB = DateTime.now().millisecondsSinceEpoch;
+bool tileVacancyLB = false;
 String tileTextRT = '';
 Color textColorRT = Colors.black;
+int postTimeRT = DateTime.now().millisecondsSinceEpoch;
+bool tileVacancyRT = false;
 String tileTextRB = '';
 Color textColorRB = Colors.black;
+int postTimeRB = DateTime.now().millisecondsSinceEpoch;
+bool tileVacancyRB = false;
 
 // Use this key to open and close drawer
 // programically (in addition to swiping)
@@ -715,60 +723,100 @@ class _DporaAppState extends State<DporaApp> {
         userColor = Colors.blueAccent;
         tileTextLT = orangeContent;
         textColorLT = Colors.orangeAccent;
+        postTimeLT = orangeTimestamp;
+        tileVacancyLT = orangeVacancy;
         tileTextLB = greenContent;
         textColorLB = Colors.greenAccent;
+        postTimeLB = greenTimestamp;
+        tileVacancyLB = greenVacancy;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
+        postTimeRT = purpleTimestamp;
+        tileVacancyRT = purpleVacancy;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
+        postTimeRB = redTimestamp;
+        tileVacancyRB = redVacancy;
       });
     } else if (userColorString == 'green') {
       setState(() {
         userColor = Colors.greenAccent;
         tileTextLT = orangeContent;
         textColorLT = Colors.orangeAccent;
+        postTimeLT = orangeTimestamp;
+        tileVacancyLT = orangeVacancy;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
+        postTimeLB = blueTimestamp;
+        tileVacancyLB = blueVacancy;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
+        postTimeRT = purpleTimestamp;
+        tileVacancyRT = purpleVacancy;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
+        postTimeRB = redTimestamp;
+        tileVacancyRB = redVacancy;
       });
     } else if (userColorString == 'orange') {
       setState(() {
         userColor = Colors.orangeAccent;
         tileTextLT = greenContent;
         textColorLT = Colors.greenAccent;
+        postTimeLT = greenTimestamp;
+        tileVacancyLT = greenVacancy;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
+        postTimeLB = blueTimestamp;
+        tileVacancyLB = blueVacancy;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
+        postTimeRT = purpleTimestamp;
+        tileVacancyRT = purpleVacancy;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
+        postTimeRB = redTimestamp;
+        tileVacancyRB = redVacancy;
       });
     } else if (userColorString == 'purple') {
       setState(() {
         userColor = Colors.purpleAccent;
         tileTextLT = orangeContent;
         textColorLT = Colors.orangeAccent;
+        postTimeLT = orangeTimestamp;
+        tileVacancyLT = orangeVacancy;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
+        postTimeLB = blueTimestamp;
+        tileVacancyLB = blueVacancy;
         tileTextRT = greenContent;
         textColorRT = Colors.greenAccent;
+        postTimeRT = greenTimestamp;
+        tileVacancyRT = greenVacancy;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
+        postTimeRB = redTimestamp;
+        tileVacancyRB = redVacancy;
       });
     } else if (userColorString == 'red') {
       setState(() {
         userColor = Colors.redAccent;
         tileTextLT = orangeContent;
         textColorLT = Colors.orangeAccent;
+        postTimeLT = orangeTimestamp;
+        tileVacancyLT = orangeVacancy;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
+        postTimeLB = blueTimestamp;
+        tileVacancyLB = blueVacancy;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
+        postTimeRT = purpleTimestamp;
+        tileVacancyRT = purpleVacancy;
         tileTextRB = greenContent;
         textColorRB = Colors.greenAccent;
+        postTimeRB = greenTimestamp;
+        tileVacancyRB = greenVacancy;
       });
     }
   }
@@ -788,34 +836,42 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  void postComment(submitted) {
-    int milliEpoch = DateTime.now().millisecondsSinceEpoch;
-    var colorContent = userColorString + '-content';
-    var colorTimestamp = userColorString + '-timestamp';
-    firebaseRTDB.child('groups').child('$groupName').update({
-      '$colorContent': '$submitted',
-      '$colorTimestamp': milliEpoch
-    }).then((_) {
+  void postComment(submitted, milli) {
+    //var milli = DateTime.now().millisecondsSinceEpoch;
+    String colorContent = userColorString + '-content';
+    String colorTimestamp = userColorString + '-timestamp';
+    firebaseRTDB.child('groups').child('$groupName').update(
+        {'$colorContent': '$submitted', '$colorTimestamp': milli}).then((_) {
       // update live stats
       firebaseRTDB
           .child('statistics')
           .update({'comments': commentsPosted + 1}).then((_) {
         // unassign inactive users of the group
         var tenMinutes = 10 * 60 * 1000;
-        var beingActive = milliEpoch - tenMinutes;
-        if (blueTimestamp < beingActive) {
+        var beingActive = milli - tenMinutes;
+        if (blueTimestamp < beingActive &&
+            userColorString != 'blue' &&
+            blueVacancy == false) {
           updateVacancy(groupName, 'blue', myGroupVacancy, true);
         }
-        if (greenTimestamp < beingActive) {
+        if (greenTimestamp < beingActive &&
+            userColorString != 'green' &&
+            greenVacancy == false) {
           updateVacancy(groupName, 'green', myGroupVacancy, true);
         }
-        if (orangeTimestamp < beingActive) {
+        if (orangeTimestamp < beingActive &&
+            userColorString != 'orange' &&
+            orangeVacancy == false) {
           updateVacancy(groupName, 'orange', myGroupVacancy, true);
         }
-        if (purpleTimestamp < beingActive) {
+        if (purpleTimestamp < beingActive &&
+            userColorString != 'purple' &&
+            purpleVacancy == false) {
           updateVacancy(groupName, 'purple', myGroupVacancy, true);
         }
-        if (redTimestamp < beingActive) {
+        if (redTimestamp < beingActive &&
+            userColorString != 'red' &&
+            redVacancy == false) {
           updateVacancy(groupName, 'red', myGroupVacancy, true);
         }
       }).catchError((onErrorStats) {
@@ -905,10 +961,25 @@ class _DporaAppState extends State<DporaApp> {
 
       // Choose a random stimulus
       randomStimulus();
+
+      // Show live stats in menu drawer
+      liveDevices =
+          'Over ' + devicesDetected.toString() + ' devices detected' + '\n';
+      liveCountries = 'Over ' +
+          countriesRepresented.toString() +
+          ' countries represented' +
+          '\n';
+      liveComments =
+          'Over ' + commentsPosted.toString() + ' comments posted' + '\n\n';
+      if (version > versionHardcoded) {
+        versionStatus = '(Please update to ' + version.toString() + ')\n';
+      } else {
+        versionStatus = '(You are up to date)\n';
+      }
     } else {
       stimulusContent =
-          'Tap the yellow arrow button on the right to continue, and to accept these terms and conditions.';
-      stimulusInstructions = 'Terms and Conditions';
+          'Tap the little yellow arrow button on the right to continue, and to accept these terms of service.';
+      stimulusInstructions = 'Terms of service';
       // This sets up the basic Terms and Conditions screen before login
       userColor = Colors.black; // to hide it
       tileTextLT = 'You must be 13 years old to use this app (dpora).';
@@ -1019,7 +1090,7 @@ class _DporaAppState extends State<DporaApp> {
                   TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: '\nPrivacy' + '\n\n',
+                        text: '\nHow To' + '\n\n',
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.white,
@@ -1029,8 +1100,8 @@ class _DporaAppState extends State<DporaApp> {
                         text: '''
 The topic is in yellow.
 
-You are matched with other 
-people who may be anywhere  
+You are randomly matched with 
+other people who may be anywhere  
 in the world. Once a comment 
 disappears, it's gone! So talk 
 openly, but be respectful.
@@ -1065,38 +1136,32 @@ About link above for more info.
                         ),
                       ),
                       TextSpan(
-                        text: 'Over ' +
-                            devicesDetected.toString() +
-                            ' devices detected' +
-                            '\n',
+                        text: liveDevices,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: 'Over ' +
-                            countriesRepresented.toString() +
-                            ' countries represented' +
-                            '\n',
+                        text: liveCountries,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: 'Over ' +
-                            commentsPosted.toString() +
-                            ' comments posted' +
-                            '\n\n',
+                        text: liveComments,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text:
-                            platform + ' Version ' + version.toString() + '\n',
+                        text: platform +
+                            ' Version ' +
+                            versionHardcoded.toString() +
+                            '\n' +
+                            versionStatus,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white38,
@@ -1137,24 +1202,38 @@ About link above for more info.
                     userColor,
                     tileTextLT,
                     textColorLT,
+                    postTimeLT,
+                    tileVacancyLT,
                     tileTextLB,
                     textColorLB,
+                    postTimeLB,
+                    tileVacancyLB,
                     tileTextRT,
                     textColorRT,
+                    postTimeRT,
+                    tileVacancyRT,
                     tileTextRB,
                     textColorRB,
-                  )
+                    postTimeRB,
+                    tileVacancyRB)
                 : _buildHorizontalLayout(
                     userColor,
                     tileTextLT,
                     textColorLT,
+                    postTimeLT,
+                    tileVacancyLT,
                     tileTextLB,
                     textColorLB,
+                    postTimeLB,
+                    tileVacancyLB,
                     tileTextRT,
                     textColorRT,
+                    postTimeRT,
+                    tileVacancyRT,
                     tileTextRB,
                     textColorRB,
-                  );
+                    postTimeRB,
+                    tileVacancyRB);
           },
         ),
       ),
@@ -1237,6 +1316,19 @@ About link above for more info.
         stimulusContent = 'Please turn on mobile data, WiFi or both.';
         stimulusInstructions = 'Are you in Airplane Mode?';
       });
+    }
+    // instructions text is 5 points smaller than stimulus text
+    double instructionSize;
+    if (textSize < 30) {
+      // probably vertical view
+      instructionSize = textSize - 4;
+    } else {
+      // probably horizontal view
+      instructionSize = textSize / 2;
+    }
+    // Hide non-essential icons from non-authenicated users
+    if (auth.currentUser == null) {
+      iconColor = boxBGColor;
     }
     return Container(
       padding: EdgeInsets.all(10.0),
@@ -1342,8 +1434,7 @@ About link above for more info.
                 child: Text(
                   stimulusInstructions,
                   style: TextStyle(
-                    // instructions text is 5 points smaller than stimulus text
-                    fontSize: textSize - 5,
+                    fontSize: instructionSize,
                     color: Colors.yellow, //yellowAccent is too bright
                   ),
                 ),
@@ -1403,9 +1494,16 @@ About link above for more info.
   }
 
   Widget _userInput(userColor) {
-    // TODO: Fix bug of physical keyboard backspace not working
+    // TODO: Fix bug of backspace key on physical keyboard not working
     int _timeUntilFade = 20;
     int _fadeDuration = 10;
+    double clearIconSize = 14.0;
+    int maxCharacters = 255;
+    if (auth.currentUser == null) {
+      boxBGColor = Colors.black;
+      clearIconSize = 0.0;
+      maxCharacters = 1;
+    }
     return TextField(
         controller: inputController,
         style: TextStyle(color: userColor),
@@ -1435,11 +1533,11 @@ About link above for more info.
             },
             icon: Icon(
               Icons.clear,
-              size: 10.0,
+              size: clearIconSize,
             ),
           ),
         ),
-        maxLength: 255,
+        maxLength: maxCharacters,
         // this is way more than needed but allows for ascii art or venting
         autofocus: false,
         onEditingComplete: () {
@@ -1455,7 +1553,8 @@ About link above for more info.
               waitStatus = true;
             });
             // post to group
-            postComment(submittedText);
+            int milli = DateTime.now().millisecondsSinceEpoch;
+            postComment(submittedText, milli);
             // clear text in input box
             inputController.clear();
             Timer(Duration(seconds: _timeUntilFade), () {
@@ -1496,17 +1595,34 @@ About link above for more info.
     );
   }
 
-  Widget _chatTile(tileHeight, tileWidth, textSize, tileText, textColor) {
-    // fades out tileText
-    Timer(Duration(seconds: 20), () {
-      setState(() {
-        // just in case user just muted someone
-        if (chatFadeTime == 1) {
-          chatFadeTime = 10;
+  Widget _chatTile(tileHeight, tileWidth, textSize, tileText, textColor,
+      postTime, tileVacancy) {
+    // If tile is vacant, don't show its color
+    Color _iconColor = iconColor;
+    // Created a special instance of icon color only for chat tiles
+    if (tileVacancy == true || auth.currentUser == null) {
+      textColor = boxBGColor;
+      _iconColor = boxBGColor;
+    } else {
+      if (postTime != null) {
+        //
+        chatOpacity = 1.0;
+        int timeElapsed = DateTime.now().millisecondsSinceEpoch - postTime;
+        // Start fading text if it was posted more than 30 seconds ago
+        int thirtySeconds = 30 * 1000;
+        if (timeElapsed > thirtySeconds) {
+          //   // just in case user just muted someone
+          //   if (chatFadeTime == 1) {
+          //     chatFadeTime = 10;
+          //   }
+          chatFadeTime = 10; // show fade out
+          chatOpacity = 0.0;
+        } else {
+          chatFadeTime = 1; // quick fade in
+          chatOpacity = 1.0;
         }
-        chatOpacity = 0.0;
-      });
-    });
+      }
+    }
 
     return Container(
       height: MediaQuery.of(context).size.height * tileHeight,
@@ -1540,21 +1656,21 @@ About link above for more info.
               child: IconButton(
                 icon: Icon(
                   Icons.not_interested_rounded,
-                  color: iconColor,
+                  color: _iconColor,
                 ),
                 padding: EdgeInsets.zero, // need for alignment
                 tooltip: 'Mute Person',
                 onPressed: () {
-                  setState(() {
-                    chatFadeTime = 1; // set to quick fade
-                    chatOpacity = 0.0;
-                    // reset fade duration
-                  });
-                  Timer(Duration(seconds: 1), () {
-                    setState(() {
-                      chatFadeTime = 10;
-                    });
-                  });
+                  // setState(() {
+                  //   chatFadeTime = 1; // set to quick fade
+                  //   chatOpacity = 0.0;
+                  //   // reset fade duration
+                  // });
+                  // Timer(Duration(seconds: 1), () {
+                  //   setState(() {
+                  //     chatFadeTime = 10;
+                  //   });
+                  // });
                 },
               ),
             ),
@@ -1564,11 +1680,13 @@ About link above for more info.
               width: 8.0,
             ),
             Text(
-              '0' + '/3', // no need for counter here, rather update from DB
+              '0' +
+                  '/3', // TODO: no need for counter here, rather update from DB
               //
               style: TextStyle(
                 fontSize: textSize - 2,
-                color: iconColor,
+                color: _iconColor,
+// TODO: later make normal iconColor and have text say "empty" or "vacant"
               ),
             ),
           ],
@@ -1579,26 +1697,33 @@ About link above for more info.
   }
 
   Widget _buildVerticalLayout(
-    userColor,
-    tileTextLT,
-    textColorLT,
-    tileTextLB,
-    textColorLB,
-    tileTextRT,
-    textColorRT,
-    tileTextRB,
-    textColorRB,
-  ) {
+      userColor,
+      tileTextLT,
+      textColorLT,
+      postTimeLT,
+      tileVacancyLT,
+      tileTextLB,
+      textColorLB,
+      postTimeLB,
+      tileVacancyLB,
+      tileTextRT,
+      textColorRT,
+      postTimeRT,
+      tileVacancyRT,
+      tileTextRB,
+      textColorRB,
+      postTimeRB,
+      tileVacancyRB) {
     final allTileHeight = 0.2; // 20% screen height
     final allTileWidth = 0.45; // 45% screen width
-    final allTextSize = 18.0; // 18 font size
+    final allTextSize = 18.0; // 18 font size for chatters
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Container(
           height: MediaQuery.of(context).size.height * 0.23, //23%
           width: MediaQuery.of(context).size.width, //100%
-          child: _stimulus(20.0),
+          child: _stimulus(20.0), // stimulus text size
         ),
         // build the chat titles, the left column (top & bottom) and right
         Row(
@@ -1607,38 +1732,18 @@ About link above for more info.
           children: [
             Column(
               children: [
-                _chatTile(
-                  allTileHeight,
-                  allTileWidth,
-                  allTextSize,
-                  tileTextLT,
-                  textColorLT,
-                ),
-                _chatTile(
-                  allTileHeight,
-                  allTileWidth,
-                  allTextSize,
-                  tileTextLB,
-                  textColorLB,
-                ),
+                _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextLT,
+                    textColorLT, postTimeLT, tileVacancyLT),
+                _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextLB,
+                    textColorLB, postTimeLB, tileVacancyLB),
               ],
             ),
             Column(
               children: [
-                _chatTile(
-                  allTileHeight,
-                  allTileWidth,
-                  allTextSize,
-                  tileTextRT,
-                  textColorRT,
-                ),
-                _chatTile(
-                  allTileHeight,
-                  allTileWidth,
-                  allTextSize,
-                  tileTextRB,
-                  textColorRB,
-                ),
+                _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextRT,
+                    textColorRT, postTimeRT, tileVacancyRT),
+                _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextRB,
+                    textColorRB, postTimeRB, tileVacancyRB),
               ],
             ),
           ],
@@ -1657,19 +1762,26 @@ About link above for more info.
   }
 
   Widget _buildHorizontalLayout(
-    userColor,
-    tileTextLT,
-    textColorLT,
-    tileTextLB,
-    textColorLB,
-    tileTextRT,
-    textColorRT,
-    tileTextRB,
-    textColorRB,
-  ) {
+      userColor,
+      tileTextLT,
+      textColorLT,
+      postTimeLT,
+      tileVacancyLT,
+      tileTextLB,
+      textColorLB,
+      postTimeLB,
+      tileVacancyLB,
+      tileTextRT,
+      textColorRT,
+      postTimeRT,
+      tileVacancyRT,
+      tileTextRB,
+      textColorRB,
+      postTimeRB,
+      tileVacancyRB) {
     final allTileHeight = 0.33; // 33% screen height
     final allTileWidth = 0.21; // 21% screen width
-    final allTextSize = 26.0; // 26 font size
+    final allTextSize = 26.0; // 26 font size for chatters
     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1680,7 +1792,7 @@ About link above for more info.
               Container(
                 height: MediaQuery.of(context).size.height * 0.355, //35.5%
                 width: MediaQuery.of(context).size.width / 2.0,
-                child: _stimulus(32.0),
+                child: _stimulus(32.0), // stimulus text size
               ),
               Container(
                 height: MediaQuery.of(context).size.height * 0.355,
@@ -1697,38 +1809,18 @@ About link above for more info.
                 children: [
                   Column(
                     children: [
-                      _chatTile(
-                        allTileHeight,
-                        allTileWidth,
-                        allTextSize,
-                        tileTextLT,
-                        textColorLT,
-                      ),
-                      _chatTile(
-                        allTileHeight,
-                        allTileWidth,
-                        allTextSize,
-                        tileTextLB,
-                        textColorLB,
-                      ),
+                      _chatTile(allTileHeight, allTileWidth, allTextSize,
+                          tileTextLT, textColorLT, postTimeLT, tileVacancyLT),
+                      _chatTile(allTileHeight, allTileWidth, allTextSize,
+                          tileTextLB, textColorLB, postTimeLB, tileVacancyLB),
                     ],
                   ),
                   Column(
                     children: [
-                      _chatTile(
-                        allTileHeight,
-                        allTileWidth,
-                        allTextSize,
-                        tileTextRT,
-                        textColorRT,
-                      ),
-                      _chatTile(
-                        allTileHeight,
-                        allTileWidth,
-                        allTextSize,
-                        tileTextRB,
-                        textColorRB,
-                      ),
+                      _chatTile(allTileHeight, allTileWidth, allTextSize,
+                          tileTextRT, textColorRT, postTimeRT, tileVacancyRT),
+                      _chatTile(allTileHeight, allTileWidth, allTextSize,
+                          tileTextRB, textColorRB, postTimeRB, tileVacancyRB),
                     ],
                   ),
                 ],
