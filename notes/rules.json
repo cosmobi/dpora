@@ -104,11 +104,11 @@
       ".write": false
     },
     "slogans": {
-      ".read": "auth != null",
+      ".read": true,
       ".write": false
     },
     "statistics": {
-      ".read": "auth != null",
+      ".read": true,
       ".write": "auth != null",
       "comments": {
         ".validate": "newData.isNumber() && newData.val() >= 2"

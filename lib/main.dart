@@ -70,22 +70,27 @@ Color menuColor = Colors.blueGrey;
 
 // Empty default values for the tileText and textColor
 Color userColor = Colors.black;
+Color colorOfMutedUser = boxBGColor;
 String tileTextLT = '';
 Color textColorLT = Colors.black;
 int postTimeLT = DateTime.now().millisecondsSinceEpoch;
 bool tileVacancyLT = false;
+int muteCountLT = 0;
 String tileTextLB = '';
 Color textColorLB = Colors.black;
 int postTimeLB = DateTime.now().millisecondsSinceEpoch;
 bool tileVacancyLB = false;
+int muteCountLB = 0;
 String tileTextRT = '';
 Color textColorRT = Colors.black;
 int postTimeRT = DateTime.now().millisecondsSinceEpoch;
 bool tileVacancyRT = false;
+int muteCountRT = 0;
 String tileTextRB = '';
 Color textColorRB = Colors.black;
 int postTimeRB = DateTime.now().millisecondsSinceEpoch;
 bool tileVacancyRB = false;
+int muteCountRB = 0;
 
 // Use this key to open and close drawer
 // programically (in addition to swiping)
@@ -95,9 +100,9 @@ GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 bool waitStatus = false;
-// successfully assigned to new group
+// Snackbar Notifications
 final snackBarNewGroup = SnackBar(
-  content: const Text('Successfully entered new group!'),
+  content: const Text('Successfully entered a new group'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -107,9 +112,8 @@ final snackBarNewGroup = SnackBar(
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 4),
 );
-// alert user when attempting to post prematurely
 final snackBarWait2Post = SnackBar(
-  content: const Text('Wait for your last post to disappear!'),
+  content: const Text('Wait for your last post to disappear'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -119,7 +123,6 @@ final snackBarWait2Post = SnackBar(
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 4),
 );
-// alert user when there is no internet connection
 final snackBarNoInternet = SnackBar(
   content: const Text('No Internet Connection!'),
   shape: RoundedRectangleBorder(
@@ -131,9 +134,8 @@ final snackBarNoInternet = SnackBar(
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 30),
 );
-// alert user when stimulus was striked
-final snackBarStrikedStimulus = SnackBar(
-  content: const Text('Topic changes after 3 people hit Next.'),
+final snackBarNeeds2Strikes = SnackBar(
+  content: const Text('Topic changes after 2 people hit Next'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -143,9 +145,41 @@ final snackBarStrikedStimulus = SnackBar(
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 4),
 );
-// alert user when stimulus was changed
+final snackBarNeeds3Strikes = SnackBar(
+  content: const Text('Topic changes after 3 people hit Next'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 4),
+);
 final snackBarNextStimulus = SnackBar(
   content: const Text('We have a new topic!'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 4),
+);
+final snackBarMutedUser = SnackBar(
+  content: const Text('Color muted! Hit again to unmute.'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 4),
+);
+final snackBarUnmutedUser = SnackBar(
+  content: const Text('Unmuted previously muted color.'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -191,8 +225,13 @@ showAlertDialog(BuildContext context) {
 }
 
 class _DporaAppState extends State<DporaApp> {
-  // using this to handle inputted text in the textfield
-  TextEditingController inputController = TextEditingController();
+  // Using this to handle inputted text in the textfield
+  final inputController = TextEditingController();
+  @override
+  void dispose() {
+    inputController.dispose();
+    super.dispose();
+  }
 
   // Firebase realtime database reference
   final firebaseRTDB = FirebaseDatabase.instance.reference();
@@ -328,7 +367,7 @@ class _DporaAppState extends State<DporaApp> {
         .then((DataSnapshot snapshotColors) {
       var colorVacancies = new Map<String, dynamic>.from(snapshotColors.value);
       var blueSeat = colorVacancies['blue-vacancy'];
-      // if blueSeat gave error, try = colorVacancies[groupName]['blue-vacancy']
+      // if blueSeat gives error, try = colorVacancies[groupName]['blue-vacancy']
       // because the json result might be nested (as it happened before)
       if (blueSeat == true) {
         seatColor = 'blue';
@@ -366,13 +405,13 @@ class _DporaAppState extends State<DporaApp> {
             .update({'color': '$seatColor', 'group': '$groupName'}).then((_) {
           // update group vacancy status
           updateVacancy(groupName, seatColor, openSeats, false);
-          // show success
-          rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNewGroup);
         }).catchError((onError) {
           print(onError);
         });
       }
     });
+    // show success
+    rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNewGroup);
   }
 
   void updateVacancy(groupName, seatColor, seatCount, v) {
@@ -452,6 +491,56 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
+  // Update the mutee's strike count and possibly boot count too
+  void muteButtonPress(groupOfMutedUser, colorOfMutedUser, muteCount, crement) {
+    // Convert Color to String
+    String _colorStriked = '';
+    if (colorOfMutedUser == Colors.blueAccent) {
+      _colorStriked = 'blue-strikes';
+    } else if (colorOfMutedUser == Colors.greenAccent) {
+      _colorStriked = 'green-strikes';
+    } else if (colorOfMutedUser == Colors.orangeAccent) {
+      _colorStriked = 'orange-strikes';
+    } else if (colorOfMutedUser == Colors.purpleAccent) {
+      _colorStriked = 'purple-strikes';
+    } else if (colorOfMutedUser == Colors.redAccent) {
+      _colorStriked = 'red-strikes';
+    }
+    // Increment mute/strike counter for group member
+    if (crement == 'increment') {
+      firebaseRTDB
+          .child('groups/$groupOfMutedUser/$_colorStriked')
+          //.update({something:somethingElse})
+          .set(ServerValue.increment(1))
+          .then((_) {
+        // show snackbar about muting action
+        rootScaffoldMessengerKey.currentState
+            .showSnackBar(snackBarMutedUser);
+      }).catchError((onIncrementError) {
+        print(onIncrementError);
+      });
+    } else {
+      firebaseRTDB
+          .child('groups/$groupOfMutedUser/$_colorStriked')
+          //.update({something:somethingElse})
+          .set(ServerValue.increment(-1))
+          .then((_) {
+        // Show snackbar about unmuting action
+        rootScaffoldMessengerKey.currentState
+            .showSnackBar(snackBarUnmutedUser);
+      }).catchError((onIncrementError) {
+        print(onIncrementError);
+      });
+    }
+
+    // Also increment boot count
+    //if (muteCount == 4) {
+    // find mutee in dporian list using groupOfMutedUser
+    // and _colorString and increment their boot count
+    // based on relative number of myGroupVacancies
+    //}
+  }
+
   // Pick a stimulus
   void getStimulus(stimuliCategory, stimulusID) {
     firebaseRTDB
@@ -493,9 +582,23 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  void strikedStimulus(uuid) {
-    if (stimulusStrikes > 1) {
-      // Show next stimulus content
+  void strikedStimulus(uuid, neededStrikes) {
+    // Show next if 3 strikes in a full group
+    if (stimulusStrikes > 1 && myGroupVacancy == 0) {
+      firebaseRTDB.child('groups').child('$groupName').update({
+        'stimulus-category': '$categoryChoice',
+        'stimulus-content': '$nextStimulusContent',
+        'stimulus-instructions': '$instructStimulus',
+        'stimulus-strikes': 0
+      }).then((_) {
+        // show success
+        rootScaffoldMessengerKey.currentState
+            .showSnackBar(snackBarNextStimulus);
+      }).catchError((onErrorNext) {
+        print(onErrorNext);
+      });
+      // Show next if 2 strikes in not a full group
+    } else if (stimulusStrikes > 0 && myGroupVacancy != 0) {
       firebaseRTDB.child('groups').child('$groupName').update({
         'stimulus-category': '$categoryChoice',
         'stimulus-content': '$nextStimulusContent',
@@ -524,9 +627,14 @@ class _DporaAppState extends State<DporaApp> {
             .update({'striked': stimulusContent}).catchError((onErrorGroups) {
           print(onErrorGroups);
         });
-        // show success
-        rootScaffoldMessengerKey.currentState
-            .showSnackBar(snackBarStrikedStimulus);
+        // Inform that more strikes are needed
+        if (neededStrikes == 2) {
+          rootScaffoldMessengerKey.currentState
+              .showSnackBar(snackBarNeeds2Strikes);
+        } else {
+          rootScaffoldMessengerKey.currentState
+              .showSnackBar(snackBarNeeds3Strikes);
+        }
       }).catchError((onErrorStriked) {
         print(onErrorStriked);
       });
@@ -725,18 +833,22 @@ class _DporaAppState extends State<DporaApp> {
         textColorLT = Colors.orangeAccent;
         postTimeLT = orangeTimestamp;
         tileVacancyLT = orangeVacancy;
+        muteCountLT = orangeStrikes;
         tileTextLB = greenContent;
         textColorLB = Colors.greenAccent;
         postTimeLB = greenTimestamp;
         tileVacancyLB = greenVacancy;
+        muteCountLB = greenStrikes;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
         postTimeRT = purpleTimestamp;
         tileVacancyRT = purpleVacancy;
+        muteCountRT = purpleStrikes;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
         postTimeRB = redTimestamp;
         tileVacancyRB = redVacancy;
+        muteCountRB = redStrikes;
       });
     } else if (userColorString == 'green') {
       setState(() {
@@ -745,18 +857,22 @@ class _DporaAppState extends State<DporaApp> {
         textColorLT = Colors.orangeAccent;
         postTimeLT = orangeTimestamp;
         tileVacancyLT = orangeVacancy;
+        muteCountLT = orangeStrikes;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
         postTimeLB = blueTimestamp;
         tileVacancyLB = blueVacancy;
+        muteCountLB = blueStrikes;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
         postTimeRT = purpleTimestamp;
         tileVacancyRT = purpleVacancy;
+        muteCountRT = purpleStrikes;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
         postTimeRB = redTimestamp;
         tileVacancyRB = redVacancy;
+        muteCountRB = redStrikes;
       });
     } else if (userColorString == 'orange') {
       setState(() {
@@ -765,18 +881,22 @@ class _DporaAppState extends State<DporaApp> {
         textColorLT = Colors.greenAccent;
         postTimeLT = greenTimestamp;
         tileVacancyLT = greenVacancy;
+        muteCountLT = greenStrikes;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
         postTimeLB = blueTimestamp;
         tileVacancyLB = blueVacancy;
+        muteCountLB = blueStrikes;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
         postTimeRT = purpleTimestamp;
         tileVacancyRT = purpleVacancy;
+        muteCountRT = purpleStrikes;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
         postTimeRB = redTimestamp;
         tileVacancyRB = redVacancy;
+        muteCountRB = redStrikes;
       });
     } else if (userColorString == 'purple') {
       setState(() {
@@ -785,18 +905,22 @@ class _DporaAppState extends State<DporaApp> {
         textColorLT = Colors.orangeAccent;
         postTimeLT = orangeTimestamp;
         tileVacancyLT = orangeVacancy;
+        muteCountLT = orangeStrikes;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
         postTimeLB = blueTimestamp;
         tileVacancyLB = blueVacancy;
+        muteCountLB = blueStrikes;
         tileTextRT = greenContent;
         textColorRT = Colors.greenAccent;
         postTimeRT = greenTimestamp;
         tileVacancyRT = greenVacancy;
+        muteCountRT = greenStrikes;
         tileTextRB = redContent;
         textColorRB = Colors.redAccent;
         postTimeRB = redTimestamp;
         tileVacancyRB = redVacancy;
+        muteCountRB = redStrikes;
       });
     } else if (userColorString == 'red') {
       setState(() {
@@ -805,18 +929,22 @@ class _DporaAppState extends State<DporaApp> {
         textColorLT = Colors.orangeAccent;
         postTimeLT = orangeTimestamp;
         tileVacancyLT = orangeVacancy;
+        muteCountLT = orangeStrikes;
         tileTextLB = blueContent;
         textColorLB = Colors.blueAccent;
         postTimeLB = blueTimestamp;
         tileVacancyLB = blueVacancy;
+        muteCountLB = blueStrikes;
         tileTextRT = purpleContent;
         textColorRT = Colors.purpleAccent;
         postTimeRT = purpleTimestamp;
         tileVacancyRT = purpleVacancy;
+        muteCountRT = purpleStrikes;
         tileTextRB = greenContent;
         textColorRB = Colors.greenAccent;
         postTimeRB = greenTimestamp;
         tileVacancyRB = greenVacancy;
+        muteCountRB = greenStrikes;
       });
     }
   }
@@ -920,6 +1048,20 @@ class _DporaAppState extends State<DporaApp> {
 
     // Get the latest stats to show in menu drawer
     liveStats();
+    // Show live stats in menu drawer
+    String liveCountries = 'Over ' +
+        countriesRepresented.toString() +
+        ' countries represented' +
+        '\n';
+    String liveDevices =
+        'Over ' + devicesDetected.toString() + ' devices detected' + '\n';
+    String liveComments =
+        'Over ' + commentsPosted.toString() + ' comments posted' + '\n\n';
+    if (version > versionHardcoded) {
+      versionStatus = '(Please update to ' + version.toString() + ')\n';
+    } else {
+      versionStatus = '(You are up to date)\n';
+    }
 
     // if already signed in...
     if (auth.currentUser != null) {
@@ -929,7 +1071,8 @@ class _DporaAppState extends State<DporaApp> {
       // print(auth.currentUser.isAnonymous); true
       // print(auth.currentUser.displayName); null if anonymous
       // print(auth.currentUser.metadata.creationTime);
-      // Use... FirebaseAuth.instance.signOut(); ...to sign out a user
+      // To sign out a user, use...
+      //FirebaseAuth.instance.signOut();
 
       // Fetch user info
       getUser(auth.currentUser.uid);
@@ -961,24 +1104,10 @@ class _DporaAppState extends State<DporaApp> {
 
       // Choose a random stimulus
       randomStimulus();
-
-      // Show live stats in menu drawer
-      liveDevices =
-          'Over ' + devicesDetected.toString() + ' devices detected' + '\n';
-      liveCountries = 'Over ' +
-          countriesRepresented.toString() +
-          ' countries represented' +
-          '\n';
-      liveComments =
-          'Over ' + commentsPosted.toString() + ' comments posted' + '\n\n';
-      if (version > versionHardcoded) {
-        versionStatus = '(Please update to ' + version.toString() + ')\n';
-      } else {
-        versionStatus = '(You are up to date)\n';
-      }
     } else {
+      // Show Terms of service to first time users of this app installation
       stimulusContent =
-          'Tap the little yellow arrow button on the right to continue, and to accept these terms of service.';
+          'Tap the little yellow arrow on the right to continue, and to accept these terms of service.';
       stimulusInstructions = 'Terms of service';
       // This sets up the basic Terms and Conditions screen before login
       userColor = Colors.black; // to hide it
@@ -1136,14 +1265,14 @@ About link above for more info.
                         ),
                       ),
                       TextSpan(
-                        text: liveDevices,
+                        text: liveCountries,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: liveCountries,
+                        text: liveDevices,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
@@ -1204,36 +1333,44 @@ About link above for more info.
                     textColorLT,
                     postTimeLT,
                     tileVacancyLT,
+                    muteCountLT,
                     tileTextLB,
                     textColorLB,
                     postTimeLB,
                     tileVacancyLB,
+                    muteCountLB,
                     tileTextRT,
                     textColorRT,
                     postTimeRT,
                     tileVacancyRT,
+                    muteCountRT,
                     tileTextRB,
                     textColorRB,
                     postTimeRB,
-                    tileVacancyRB)
+                    tileVacancyRB,
+                    muteCountRB)
                 : _buildHorizontalLayout(
                     userColor,
                     tileTextLT,
                     textColorLT,
                     postTimeLT,
                     tileVacancyLT,
+                    muteCountLT,
                     tileTextLB,
                     textColorLB,
                     postTimeLB,
                     tileVacancyLB,
+                    muteCountLB,
                     tileTextRT,
                     textColorRT,
                     postTimeRT,
                     tileVacancyRT,
+                    muteCountRT,
                     tileTextRB,
                     textColorRB,
                     postTimeRB,
-                    tileVacancyRB);
+                    tileVacancyRB,
+                    muteCountRB);
           },
         ),
       ),
@@ -1330,6 +1467,15 @@ About link above for more info.
     if (auth.currentUser == null) {
       iconColor = boxBGColor;
     }
+    // Calculute how many strikes are needed to show next stimulus
+    if (myGroupVacancy != 0) {
+      // No group or not a full group
+      strikesNeeded = 2;
+    } else {
+      // It's a full group
+      strikesNeeded = 3;
+    }
+
     return Container(
       padding: EdgeInsets.all(10.0),
       margin: EdgeInsets.all(10.0),
@@ -1463,24 +1609,31 @@ About link above for more info.
                     onPressed: () {
                       if (auth.currentUser != null) {
                         if (strikedContent == stimulusContent) {
-                          // show snackbar about topic change process
-                          rootScaffoldMessengerKey.currentState
-                              .showSnackBar(snackBarStrikedStimulus);
+                          if (strikesNeeded == 2) {
+                            rootScaffoldMessengerKey.currentState
+                                .showSnackBar(snackBarNeeds2Strikes);
+                          } else {
+                            rootScaffoldMessengerKey.currentState
+                                .showSnackBar(snackBarNeeds3Strikes);
+                          }
                         } else {
                           // shuffle category and stimulus decks
                           shuffleDecks();
                           // update stimulus strike count or stimulus
-                          strikedStimulus(auth.currentUser.uid);
+                          strikedStimulus(auth.currentUser.uid, strikesNeeded);
                         }
                       } else {
                         // Otherwise, sign the user in anonymously
                         signInAnonymously();
+                        if (registered == false) {
+                          createUser(auth.currentUser.uid);
+                        }
                       }
                     },
                   ),
                 ),
                 Text(
-                  stimulusStrikes.toString() + '/3',
+                  stimulusStrikes.toString() + '/' + strikesNeeded.toString(),
                   //
                   style: TextStyle(
                     fontSize: textSize - 2,
@@ -1494,11 +1647,10 @@ About link above for more info.
   }
 
   Widget _userInput(userColor) {
-    // TODO: Fix bug of backspace key on physical keyboard not working
     int _timeUntilFade = 20;
     int _fadeDuration = 10;
     double clearIconSize = 14.0;
-    int maxCharacters = 255;
+    int maxCharacters = 100;
     if (auth.currentUser == null) {
       boxBGColor = Colors.black;
       clearIconSize = 0.0;
@@ -1506,6 +1658,8 @@ About link above for more info.
     }
     return TextField(
         controller: inputController,
+        // TODO: Verify backspace works in real android app
+        // because it doesn't work on Chromebook test build.
         style: TextStyle(color: userColor),
         cursorColor: userColor,
         // show Send instead of Enter with onscreen keyboards
@@ -1596,30 +1750,56 @@ About link above for more info.
   }
 
   Widget _chatTile(tileHeight, tileWidth, textSize, tileText, textColor,
-      postTime, tileVacancy) {
+      postTime, tileVacancy, muteCount) {
+    String muteStatus = '';
     // If tile is vacant, don't show its color
     Color _iconColor = iconColor;
-    // Created a special instance of icon color only for chat tiles
-    if (tileVacancy == true || auth.currentUser == null) {
-      textColor = boxBGColor;
+    // If tile is muted, don't show its contents
+    Color _textColor = textColor;
+    if (tileVacancy == true) {
+      if (auth.currentUser != null) {
+        // hide chat text but not Terms of service
+        _textColor = boxBGColor;
+      }
       _iconColor = boxBGColor;
     } else {
+      // Make icons visable again, if user not muted
+      if (colorOfMutedUser != textColor) {
+        _iconColor = iconColor;
+        _textColor = textColor; // unmute
+      } else {
+        _iconColor = Colors.grey;
+        _textColor = boxBGColor; // mute
+      }
       if (postTime != null) {
-        //
         chatOpacity = 1.0;
         int timeElapsed = DateTime.now().millisecondsSinceEpoch - postTime;
         // Start fading text if it was posted more than 30 seconds ago
-        int thirtySeconds = 30 * 1000;
-        if (timeElapsed > thirtySeconds) {
-          //   // just in case user just muted someone
-          //   if (chatFadeTime == 1) {
-          //     chatFadeTime = 10;
-          //   }
+        int twentySeconds = 20 * 1000;
+        // Fade action only occurs to chat text, not Terms of service
+        if (timeElapsed > twentySeconds && auth.currentUser != null) {
           chatFadeTime = 10; // show fade out
           chatOpacity = 0.0;
         } else {
           chatFadeTime = 1; // quick fade in
           chatOpacity = 1.0;
+        }
+        // Show literal mute status
+        if (muteCount == 0) {
+          muteStatus = 'Group never muted';
+        } else if (muteCount == 1) {
+          muteStatus = 'Group muted once';
+        } else if (muteCount == 2) {
+          muteStatus = 'Group muted twice';
+        } else if (muteCount == 3) {
+          muteStatus = 'Group muted thrice';
+        } else if (muteCount == 4) {
+          muteStatus = 'Whole group muted';
+        }
+        // Unmute new member if assigned to a muted color tile
+        if (muteCount == 0 && _iconColor == Colors.grey) {
+          muteStatus = 'Unmute new user!';
+          _textColor = textColor; // unmuted
         }
       }
     }
@@ -1643,7 +1823,7 @@ About link above for more info.
               opacity: chatOpacity,
               child: Text(
                 tileText,
-                style: TextStyle(fontSize: textSize, color: textColor),
+                style: TextStyle(fontSize: textSize, color: _textColor),
               ),
             ),
           ),
@@ -1659,18 +1839,32 @@ About link above for more info.
                   color: _iconColor,
                 ),
                 padding: EdgeInsets.zero, // need for alignment
-                tooltip: 'Mute Person',
+                tooltip: 'Toggle Mute Status',
                 onPressed: () {
-                  // setState(() {
-                  //   chatFadeTime = 1; // set to quick fade
-                  //   chatOpacity = 0.0;
-                  //   // reset fade duration
-                  // });
-                  // Timer(Duration(seconds: 1), () {
-                  //   setState(() {
-                  //     chatFadeTime = 10;
-                  //   });
-                  // });
+                  if (groupName == groupOfMutedUser) {
+                    // Decrement, if possible
+                    if (muteCount > 0) {
+                      muteButtonPress(groupOfMutedUser, colorOfMutedUser,
+                          muteCount, 'decrement');
+                    }
+                    // Make content visable but update the DB
+                    // first before the variables are reset
+                    setState(() {
+                      groupOfMutedUser = ''; // reset
+                      colorOfMutedUser = boxBGColor; // reset
+                    });
+                  } else {
+                    // set the variables before updating the DB
+                    setState(() {
+                      groupOfMutedUser = groupName;
+                      colorOfMutedUser = textColor;
+                    });
+                    // Increment, if possible
+                    if (muteCount < 4) {
+                      muteButtonPress(groupOfMutedUser, colorOfMutedUser,
+                          muteCount, 'increment');
+                    }
+                  }
                 },
               ),
             ),
@@ -1680,13 +1874,10 @@ About link above for more info.
               width: 8.0,
             ),
             Text(
-              '0' +
-                  '/3', // TODO: no need for counter here, rather update from DB
-              //
+              muteStatus,
               style: TextStyle(
-                fontSize: textSize - 2,
+                fontSize: textSize - 4,
                 color: _iconColor,
-// TODO: later make normal iconColor and have text say "empty" or "vacant"
               ),
             ),
           ],
@@ -1702,18 +1893,22 @@ About link above for more info.
       textColorLT,
       postTimeLT,
       tileVacancyLT,
+      muteCountLT,
       tileTextLB,
       textColorLB,
       postTimeLB,
       tileVacancyLB,
+      muteCountLB,
       tileTextRT,
       textColorRT,
       postTimeRT,
       tileVacancyRT,
+      muteCountRT,
       tileTextRB,
       textColorRB,
       postTimeRB,
-      tileVacancyRB) {
+      tileVacancyRB,
+      muteCountRB) {
     final allTileHeight = 0.2; // 20% screen height
     final allTileWidth = 0.45; // 45% screen width
     final allTextSize = 18.0; // 18 font size for chatters
@@ -1733,17 +1928,17 @@ About link above for more info.
             Column(
               children: [
                 _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextLT,
-                    textColorLT, postTimeLT, tileVacancyLT),
+                    textColorLT, postTimeLT, tileVacancyLT, muteCountLT),
                 _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextLB,
-                    textColorLB, postTimeLB, tileVacancyLB),
+                    textColorLB, postTimeLB, tileVacancyLB, muteCountLB),
               ],
             ),
             Column(
               children: [
                 _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextRT,
-                    textColorRT, postTimeRT, tileVacancyRT),
+                    textColorRT, postTimeRT, tileVacancyRT, muteCountRT),
                 _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextRB,
-                    textColorRB, postTimeRB, tileVacancyRB),
+                    textColorRB, postTimeRB, tileVacancyRB, muteCountRB),
               ],
             ),
           ],
@@ -1767,18 +1962,22 @@ About link above for more info.
       textColorLT,
       postTimeLT,
       tileVacancyLT,
+      muteCountLT,
       tileTextLB,
       textColorLB,
       postTimeLB,
       tileVacancyLB,
+      muteCountLB,
       tileTextRT,
       textColorRT,
       postTimeRT,
       tileVacancyRT,
+      muteCountRT,
       tileTextRB,
       textColorRB,
       postTimeRB,
-      tileVacancyRB) {
+      tileVacancyRB,
+      muteCountRB) {
     final allTileHeight = 0.33; // 33% screen height
     final allTileWidth = 0.21; // 21% screen width
     final allTextSize = 26.0; // 26 font size for chatters
@@ -1809,18 +2008,46 @@ About link above for more info.
                 children: [
                   Column(
                     children: [
-                      _chatTile(allTileHeight, allTileWidth, allTextSize,
-                          tileTextLT, textColorLT, postTimeLT, tileVacancyLT),
-                      _chatTile(allTileHeight, allTileWidth, allTextSize,
-                          tileTextLB, textColorLB, postTimeLB, tileVacancyLB),
+                      _chatTile(
+                          allTileHeight,
+                          allTileWidth,
+                          allTextSize,
+                          tileTextLT,
+                          textColorLT,
+                          postTimeLT,
+                          tileVacancyLT,
+                          muteCountLT),
+                      _chatTile(
+                          allTileHeight,
+                          allTileWidth,
+                          allTextSize,
+                          tileTextLB,
+                          textColorLB,
+                          postTimeLB,
+                          tileVacancyLB,
+                          muteCountLB),
                     ],
                   ),
                   Column(
                     children: [
-                      _chatTile(allTileHeight, allTileWidth, allTextSize,
-                          tileTextRT, textColorRT, postTimeRT, tileVacancyRT),
-                      _chatTile(allTileHeight, allTileWidth, allTextSize,
-                          tileTextRB, textColorRB, postTimeRB, tileVacancyRB),
+                      _chatTile(
+                          allTileHeight,
+                          allTileWidth,
+                          allTextSize,
+                          tileTextRT,
+                          textColorRT,
+                          postTimeRT,
+                          tileVacancyRT,
+                          muteCountRT),
+                      _chatTile(
+                          allTileHeight,
+                          allTileWidth,
+                          allTextSize,
+                          tileTextRB,
+                          textColorRB,
+                          postTimeRB,
+                          tileVacancyRB,
+                          muteCountRB),
                     ],
                   ),
                 ],

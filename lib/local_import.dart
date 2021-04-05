@@ -35,11 +35,9 @@ int devicesDetected = 2;
 int countriesRepresented = 2;
 int commentsPosted = 2;
 double version = 0.0;
-double versionHardcoded = 0.1; // TODO: Update before every app release (on DB too)
+double versionHardcoded =
+    0.1; // TODO: Update before every app release (on DB too)
 String versionStatus = '';
-String liveDevices = 'After agreeing to the\n';
-String liveCountries = 'Terms and Conditions\n,';
-String liveComments = 'live stats will show here!\n';
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
@@ -54,6 +52,7 @@ String userColorString = '';
 String groupName = '';
 int myGroupVacancy;
 String strikedContent = '';
+String groupOfMutedUser = '';
 var registered; // check the registration status
 
 // Create lists (decks) containing all the stimuli counts
@@ -79,8 +78,8 @@ String categoryChoice = '';
 // so transitions between reloads are smoother
 String stimulusContent = '';
 String nextStimulusContent = '';
-int stimulusStrikes = 2; 
-// Starts at 2 so the 'Terms of service' only needs one more
+int strikesNeeded = 1; // Both set at 1 for
+int stimulusStrikes = 1; // Terms of service
 String stimulusCategory = '';
 String stimulusInstructions = '';
 
