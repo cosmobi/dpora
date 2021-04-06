@@ -283,7 +283,6 @@ class _DporaAppState extends State<DporaApp> {
   void findVacantGroup() {
     String groupName = '';
     int openSeats = 0;
-    int milliEpoch = DateTime.now().millisecondsSinceEpoch;
     firebaseRTDB.child('vacancies').once().then((DataSnapshot snapshotGroups) {
       var vacancyCheck = new Map<String, dynamic>.from(snapshotGroups.value);
       // First gather some keys before assigning one in priority order
@@ -321,23 +320,23 @@ class _DporaAppState extends State<DporaApp> {
         firebaseRTDB.child('groups').child('$groupName').set({
           'blue-content': '',
           'blue-strikes': 0,
-          'blue-timestamp': milliEpoch,
+          'blue-timestamp': ServerValue.timestamp,
           'blue-vacancy': true,
           'green-content': '',
           'green-strikes': 0,
-          'green-timestamp': milliEpoch,
+          'green-timestamp': ServerValue.timestamp,
           'green-vacancy': true,
           'orange-content': '',
           'orange-strikes': 0,
-          'orange-timestamp': milliEpoch,
+          'orange-timestamp': ServerValue.timestamp,
           'orange-vacancy': true,
           'purple-content': '',
           'purple-strikes': 0,
-          'purple-timestamp': milliEpoch,
+          'purple-timestamp': ServerValue.timestamp,
           'purple-vacancy': true,
           'red-content': '',
           'red-strikes': 0,
-          'red-timestamp': milliEpoch,
+          'red-timestamp': ServerValue.timestamp,
           'red-vacancy': true,
           'stimulus-category': '',
           'stimulus-content': 'What would you like to talk about?',
@@ -434,7 +433,7 @@ class _DporaAppState extends State<DporaApp> {
       firebaseRTDB.child('groups').child('$groupName').update({
         '$colorContent': '$userStatus',
         '$colorStrikes': 0, // reset
-        '$colorTimestamp': DateTime.now().millisecondsSinceEpoch,
+        '$colorTimestamp': ServerValue.timestamp,
         '$seatKey': v
       }).catchError((onErrorGroups) {
         print(onErrorGroups);
@@ -449,7 +448,7 @@ class _DporaAppState extends State<DporaApp> {
     // Create user data that links to that group and color
     firebaseRTDB.child('dporians').child('$uuid').set({
       'boots': 0,
-      'bootstamp': DateTime.now().millisecondsSinceEpoch,
+      'bootstamp': ServerValue.timestamp,
       'color': 'black',
       'group': 'none',
       'striked': 'never have i ever'
@@ -494,51 +493,76 @@ class _DporaAppState extends State<DporaApp> {
   // Update the mutee's strike count and possibly boot count too
   void muteButtonPress(groupOfMutedUser, colorOfMutedUser, muteCount, crement) {
     // Convert Color to String
-    String _colorStriked = '';
+    String _colorString = '';
     if (colorOfMutedUser == Colors.blueAccent) {
-      _colorStriked = 'blue-strikes';
+      _colorString = 'blue';
     } else if (colorOfMutedUser == Colors.greenAccent) {
-      _colorStriked = 'green-strikes';
+      _colorString = 'green';
     } else if (colorOfMutedUser == Colors.orangeAccent) {
-      _colorStriked = 'orange-strikes';
+      _colorString = 'orange';
     } else if (colorOfMutedUser == Colors.purpleAccent) {
-      _colorStriked = 'purple-strikes';
+      _colorString = 'purple';
     } else if (colorOfMutedUser == Colors.redAccent) {
-      _colorStriked = 'red-strikes';
+      _colorString = 'red';
     }
+    String _colorStriked = _colorString + '-strikes';
     // Increment mute/strike counter for group member
     if (crement == 'increment') {
       firebaseRTDB
-          .child('groups/$groupOfMutedUser/$_colorStriked')
-          //.update({something:somethingElse})
+          .child('groups')
+          .child('$groupOfMutedUser')
+          .child('$_colorStriked')
           .set(ServerValue.increment(1))
           .then((_) {
         // show snackbar about muting action
-        rootScaffoldMessengerKey.currentState
-            .showSnackBar(snackBarMutedUser);
+        rootScaffoldMessengerKey.currentState.showSnackBar(snackBarMutedUser);
+        // if whole group muted user, increment their boot count
+        if (muteCount == 3 && myGroupVacancy == 0) {
+          bootUser(groupOfMutedUser, _colorString);
+        }
       }).catchError((onIncrementError) {
         print(onIncrementError);
       });
     } else {
       firebaseRTDB
-          .child('groups/$groupOfMutedUser/$_colorStriked')
-          //.update({something:somethingElse})
+          .child('groups')
+          .child('$groupOfMutedUser')
+          .child('$_colorStriked')
           .set(ServerValue.increment(-1))
           .then((_) {
         // Show snackbar about unmuting action
-        rootScaffoldMessengerKey.currentState
-            .showSnackBar(snackBarUnmutedUser);
-      }).catchError((onIncrementError) {
-        print(onIncrementError);
+        rootScaffoldMessengerKey.currentState.showSnackBar(snackBarUnmutedUser);
+      }).catchError((onDecrementError) {
+        print(onDecrementError);
       });
     }
+  }
 
-    // Also increment boot count
-    //if (muteCount == 4) {
-    // find mutee in dporian list using groupOfMutedUser
-    // and _colorString and increment their boot count
-    // based on relative number of myGroupVacancies
-    //}
+  void bootUser(groupOf, colorString) {
+    // Find group
+    firebaseRTDB
+        .child('dporians')
+        .orderByChild('group')
+        .equalTo('$groupOf')
+        .once()
+        .then((DataSnapshot snapshot) {
+      var mapMembers = new Map<String, dynamic>.from(snapshot.value);
+      for (var entry in mapMembers.entries) {
+        // Find bootee (the one getting booted)
+        if (entry.value['color'] == colorString) {
+          var bootee = entry.key;
+          // Increment boot count
+          firebaseRTDB.child('dporians').child('$bootee').update({
+          'boots': ServerValue.increment(1),
+          'bootstamp': ServerValue.timestamp
+          }).catchError((onBootError) {
+            print(onBootError);
+          });
+        }
+      }
+    }).catchError((onFindError) {
+      print(onFindError);
+    });
   }
 
   // Pick a stimulus
@@ -965,11 +989,12 @@ class _DporaAppState extends State<DporaApp> {
   }
 
   void postComment(submitted, milli) {
-    //var milli = DateTime.now().millisecondsSinceEpoch;
     String colorContent = userColorString + '-content';
     String colorTimestamp = userColorString + '-timestamp';
-    firebaseRTDB.child('groups').child('$groupName').update(
-        {'$colorContent': '$submitted', '$colorTimestamp': milli}).then((_) {
+    firebaseRTDB.child('groups').child('$groupName').update({
+      '$colorContent': '$submitted',
+      '$colorTimestamp': ServerValue.timestamp
+    }).then((_) {
       // update live stats
       firebaseRTDB
           .child('statistics')

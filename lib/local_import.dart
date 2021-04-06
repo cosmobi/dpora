@@ -1,4 +1,5 @@
 // TODO: Stimuli totals need to be updated before every app release!
+
 final int totalAds = 1;
 final int totalDebates = 266;
 final int totalGames = 33;

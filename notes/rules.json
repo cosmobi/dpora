@@ -1,11 +1,12 @@
 {
   "rules": {
     "dporians": {
+      ".read": "auth != null",
       ".write": "auth != null",
+      ".indexOn": "group",
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
         "boots": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          ".validate": "newData.isNumber() && newData.val() >= 0"
         },
         "bootstamp": {
           ".validate": "newData.isNumber() && newData.val() <= now"
@@ -26,10 +27,10 @@
       ".write": "auth != null",
       "$uid": {
         "blue-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
         },
         "blue-strikes": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
         "blue-timestamp": {
           ".validate": "newData.isNumber() && newData.val() <= now"
@@ -38,10 +39,10 @@
           ".validate": "newData.isBoolean()"
         },
         "green-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
         },
         "green-strikes": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
         "green-timestamp": {
           ".validate": "newData.isNumber() && newData.val() <= now"
@@ -50,10 +51,10 @@
           ".validate": "newData.isBoolean()"
         },
         "orange-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
         },
         "orange-strikes": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
         "orange-timestamp": {
           ".validate": "newData.isNumber() && newData.val() <= now"
@@ -62,10 +63,10 @@
           ".validate": "newData.isBoolean()"
         },
         "purple-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
         },
         "purple-strikes": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
         "purple-timestamp": {
           ".validate": "newData.isNumber() && newData.val() <= now"
@@ -74,10 +75,10 @@
           ".validate": "newData.isBoolean()"
         },
         "red-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 256"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
         },
         "red-strikes": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
         "red-timestamp": {
           ".validate": "newData.isNumber() && newData.val() <= now"
