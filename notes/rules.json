@@ -18,7 +18,7 @@
           ".validate": "newData.isString() || newData.val() == ''"
         },
         "striked": {
-          ".validate": "newData.isString() && newData.val().length < 256"
+          ".validate": "newData.isString() && newData.val().length < 251"
         }
       }
     },
@@ -27,7 +27,7 @@
       ".write": "auth != null",
       "$uid": {
         "blue-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
         "blue-strikes": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
@@ -39,7 +39,7 @@
           ".validate": "newData.isBoolean()"
         },
         "green-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
         "green-strikes": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
@@ -51,7 +51,7 @@
           ".validate": "newData.isBoolean()"
         },
         "orange-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
         "orange-strikes": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
@@ -63,7 +63,7 @@
           ".validate": "newData.isBoolean()"
         },
         "purple-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
         "purple-strikes": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
@@ -75,7 +75,7 @@
           ".validate": "newData.isBoolean()"
         },
         "red-content": {
-          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 101"
+          ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
         "red-strikes": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
@@ -90,7 +90,7 @@
           ".validate": "newData.isString() && newData.val().length < 24"
         },
         "stimulus-content": {
-          ".validate": "newData.isString() && newData.val().length < 256"
+          ".validate": "newData.isString() && newData.val().length < 251"
         },
         "stimulus-instructions": {
           ".validate": "newData.isString() && newData.val().length < 24"

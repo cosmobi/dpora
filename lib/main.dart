@@ -101,17 +101,6 @@ final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 bool waitStatus = false;
 // Snackbar Notifications
-final snackBarNewGroup = SnackBar(
-  content: const Text('Successfully entered a new group'),
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.only(
-      topLeft: Radius.circular(10.0),
-      topRight: Radius.circular(10.0),
-    ),
-  ),
-  backgroundColor: Colors.yellow,
-  duration: const Duration(seconds: 4),
-);
 final snackBarWait2Post = SnackBar(
   content: const Text('Wait for your last post to disappear'),
   shape: RoundedRectangleBorder(
@@ -409,8 +398,6 @@ class _DporaAppState extends State<DporaApp> {
         });
       }
     });
-    // show success
-    rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNewGroup);
   }
 
   void updateVacancy(groupName, seatColor, seatCount, v) {
@@ -422,7 +409,7 @@ class _DporaAppState extends State<DporaApp> {
     String seatKey = seatColor + '-vacancy';
     if (v == false) {
       seatCount--; // decrement
-      userStatus = userStatus + ' entered ]';
+      userStatus = 'a new ' + userStatus + ' entered ]';
     } else {
       seatCount++; // increment
       userStatus = userStatus + ' exited ]';
@@ -553,8 +540,8 @@ class _DporaAppState extends State<DporaApp> {
           var bootee = entry.key;
           // Increment boot count
           firebaseRTDB.child('dporians').child('$bootee').update({
-          'boots': ServerValue.increment(1),
-          'bootstamp': ServerValue.timestamp
+            'boots': ServerValue.increment(1),
+            'bootstamp': ServerValue.timestamp
           }).catchError((onBootError) {
             print(onBootError);
           });
@@ -1131,19 +1118,21 @@ class _DporaAppState extends State<DporaApp> {
       randomStimulus();
     } else {
       // Show Terms of service to first time users of this app installation
-      stimulusContent =
-          'Tap the little yellow arrow on the right to continue, and to accept these terms of service.';
-      stimulusInstructions = 'Terms of service';
+      stimulusContent = '* Welcome to dpora *\nthe stranger chat app';
+      stimulusInstructions = 'What is dpora?';
       // This sets up the basic Terms and Conditions screen before login
       userColor = Colors.black; // to hide it
-      tileTextLT = 'You must be 13 years old to use this app (dpora).';
+      tileTextLT =
+          'HOW TO DPORA: Swipe the text up to view all the content in each square. Push this text up now using your finger or cursor. If the text does not scroll, that means you are already viewing all the content. The blue square should have enough text for you to test scrolling.';
       textColorLT = Colors.orangeAccent;
-      tileTextLB = 'dpora does not save user-created chat content.';
+      tileTextLB =
+          'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comments by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
       textColorLB = Colors.blueAccent;
-      tileTextRT = 'dpora is not responsible for user-created chat content.';
+      tileTextRT =
+          'TERMS OF SERVICE: You must be at least 13 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app.';
       textColorRT = Colors.purpleAccent;
       tileTextRB =
-          'dpora is not liable for any consequences attributed to the use of this app.';
+          'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
       textColorRB = Colors.redAccent;
     }
 
@@ -1260,9 +1249,10 @@ in the world. Once a comment
 disappears, it's gone! So talk 
 openly, but be respectful.
 
-When 3 people tap the yellow arrow,
-the next topic will appear. Tap the 
-About link above for more info.
+When enough of your group tap 
+the yellow arrow, the next topic 
+will appear. Tap the About 
+link above for more info.
 ''',
                         style: TextStyle(
                           fontSize: 16,
@@ -1403,69 +1393,87 @@ About link above for more info.
   }
 
   // Show the appropriate icon for each stimuli category
-  Widget _icon(stimulusCategory) {
+  Widget _icon(stimulusCategory, textSize) {
+  double categoryIconSize = 24.0; // normal size
+    if (textSize > 25.0) {
+      // Show larger icons for horizontal view.
+      // "double the double" value
+      categoryIconSize = 48.0;
+    }
     if (stimulusCategory == 'ads') {
       return Icon(
         Icons.local_offer_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'debates') {
       return Icon(
         Icons.gavel_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'games') {
       return Icon(
         Icons.casino_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'jokes') {
       return Icon(
         Icons.emoji_emotions_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'news') {
       return Icon(
         Icons.speaker_notes_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'passion') {
       return Icon(
         Icons.thumbs_up_down_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'personal') {
       return Icon(
         Icons.emoji_people_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'ponder') {
       return Icon(
         Icons.psychology_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'proverbs') {
       return Icon(
         Icons.history_edu_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'quotes') {
       return Icon(
         Icons.format_quote_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else if (stimulusCategory == 'share') {
       return Icon(
         Icons.group_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     } else {
       // Trivia or Myths
-      // Terms and Conditions
+      // Terms of service
       // No Internet Connection
       return Icon(
         Icons.fact_check_rounded,
         color: Colors.yellow,
+        size: categoryIconSize,
       );
     }
   }
@@ -1480,13 +1488,12 @@ About link above for more info.
       });
     }
     // instructions text is 5 points smaller than stimulus text
-    double instructionSize;
-    if (textSize < 30) {
-      // probably vertical view
-      instructionSize = textSize - 4;
-    } else {
+    double instructionSize = textSize - 4; // vertical view
+    double _iconSize = 24.0; // normal size
+    if (textSize > 25.0) {
       // probably horizontal view
       instructionSize = textSize / 2;
+      _iconSize = 38.0;
     }
     // Hide non-essential icons from non-authenicated users
     if (auth.currentUser == null) {
@@ -1522,6 +1529,7 @@ About link above for more info.
                   icon: Icon(
                     Icons.menu_rounded,
                     color: iconColor,
+                    size: _iconSize,
                   ),
                   padding: EdgeInsets.zero, // need for alignment
                   tooltip: 'Φ Menu',
@@ -1536,6 +1544,7 @@ About link above for more info.
                   icon: Icon(
                     Icons.share_rounded,
                     color: iconColor,
+                    size: _iconSize,
                   ),
                   padding: EdgeInsets.zero, // need for alignment
                   tooltip: 'Share Topic',
@@ -1551,6 +1560,7 @@ About link above for more info.
               //   icon: Icon(
               //     Icons.threesixty_rounded,
               //     color: iconColor,
+              //     size: _iconSize,
               //   ),
               //   padding: EdgeInsets.zero, // need for alignment
               //   tooltip: 'New Group & Topic',
@@ -1564,6 +1574,7 @@ About link above for more info.
               //     icon: Icon(
               //       Icons.not_interested_rounded,
               //       color: iconColor,
+              //       size: _iconSize,
               //     ),
               //     padding: EdgeInsets.zero, // need for alignment
               //     tooltip: 'Something is wrong!',
@@ -1592,7 +1603,8 @@ About link above for more info.
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _icon(stimulusCategory), // Shows the appropriate icon
+              // Shows the appropriate icon & size
+              _icon(stimulusCategory, textSize),
               Container(
                 padding: EdgeInsets.all(7.0),
                 decoration: BoxDecoration(
@@ -1616,7 +1628,6 @@ About link above for more info.
                   style: TextStyle(
                     fontSize: textSize,
                     color: iconColor,
-                    //letterSpacing: 1.5,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
@@ -1628,6 +1639,7 @@ About link above for more info.
                     icon: Icon(
                       Icons.forward_rounded,
                       color: Colors.yellow,
+                      size: _iconSize,
                     ),
                     padding: EdgeInsets.zero, // need for alignment
                     tooltip: 'Next Topic',
@@ -1675,7 +1687,7 @@ About link above for more info.
     int _timeUntilFade = 20;
     int _fadeDuration = 10;
     double clearIconSize = 14.0;
-    int maxCharacters = 100;
+    int maxCharacters = 250;
     if (auth.currentUser == null) {
       boxBGColor = Colors.black;
       clearIconSize = 0.0;
@@ -1713,6 +1725,7 @@ About link above for more info.
             icon: Icon(
               Icons.clear,
               size: clearIconSize,
+              color: userColor,
             ),
           ),
         ),
@@ -1779,10 +1792,16 @@ About link above for more info.
     String muteStatus = '';
     // If tile is vacant, don't show its color
     Color _iconColor = iconColor;
-    // If tile is muted, don't show its contents
+    // If tile is muted or vacant, 
+    // hide its contents or box border
     Color _textColor = textColor;
+    double iconSize = 24.0; // normal size
+    if (textSize > 25.0) {
+      // make iconSize larger for horizontal
+      iconSize = 32.0;
+    }
     if (tileVacancy == true) {
-      if (auth.currentUser != null) {
+      if (registered == true) {
         // hide chat text but not Terms of service
         _textColor = boxBGColor;
       }
@@ -1811,15 +1830,15 @@ About link above for more info.
         }
         // Show literal mute status
         if (muteCount == 0) {
-          muteStatus = 'Group never muted';
+          muteStatus = ' Not muted by group';
         } else if (muteCount == 1) {
-          muteStatus = 'Group muted once';
+          muteStatus = ' Group muted once';
         } else if (muteCount == 2) {
-          muteStatus = 'Group muted twice';
+          muteStatus = ' Group muted twice';
         } else if (muteCount == 3) {
-          muteStatus = 'Group muted thrice';
+          muteStatus = ' Group muted thrice';
         } else if (muteCount == 4) {
-          muteStatus = 'Whole group muted';
+          muteStatus = ' Whole group muted';
         }
         // Unmute new member if assigned to a muted color tile
         if (muteCount == 0 && _iconColor == Colors.grey) {
@@ -1835,7 +1854,7 @@ About link above for more info.
       padding: EdgeInsets.all(10.0),
       margin: EdgeInsets.all(10.0),
       decoration: BoxDecoration(
-        border: Border.all(color: textColor),
+        border: Border.all(color: _textColor),
         borderRadius: BorderRadius.all(Radius.circular(20)),
         color: boxBGColor,
       ),
@@ -1862,6 +1881,7 @@ About link above for more info.
                 icon: Icon(
                   Icons.not_interested_rounded,
                   color: _iconColor,
+                  size: iconSize,
                 ),
                 padding: EdgeInsets.zero, // need for alignment
                 tooltip: 'Toggle Mute Status',
@@ -2005,7 +2025,7 @@ About link above for more info.
       muteCountRB) {
     final allTileHeight = 0.33; // 33% screen height
     final allTileWidth = 0.21; // 21% screen width
-    final allTextSize = 26.0; // 26 font size for chatters
+    final allTextSize = 32.0; // 26 font size for chatters
     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2016,12 +2036,12 @@ About link above for more info.
               Container(
                 height: MediaQuery.of(context).size.height * 0.355, //35.5%
                 width: MediaQuery.of(context).size.width / 2.0,
-                child: _stimulus(32.0), // stimulus text size
+                child: _stimulus(38.0), // stimulus text size
               ),
               Container(
                 height: MediaQuery.of(context).size.height * 0.355,
                 width: MediaQuery.of(context).size.width / 2.0,
-                child: _userOutput(26.0), // font size 26
+                child: _userOutput(32.0), // font size 26
               ),
             ],
           ),
