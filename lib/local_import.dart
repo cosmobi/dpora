@@ -1,27 +1,21 @@
-// TODO: Stimuli totals need to be updated before every app release!
-
-final int totalAds = 1;
-final int totalDebates = 266;
-final int totalGames = 33;
-final int totalJokes = 152;
-final int totalMyths = 59;
-final int totalNews = 4;
-final int totalPassion = 65;
-final int totalPersonal = 757;
-final int totalPonder = 262;
-final int totalProverbs = 394;
-final int totalQuotes = 297;
-final int totalShare = 34;
-final int totalTrivia = 132;
-final int totalStimuli = 2456; // Total Sum
+// These default totals should be updated from the DB
+// but since they cannot be null and need some number...
+// TODO: update all default totals before each release
+int totalAds = 1;
+int totalDebates = 266;
+int totalGames = 33;
+int totalJokes = 152;
+int totalMyths = 59;
+int totalNews = 4;
+int totalPassion = 65;
+int totalPersonal = 757;
+int totalPonder = 262;
+int totalProverbs = 394;
+int totalQuotes = 297;
+int totalShare = 34;
+int totalStimuli = 2456; // Total Sum
+int totalTrivia = 132;
 // *******************************************************
-
-// To generate an UID (eg, r4me6vuiRqQnJ*GoToTheMoon), if needed...
-// then import 'dart:math'; at the top and uncomment these lines...
-// String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
-// Random generateRandom = new Random();
-// String randomNumber = generateRandom.nextInt(1000000).toString();
-// final String uid = randomNumber + milliseconds;
 
 // Will be used to hold platform identification
 String platform;
@@ -264,6 +258,72 @@ class Instruct {
         'quotes': quotes,
         'share': share,
         'trivia': trivia
+      };
+}
+
+class Totals {
+  final int adsT;
+  final int debatesT;
+  final int gamesT;
+  final int jokesT;
+  final int mythsT;
+  final int newsT;
+  final int passionT;
+  final int personalT;
+  final int ponderT;
+  final int proverbsT;
+  final int quotesT;
+  final int shareT;
+  final int stimuliT;
+  final int triviaT;
+
+  Totals(
+      this.adsT,
+      this.debatesT,
+      this.gamesT,
+      this.jokesT,
+      this.mythsT,
+      this.newsT,
+      this.passionT,
+      this.personalT,
+      this.ponderT,
+      this.proverbsT,
+      this.quotesT,
+      this.shareT,
+      this.stimuliT,
+      this.triviaT);
+
+  Totals.fromJson(Map<String, dynamic> json)
+      : adsT = json['ads'],
+        debatesT = json['debates'],
+        gamesT = json['games'],
+        jokesT = json['jokes'],
+        mythsT = json['myths'],
+        newsT = json['news'],
+        passionT = json['passion'],
+        personalT = json['personal'],
+        ponderT = json['ponder'],
+        proverbsT = json['proverbs'],
+        quotesT = json['quotes'],
+        shareT = json['share'],
+        stimuliT = json['stimuli'],
+        triviaT = json['trivia'];
+
+  Map<String, dynamic> toJson() => {
+        'ads': adsT,
+        'debates': debatesT,
+        'games': gamesT,
+        'jokes': jokesT,
+        'myths': mythsT,
+        'news': newsT,
+        'passion': passionT,
+        'personal': personalT,
+        'ponder': ponderT,
+        'proverbs': proverbsT,
+        'quotes': quotesT,
+        'share': shareT,
+        'stimuli': stimuliT,
+        'trivia': triviaT
       };
 }
 

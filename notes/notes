@@ -1,0 +1,57 @@
+void deleteData() {
+    // only use if needed to surgically delete erroneous data
+    firebaseRTDB.child('dporians/rMW_ogUVuBS14jAk_jy1').remove();
+  }
+
+*********************************************************************************
+
+When users anonymously sign-in, here is some data captured:
+      print(auth.currentUser.uid);
+      print(auth.languageCode); null
+      print(auth.currentUser.isAnonymous); true
+      print(auth.currentUser.displayName); null if anonymous
+      print(auth.currentUser.metadata.creationTime);
+      To sign out a user, use...
+      FirebaseAuth.instance.signOut();
+
+*********************************************************************************
+
+To generate an UID (eg, r4Me6vuiRqQnJ*GoToTheMoon), if needed...
+then import 'dart:math'; at the top and uncomment these lines...
+String milliseconds = DateTime.now().millisecondsSinceEpoch.toString();
+Random generateRandom = new Random();
+String randomNumber = generateRandom.nextInt(1000000).toString();
+final String uid = randomNumber + milliseconds;
+
+*********************************************************************************
+
+[ This is how to create a link to an URL, if needed. ]
+
+[ In the pubspec.yaml file, add the latest version of...]
+
+url_launcher: ^6.0.2
+
+[ In the main.dart file, add... ]
+
+import 'package:url_launcher/url_launcher.dart';
+
+[... at the top and after "class DporaApp extends StatefulWidget"
+next to the checkConnectivity() async, put...]
+
+_dporaWebsite() async {
+  const url = 'https://dpora.com';
+  if (await canLaunch(url)) {
+    await launch(
+      url,
+      forceWebView:
+          true, // To open url in-app on android. iOS is in-app by default.
+      // enableJavaScript: true, // uncomment if dpora.com uses javascript
+    );
+  } else {
+    throw 'Could not launch $url';
+  }
+}
+
+[ And then to call the action (inside button or whatever), use... ]
+
+_dporaWebsite()

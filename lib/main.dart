@@ -4,7 +4,6 @@ import 'local_import.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // ignore: import_of_legacy_library_into_null_safe
@@ -21,36 +20,6 @@ void main() async {
 class DporaApp extends StatefulWidget {
   @override
   _DporaAppState createState() => _DporaAppState();
-}
-
-// Creating link to main website
-_dporaWebsite() async {
-  const url = 'https://dpora.com';
-  if (await canLaunch(url)) {
-    await launch(
-      url,
-      forceWebView:
-          true, // To open url in-app on android. iOS is in-app by default.
-      // enableJavaScript: true, // uncomment if dpora.com uses javascript
-    );
-  } else {
-    throw 'Could not launch $url';
-  }
-}
-
-// Creating link to the web-based dynamic contact form
-_contactForm() async {
-  const url = 'https://contact.dpora.com';
-  if (await canLaunch(url)) {
-    await launch(
-      url,
-      forceWebView:
-          true, // To open url in-app on android. iOS is in-app by default.
-      // enableJavaScript: true, // uncomment if dpora.com uses javascript
-    );
-  } else {
-    throw 'Could not launch $url';
-  }
 }
 
 // If mobile data and/or wifi are turned off then tell the
@@ -569,7 +538,7 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  // Ge the stimuli catetory instructions
+  // Get the stimuli catetory instructions
   void getInstructions() {
     firebaseRTDB.child('instructions').once().then((DataSnapshot snapshot) {
       Map<String, dynamic> instructMap =
@@ -589,6 +558,31 @@ class _DporaAppState extends State<DporaApp> {
         instructQuotes = categoryInstructions.quotes;
         instructShare = categoryInstructions.share;
         instructTrivia = categoryInstructions.trivia;
+      });
+    });
+  }
+
+  // Get the stimuli totals
+  void stimuliTotals() {
+    firebaseRTDB.child('totals').once().then((DataSnapshot snapshot) {
+      Map<String, dynamic> totalsMap =
+          new Map<String, dynamic>.from(snapshot.value);
+      var categoryTotals = Totals.fromJson(totalsMap);
+      setState(() {
+        totalAds = categoryTotals.adsT;
+        totalDebates = categoryTotals.debatesT;
+        totalGames = categoryTotals.gamesT;
+        totalJokes = categoryTotals.jokesT;
+        totalMyths = categoryTotals.mythsT;
+        totalNews = categoryTotals.newsT;
+        totalPassion = categoryTotals.passionT;
+        totalPersonal = categoryTotals.personalT;
+        totalPonder = categoryTotals.ponderT;
+        totalProverbs = categoryTotals.proverbsT;
+        totalQuotes = categoryTotals.quotesT;
+        totalShare = categoryTotals.shareT;
+        totalStimuli = categoryTotals.stimuliT;
+        totalTrivia = categoryTotals.triviaT;
       });
     });
   }
@@ -1022,11 +1016,6 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  // void deleteData() {
-  //   // only use if needed to surgically delete erroneous data
-  //   firebaseRTDB.child('dporians/rMW_ogUVuBS14jAk_jy1').remove();
-  // }
-
   @override
   Widget build(BuildContext context) {
     // is mobile data and wifi turned off?
@@ -1075,17 +1064,11 @@ class _DporaAppState extends State<DporaApp> {
       versionStatus = '(You are up to date)\n';
     }
 
+    // Update the total number of each stimuli category & sum total
+    stimuliTotals();
+
     // if already signed in...
     if (auth.currentUser != null) {
-      // When users anonymously sign-in, here is some data captured:
-      // print(auth.currentUser.uid);
-      // print(auth.languageCode); null
-      // print(auth.currentUser.isAnonymous); true
-      // print(auth.currentUser.displayName); null if anonymous
-      // print(auth.currentUser.metadata.creationTime);
-      // To sign out a user, use...
-      //FirebaseAuth.instance.signOut();
-
       // Fetch user info
       getUser(auth.currentUser.uid);
 
@@ -1129,7 +1112,7 @@ class _DporaAppState extends State<DporaApp> {
           'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comments by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
       textColorLB = Colors.blueAccent;
       tileTextRT =
-          'TERMS OF SERVICE: You must be at least 13 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app.';
+          'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these Terms of service at any time, and such charges will be announced at news.dpora.com, which you can subscribe to by email or RSS to be notified of such changes.';
       textColorRT = Colors.purpleAccent;
       tileTextRB =
           'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
@@ -1183,39 +1166,15 @@ class _DporaAppState extends State<DporaApp> {
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.info_outline_rounded),
+                leading: Icon(Icons.arrow_back_outlined),
                 title: Text(
-                  'About',
+                  'Back',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Colors.white,
                   ),
                 ),
                 onTap: () {
-                  // Go to dpora.com
-                  _dporaWebsite();
-                  // Prep the next slogan to show
-                  sNum++;
-                  if (sNum == sMax) {
-                    // Start over, don't exceed range
-                    sNum = 0;
-                  }
-                  //close the drawer
-                  _drawerKey.currentState.openEndDrawer();
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.contact_support_outlined),
-                title: Text(
-                  'Contact',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                  ),
-                ),
-                onTap: () {
-                  // Go to web-based dynamic contact form
-                  _contactForm();
                   sNum++;
                   if (sNum == sMax) {
                     sNum = 0;
@@ -1233,7 +1192,7 @@ class _DporaAppState extends State<DporaApp> {
                   TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: '\nHow To' + '\n\n',
+                        text: '\nContact' + '\n\n',
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.white,
@@ -1241,18 +1200,21 @@ class _DporaAppState extends State<DporaApp> {
                       ),
                       TextSpan(
                         text: '''
-The topic is in yellow.
+If you discover a software bug,
+please email chat+bug@dpora.com
 
-You are randomly matched with 
-other people who may be anywhere  
-in the world. Once a comment 
-disappears, it's gone! So talk 
-openly, but be respectful.
+If something is wrong with a topic
+(misspelled, offensive, outdated
+dumb or incorrect in some way),
+email chat+topic@dpora.com
 
-When enough of your group tap 
-the yellow arrow, the next topic 
-will appear. Tap the About 
-link above for more info.
+If you want a new feature, have
+suggestions, comments or concerns 
+email chat+feedback@dpora.com
+
+If you have any other questions,
+email either chat@dpora.com or
+your mother, if you can. ;)
 ''',
                         style: TextStyle(
                           fontSize: 16,
@@ -1394,7 +1356,7 @@ link above for more info.
 
   // Show the appropriate icon for each stimuli category
   Widget _icon(stimulusCategory, textSize) {
-  double categoryIconSize = 24.0; // normal size
+    double categoryIconSize = 24.0; // normal size
     if (textSize > 25.0) {
       // Show larger icons for horizontal view.
       // "double the double" value
@@ -1492,7 +1454,7 @@ link above for more info.
     double _iconSize = 24.0; // normal size
     if (textSize > 25.0) {
       // probably horizontal view
-      instructionSize = textSize / 2;
+      instructionSize = textSize - 22;
       _iconSize = 38.0;
     }
     // Hide non-essential icons from non-authenicated users
@@ -1566,23 +1528,6 @@ link above for more info.
               //   tooltip: 'New Group & Topic',
               //   onPressed: () {},
               // //set dporian groupName to 'none' and update vacancies and group data
-              // ),
-              // SizedBox(
-              //   height: 20.0,
-              //   width: 20.0,
-              //   child: IconButton(
-              //     icon: Icon(
-              //       Icons.not_interested_rounded,
-              //       color: iconColor,
-              //       size: _iconSize,
-              //     ),
-              //     padding: EdgeInsets.zero, // need for alignment
-              //     tooltip: 'Something is wrong!',
-              //     onPressed: () {
-              //       // TODO: stimulus is offensive, misspelled, incorrect, outdated,
-              //       // dumb, etc. The simpliest solution is to url over to a web form
-              //     },
-              //   ),
               // ),
             ]),
         // Stimulus is displayed here
@@ -1669,9 +1614,9 @@ link above for more info.
                     },
                   ),
                 ),
-                Text(
-                  stimulusStrikes.toString() + '/' + strikesNeeded.toString(),
-                  //
+                Text(' ' +
+                  stimulusStrikes.toString() + 
+                  '/' + strikesNeeded.toString(),
                   style: TextStyle(
                     fontSize: textSize - 2,
                     color: iconColor,
@@ -1792,7 +1737,7 @@ link above for more info.
     String muteStatus = '';
     // If tile is vacant, don't show its color
     Color _iconColor = iconColor;
-    // If tile is muted or vacant, 
+    // If tile is muted or vacant,
     // hide its contents or box border
     Color _textColor = textColor;
     double iconSize = 24.0; // normal size
@@ -1830,7 +1775,7 @@ link above for more info.
         }
         // Show literal mute status
         if (muteCount == 0) {
-          muteStatus = ' Not muted by group';
+          muteStatus = ' Tap icon to mute';
         } else if (muteCount == 1) {
           muteStatus = ' Group muted once';
         } else if (muteCount == 2) {
@@ -1842,7 +1787,7 @@ link above for more info.
         }
         // Unmute new member if assigned to a muted color tile
         if (muteCount == 0 && _iconColor == Colors.grey) {
-          muteStatus = 'Unmute new user!';
+          muteStatus = ' Unmute new user!';
           _textColor = textColor; // unmuted
         }
       }
