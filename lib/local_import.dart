@@ -1,8 +1,8 @@
 // These default totals should be updated from the DB
 // but since they cannot be null and need some number...
-// TODO: update all default totals before each release
+// TODO: Update all default totals before each release
 int totalAds = 1;
-int totalDebates = 266;
+int totalDebates = 267;
 int totalGames = 33;
 int totalJokes = 152;
 int totalMyths = 59;
@@ -13,7 +13,7 @@ int totalPonder = 262;
 int totalProverbs = 394;
 int totalQuotes = 297;
 int totalShare = 34;
-int totalStimuli = 2456; // Total Sum
+int totalStimuli = 2457; // Total Sum
 int totalTrivia = 132;
 // *******************************************************
 
@@ -30,9 +30,12 @@ int devicesDetected = 2;
 int countriesRepresented = 2;
 int commentsPosted = 2;
 double version = 0.0;
-double versionHardcoded =
-    0.1; // TODO: Update before every app release (on DB too)
 String versionStatus = '';
+// TODO: Update in 3 places before every app release
+// 1. on the DB
+// 2. in the yaml file
+// 3. below this line
+double versionHardcoded = 0.1;
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;

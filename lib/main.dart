@@ -1054,6 +1054,8 @@ class _DporaAppState extends State<DporaApp> {
         countriesRepresented.toString() +
         ' countries represented' +
         '\n';
+    String liveTopics =
+        'Over ' + totalStimuli.toString() + ' topics available' + '\n';
     String liveDevices =
         'Over ' + devicesDetected.toString() + ' devices detected' + '\n';
     String liveComments =
@@ -1093,12 +1095,16 @@ class _DporaAppState extends State<DporaApp> {
       getInstructions();
 
       // Choose a category
-      chooseCategory(stimuliDeck[2295]);
-      // The default 2295 falls in the range of the 'share' category
-      // and the default stimulus there is set to "What's on your mind?"
+      chooseCategory(stimuliDeck[0]);
+      // The default stimulus is "DO NOT DELETE THIS ENTRY"
+      // which serves as a placeholder for...
+      if (nextStimulusContent == 'DO NOT DELETE THIS ENTRY') {
+        shuffleDecks();
+        }
 
       // Choose a random stimulus
       randomStimulus();
+
     } else {
       // Show Terms of service to first time users of this app installation
       stimulusContent = '* Welcome to dpora *\nthe stranger chat app';
@@ -1243,6 +1249,13 @@ your mother, if you can. ;)
                       ),
                       TextSpan(
                         text: liveCountries,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      TextSpan(
+                        text: liveTopics,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
@@ -1614,9 +1627,11 @@ your mother, if you can. ;)
                     },
                   ),
                 ),
-                Text(' ' +
-                  stimulusStrikes.toString() + 
-                  '/' + strikesNeeded.toString(),
+                Text(
+                  ' ' +
+                      stimulusStrikes.toString() +
+                      '/' +
+                      strikesNeeded.toString(),
                   style: TextStyle(
                     fontSize: textSize - 2,
                     color: iconColor,
