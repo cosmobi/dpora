@@ -25,6 +25,12 @@ final String uid = randomNumber + milliseconds;
 
 *********************************************************************************
 
+var blueSeat = colorVacancies['blue-vacancy'];
+// if blueSeat gives error, try = colorVacancies[groupName]['blue-vacancy']
+// because the json result might be nested (as it happened before)
+
+*********************************************************************************
+
 [ This is how to create a link to an URL, if needed. ]
 
 [ In the pubspec.yaml file, add the latest version of...]
