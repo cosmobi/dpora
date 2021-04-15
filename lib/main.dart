@@ -82,7 +82,7 @@ final snackBarWait2Post = SnackBar(
   duration: const Duration(seconds: 4),
 );
 final snackBarNoInternet = SnackBar(
-  content: const Text('No Internet Connection!'),
+  content: const Text('No Internet! Get online and relaunch app.'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -405,6 +405,84 @@ class _DporaAppState extends State<DporaApp> {
       });
     }).catchError((onErrorUpdateGroups) {
       print(onErrorUpdateGroups);
+    });
+  }
+
+  // Seek and destroy ghosts occupying vacancies
+  void ghostBusters(myGroup) {
+    // Seek all real group members
+    bool blueMember = false;
+    bool greenMember = false;
+    bool orangeMember = false;
+    bool purpleMember = false;
+    bool redMember = false;
+    firebaseRTDB
+        .child('dporians')
+        .orderByChild('group')
+        .equalTo('$myGroup')
+        .once()
+        .then((DataSnapshot snapshot) {
+      var myGroupMembers = new Map<String, dynamic>.from(snapshot.value);
+      for (var entry in myGroupMembers.entries) {
+        if (entry.value['color'] == 'blue') {
+          blueMember = true;
+        }
+        if (entry.value['color'] == 'green') {
+          greenMember = true;
+        }
+        if (entry.value['color'] == 'orange') {
+          orangeMember = true;
+        }
+        if (entry.value['color'] == 'purple') {
+          purpleMember = true;
+        }
+        if (entry.value['color'] == 'red') {
+          redMember = true;
+        }
+      }
+      // Destroy all ghost group members
+      if (blueMember == false) {
+        firebaseRTDB
+            .child('groups')
+            .child('$myGroup')
+            .update({'blue-vacancy': true}).catchError((onDestroyError) {
+          print(onDestroyError);
+        });
+      }
+      if (greenMember == false) {
+        firebaseRTDB
+            .child('groups')
+            .child('$myGroup')
+            .update({'green-vacancy': true}).catchError((onDestroyError) {
+          print(onDestroyError);
+        });
+      }
+      if (orangeMember == false) {
+        firebaseRTDB
+            .child('groups')
+            .child('$myGroup')
+            .update({'orange-vacancy': true}).catchError((onDestroyError) {
+          print(onDestroyError);
+        });
+      }
+      if (purpleMember == false) {
+        firebaseRTDB
+            .child('groups')
+            .child('$myGroup')
+            .update({'purple-vacancy': true}).catchError((onDestroyError) {
+          print(onDestroyError);
+        });
+      }
+      if (redMember == false) {
+        firebaseRTDB
+            .child('groups')
+            .child('$myGroup')
+            .update({'red-vacancy': true}).catchError((onDestroyError) {
+          print(onDestroyError);
+        });
+      }
+    }).catchError((onSeekError) {
+      print(onSeekError);
     });
   }
 
@@ -1106,17 +1184,21 @@ class _DporaAppState extends State<DporaApp> {
         createUser(auth.currentUser.uid);
       }
 
+      // If not in group (nor have color)...
       if (userColorString == 'black' || groupName == 'none') {
         // User needs to be assigned to a group
         findVacantGroup();
       }
 
+      // If in group...
       if (groupName != '' && groupName != 'none') {
         getContent(groupName);
         // Assign comments to appropriate color boxes
         assignChatBoxes(userColorString);
         // To keep the myGroupVacancy integer updated
         myGroupVacancyStatus();
+        // Seek and destroy ghosts occupying vacancies
+        ghostBusters(groupName);
       }
 
       // Load all stimlui category instructions
@@ -1139,7 +1221,7 @@ class _DporaAppState extends State<DporaApp> {
       // This sets up the basic Terms and Conditions screen before login
       userColor = Colors.black; // to hide it
       tileTextLT =
-          'HOW TO DPORA: Swipe the text up to view all the content in each square. Push this text up now using your finger or cursor. If the text does not scroll, that means you are already viewing all the content. The blue square should have enough text for you to test scrolling.';
+          'HOW TO DPORA: Swipe the text up to view all the content in each square. Push this text up now using your finger or cursor. If the text does not scroll, that means you are already viewing all the content. The blue or purple square should have enough text for you to test scrolling.';
       textColorLT = Colors.orangeAccent;
       tileTextLB =
           'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comments by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
@@ -1601,9 +1683,10 @@ anything else, email chat@dpora.com
                 width: 90.0,
                 child: Text(
                   stimulusInstructions,
+                  overflow: TextOverflow.clip, // just in case
                   style: TextStyle(
                     fontSize: instructionSize,
-                    color: Colors.yellow, //yellowAccent is too bright
+                    color: Colors.yellow,
                   ),
                 ),
               ),
@@ -1907,6 +1990,7 @@ anything else, email chat@dpora.com
             ),
             Text(
               muteStatus,
+              overflow: TextOverflow.clip, // just in case
               style: TextStyle(
                 fontSize: textSize - 4,
                 color: _iconColor,
@@ -1941,15 +2025,15 @@ anything else, email chat@dpora.com
       postTimeRB,
       tileVacancyRB,
       muteCountRB) {
-    final allTileHeight = 0.2; // 20% screen height
-    final allTileWidth = 0.45; // 45% screen width
+    final allTileHeight = 0.19; // 19% screen height
+    final allTileWidth = 0.44; // 44% screen width
     final allTextSize = 18.0; // 18 font size for chatters
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Container(
-          height: MediaQuery.of(context).size.height * 0.23, //23%
-          width: MediaQuery.of(context).size.width, //100%
+          height: MediaQuery.of(context).size.height * 0.26, //26%
+          width: MediaQuery.of(context).size.width * 0.98, //98%
           child: _stimulus(20.0), // stimulus text size
         ),
         // build the chat titles, the left column (top & bottom) and right
@@ -1976,12 +2060,12 @@ anything else, email chat@dpora.com
           ],
         ),
         Container(
-          width: MediaQuery.of(context).size.width,
+          width: MediaQuery.of(context).size.width * 0.98, //98%,
           child: _userOutput(18.0), // font size 18
         ),
         Container(
           padding: EdgeInsets.all(10.0),
-          width: MediaQuery.of(context).size.width,
+          width: MediaQuery.of(context).size.width * 0.98, //98%,
           child: _userInput(userColor),
         ),
       ],
@@ -2012,7 +2096,7 @@ anything else, email chat@dpora.com
       muteCountRB) {
     final allTileHeight = 0.33; // 33% screen height
     final allTileWidth = 0.21; // 21% screen width
-    final allTextSize = 32.0; // 26 font size for chatters
+    final allTextSize = 32.0; // 32 font size for chatters
     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2026,9 +2110,9 @@ anything else, email chat@dpora.com
                 child: _stimulus(38.0), // stimulus text size
               ),
               Container(
-                height: MediaQuery.of(context).size.height * 0.355,
+                height: MediaQuery.of(context).size.height * 0.337, //33.7%
                 width: MediaQuery.of(context).size.width / 2.0,
-                child: _userOutput(32.0), // font size 26
+                child: _userOutput(32.0), // font size 32
               ),
             ],
           ),
@@ -2089,7 +2173,7 @@ anything else, email chat@dpora.com
         ],
       ),
       Container(
-        width: MediaQuery.of(context).size.width * 0.95, //95%
+        width: MediaQuery.of(context).size.width * 0.935, //93.5%
         padding: EdgeInsets.all(10.0),
         child: _userInput(userColor),
       ),
