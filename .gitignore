@@ -39,3 +39,7 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+
+# Don't check in the keystore files or equivalent
+*.jks
+key*.properties

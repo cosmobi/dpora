@@ -36,6 +36,8 @@ String versionStatus = '';
 // 2. in the yaml file
 // 3. below this line
 double versionHardcoded = 0.1;
+// TODO: Lastly, enter the JKS key in the dpora/android/key.properties
+// file but DO NOT push (save) the password to GitHub!
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
