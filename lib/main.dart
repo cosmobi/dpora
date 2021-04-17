@@ -890,8 +890,6 @@ class _DporaAppState extends State<DporaApp> {
     } else if (categoryChoice == 'trivia') {
       getStimulus(categoryChoice, triviaDeck[0]);
     } else {
-      // Set default if random choices don't work, "What's
-      // on your mind?", same as shareDeck[4] default above
       getStimulus('share', 5);
     }
   }
@@ -1150,6 +1148,9 @@ class _DporaAppState extends State<DporaApp> {
       }
     }
 
+    // Multiple fonts sizes in menu by this to fit different screen sizes
+    double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
+
     // Get slogans to show in menu drawer
     getSlogans();
 
@@ -1251,25 +1252,20 @@ class _DporaAppState extends State<DporaApp> {
                   TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: 'Φ dpora\n \n',
+                        text: 'Φ dpora\n',
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 32 * screenSizeUnit,
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       TextSpan(
                         // pick a slogan from the list
-                        text: slogans[sNum] + '\n\n',
+                        text: slogans[sNum] + '\n\n\nhttps://dpora.com',
+                        // URL not shown in horizontal view
+                        // Fills empty space in vertical view
                         style: TextStyle(
-                          fontSize: 19,
-                          color: Colors.black,
-                        ),
-                      ),
-                      TextSpan(
-                        text: copyright,
-                        style: TextStyle(
-                          fontStyle: FontStyle.italic,
+                          fontSize: 12 * screenSizeUnit,
                           color: Colors.black,
                         ),
                       ),
@@ -1285,7 +1281,7 @@ class _DporaAppState extends State<DporaApp> {
                 title: Text(
                   'Back',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16 * screenSizeUnit,
                     color: Colors.white,
                   ),
                 ),
@@ -1309,30 +1305,17 @@ class _DporaAppState extends State<DporaApp> {
                       TextSpan(
                         text: '\nContact' + '\n\n',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 18 * screenSizeUnit,
                           color: Colors.white,
                         ),
                       ),
                       TextSpan(
-                        text: '''
-If you discover a software bug
-or have a problem with dpora,
-please email chat+bug@dpora.com
-
-If something is wrong with a topic
-(misspelled, offensive, outdated
-dumb or incorrect in some way),
-email chat+topic@dpora.com
-
-If you want a new feature, have
-suggestions, comments or concerns 
-email chat+feedback@dpora.com
-
-If you have any questions or
-anything else, email chat@dpora.com
-''',
+                        text: 'If you discover a software bug or have a problem with dpora, please email chat+bug@dpora.com\n\n' +
+                            'If something is wrong with a topic (misspelled, offensive, outdated dumb or incorrect in some way), email chat+topic@dpora.com\n\n' +
+                            'If you want a new feature, have suggestions, comments or concerns  email chat+feedback@dpora.com\n\n' +
+                            'If you have any questions or anything else, email chat@dpora.com\n',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
                         ),
                       ),
@@ -1352,35 +1335,35 @@ anything else, email chat@dpora.com
                       TextSpan(
                         text: '\nLive Stats' + '\n\n',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 18 * screenSizeUnit,
                           color: Colors.white,
                         ),
                       ),
                       TextSpan(
-                        text: liveCountries,
+                        text: liveCountries + '\n\n',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: liveTopics,
+                        text: liveTopics + '\n\n',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: liveDevices,
+                        text: liveDevices + '\n\n',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: liveComments,
+                        text: liveComments + '\n',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
                         ),
                       ),
@@ -1389,9 +1372,12 @@ anything else, email chat@dpora.com
                             ' Version ' +
                             versionHardcoded.toString() +
                             '\n' +
-                            versionStatus,
+                            versionStatus +
+                            '\n' +
+                            copyright +
+                            '\n',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14 * screenSizeUnit,
                           color: Colors.white38,
                         ),
                       ),
@@ -1408,7 +1394,7 @@ anything else, email chat@dpora.com
                 title: Text(
                   'Back',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16 * screenSizeUnit,
                     color: Colors.white,
                   ),
                 ),
@@ -1478,11 +1464,13 @@ anything else, email chat@dpora.com
 
   // Show the appropriate icon for each stimuli category
   Widget _icon(stimulusCategory, textSize) {
-    double categoryIconSize = 24.0; // normal size
-    if (textSize > 25.0) {
+    // Multiple icon sizes by this to fit different screen sizes
+    double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
+    double categoryIconSize = 24.0 * screenSizeUnit; // normal size
+    if (textSize > 25.0 * screenSizeUnit) {
       // Show larger icons for horizontal view.
       // "double the double" value
-      categoryIconSize = 48.0;
+      categoryIconSize = 48.0 * screenSizeUnit;
     }
     if (stimulusCategory == 'ads') {
       return Icon(
@@ -1568,16 +1556,18 @@ anything else, email chat@dpora.com
       rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
       setState(() {
         stimulusContent = 'Please turn on mobile data, WiFi or both.';
-        stimulusInstructions = 'Are you in Airplane Mode?';
+        stimulusInstructions = 'Airplane Mode?';
       });
     }
-    // instructions text is 5 points smaller than stimulus text
-    double instructionSize = textSize - 4; // vertical view
-    double _iconSize = 24.0; // normal size
-    if (textSize > 25.0) {
-      // probably horizontal view
-      instructionSize = textSize - 22;
-      _iconSize = 38.0;
+    // Multiple object sizes by this to fit different screen sizes
+    double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
+    // vertical view
+    double instructionSize = 15 * screenSizeUnit;
+    double _iconSize = 24.0 * screenSizeUnit;
+    if (textSize > 25.0 * screenSizeUnit) {
+      // horizontal view
+      instructionSize = 12 * screenSizeUnit;
+      _iconSize = 28.0 * screenSizeUnit;
     }
     // Hide non-essential icons from non-authenicated users
     if (auth.currentUser == null) {
@@ -1607,8 +1597,8 @@ anything else, email chat@dpora.com
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               SizedBox(
-                height: 20.0,
-                width: 20.0,
+                height: 30.0 * screenSizeUnit,
+                width: 30.0 * screenSizeUnit,
                 child: IconButton(
                   icon: Icon(
                     Icons.menu_rounded,
@@ -1622,8 +1612,8 @@ anything else, email chat@dpora.com
                 ),
               ),
               SizedBox(
-                height: 20.0,
-                width: 20.0,
+                height: 30.0 * screenSizeUnit,
+                width: 30.0 * screenSizeUnit,
                 child: IconButton(
                   icon: Icon(
                     Icons.share_rounded,
@@ -1679,8 +1669,8 @@ anything else, email chat@dpora.com
                   borderRadius: BorderRadius.all(Radius.circular(20)),
                   color: Colors.grey[900],
                 ),
-                height: 70.0,
-                width: 90.0,
+                height: 75.0 * screenSizeUnit,
+                width: 90.0 * screenSizeUnit,
                 child: Text(
                   stimulusInstructions,
                   overflow: TextOverflow.clip, // just in case
@@ -1701,8 +1691,8 @@ anything else, email chat@dpora.com
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(
-                  height: 30.0,
-                  width: 30.0,
+                  height: 30.0 * screenSizeUnit,
+                  width: 30.0 * screenSizeUnit,
                   child: IconButton(
                     icon: Icon(
                       Icons.forward_rounded,
@@ -1859,6 +1849,8 @@ anything else, email chat@dpora.com
 
   Widget _chatTile(tileHeight, tileWidth, textSize, tileText, textColor,
       postTime, tileVacancy, muteCount) {
+    // Multiple object sizes by this to fit different screen sizes
+    double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     String muteStatus = '';
     // If tile is vacant, don't show its color
     Color _iconColor = iconColor;
@@ -1866,7 +1858,7 @@ anything else, email chat@dpora.com
     // hide its contents or box border
     Color _textColor = textColor;
     double iconSize = 24.0; // normal size
-    if (textSize > 25.0) {
+    if (textSize > 20.0 * screenSizeUnit) {
       // make iconSize larger for horizontal
       iconSize = 32.0;
     }
@@ -2025,16 +2017,18 @@ anything else, email chat@dpora.com
       postTimeRB,
       tileVacancyRB,
       muteCountRB) {
+    // Multiple fonts sizes by this to fit different screen sizes
+    double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     final allTileHeight = 0.19; // 19% screen height
     final allTileWidth = 0.44; // 44% screen width
-    final allTextSize = 18.0; // 18 font size for chatters
+    final allTextSize = 17.0 * screenSizeUnit; // font size for chatters
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Container(
           height: MediaQuery.of(context).size.height * 0.26, //26%
           width: MediaQuery.of(context).size.width * 0.98, //98%
-          child: _stimulus(20.0), // stimulus text size
+          child: _stimulus(19.0 * screenSizeUnit), // stimulus text size
         ),
         // build the chat titles, the left column (top & bottom) and right
         Row(
@@ -2061,7 +2055,7 @@ anything else, email chat@dpora.com
         ),
         Container(
           width: MediaQuery.of(context).size.width * 0.98, //98%,
-          child: _userOutput(18.0), // font size 18
+          child: _userOutput(17.0 * screenSizeUnit), // user font size
         ),
         Container(
           padding: EdgeInsets.all(10.0),
@@ -2094,9 +2088,11 @@ anything else, email chat@dpora.com
       postTimeRB,
       tileVacancyRB,
       muteCountRB) {
+    // Multiple fonts sizes by this to fit different screen sizes
+    double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     final allTileHeight = 0.33; // 33% screen height
     final allTileWidth = 0.21; // 21% screen width
-    final allTextSize = 32.0; // 32 font size for chatters
+    final allTextSize = 24.0 * screenSizeUnit; // font size for chatters
     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2107,12 +2103,12 @@ anything else, email chat@dpora.com
               Container(
                 height: MediaQuery.of(context).size.height * 0.355, //35.5%
                 width: MediaQuery.of(context).size.width / 2.0,
-                child: _stimulus(38.0), // stimulus text size
+                child: _stimulus(30.0 * screenSizeUnit), // stimulus text size
               ),
               Container(
                 height: MediaQuery.of(context).size.height * 0.337, //33.7%
                 width: MediaQuery.of(context).size.width / 2.0,
-                child: _userOutput(32.0), // font size 32
+                child: _userOutput(24.0 * screenSizeUnit), // user font size
               ),
             ],
           ),

@@ -1,4 +1,4 @@
-package com.example.dpora
+package com.cosmobi.dpora
 
 import io.flutter.embedding.android.FlutterActivity
 
