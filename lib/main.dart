@@ -34,7 +34,8 @@ void checkConnectivity() async {
 
 // Default app-wide colors
 Color boxBGColor = Colors.grey[900];
-Color iconColor = Colors.grey[700];
+// Hide non-essential icons from non-authenicated users
+Color iconColor = Colors.grey[900];
 Color menuColor = Colors.blueGrey;
 
 // Empty default values for the tileText and textColor
@@ -1215,24 +1216,28 @@ class _DporaAppState extends State<DporaApp> {
 
       // Choose a random stimulus
       randomStimulus();
+
+      // Show icons
+      iconColor = Colors.grey[700];
     } else {
       // Show Terms of service to first time users of this app installation
-      stimulusContent = '* Welcome to dpora *\nthe stranger chat app';
-      stimulusInstructions = 'What is dpora?';
+      stimulusContent = 'Welcome to dpora';
+      stimulusInstructions = 'Hello';
       // This sets up the basic Terms and Conditions screen before login
-      userColor = Colors.black; // to hide it
+      userColor = Colors.grey[700];
       tileTextLT =
-          'HOW TO DPORA: Swipe the text up to view all the content in each square. Push this text up now using your finger or cursor. If the text does not scroll, that means you are already viewing all the content. The blue or purple square should have enough text for you to test scrolling.';
+          'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each square. If the text does not scroll, that means you are already viewing all the content. The blue or purple square should have enough text for you to test scrolling.';
       textColorLT = Colors.orangeAccent;
       tileTextLB =
-          'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comments by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
+          'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
       textColorLB = Colors.blueAccent;
       tileTextRT =
-          'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these Terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
+          'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
       textColorRT = Colors.purpleAccent;
       tileTextRB =
           'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
       textColorRB = Colors.redAccent;
+      iconColor = Colors.black;
     }
 
     return MaterialApp(
@@ -1242,7 +1247,11 @@ class _DporaAppState extends State<DporaApp> {
       home: Scaffold(
         key: _drawerKey,
         backgroundColor: Colors.black,
-        // appBar would go here
+        // Commented out b/c takes up too much space
+        // appBar: new AppBar(
+        //       backgroundColor: Colors.transparent,
+        //       elevation: 0.0,
+        //     ),
         drawer: Drawer(
           child: ListView(
             padding: EdgeInsets.zero,
@@ -1252,7 +1261,7 @@ class _DporaAppState extends State<DporaApp> {
                   TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: 'Φ dpora\n',
+                        text: 'Φ dpora',
                         style: TextStyle(
                           fontSize: 32 * screenSizeUnit,
                           color: Colors.black,
@@ -1261,11 +1270,9 @@ class _DporaAppState extends State<DporaApp> {
                       ),
                       TextSpan(
                         // pick a slogan from the list
-                        text: slogans[sNum] + '\n\n\nhttps://dpora.com',
-                        // URL not shown in horizontal view
-                        // Fills empty space in vertical view
+                        text: '\n\n' + slogans[sNum],
                         style: TextStyle(
-                          fontSize: 12 * screenSizeUnit,
+                          fontSize: 16 * screenSizeUnit,
                           color: Colors.black,
                         ),
                       ),
@@ -1294,11 +1301,11 @@ class _DporaAppState extends State<DporaApp> {
                 },
               ),
               Divider(
-                height: 1,
-                thickness: 1,
+                height: 1.0,
+                thickness: 1.0,
               ),
               Container(
-                padding: EdgeInsets.only(left: 20.0),
+                padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
                 child: Text.rich(
                   TextSpan(
                     children: <TextSpan>[
@@ -1328,33 +1335,33 @@ class _DporaAppState extends State<DporaApp> {
                 thickness: 1.0,
               ),
               Container(
-                padding: EdgeInsets.only(left: 20.0),
+                padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
                 child: Text.rich(
                   TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: '\nLive Stats' + '\n\n',
+                        text: '\nLive Stats',
                         style: TextStyle(
                           fontSize: 18 * screenSizeUnit,
                           color: Colors.white,
                         ),
                       ),
                       TextSpan(
-                        text: liveCountries + '\n\n',
+                        text: '\n\n' + liveCountries + '\n',
                         style: TextStyle(
                           fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: liveTopics + '\n\n',
+                        text: liveTopics + '\n',
                         style: TextStyle(
                           fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
                         ),
                       ),
                       TextSpan(
-                        text: liveDevices + '\n\n',
+                        text: liveDevices + '\n',
                         style: TextStyle(
                           fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
@@ -1569,10 +1576,7 @@ class _DporaAppState extends State<DporaApp> {
       instructionSize = 12 * screenSizeUnit;
       _iconSize = 28.0 * screenSizeUnit;
     }
-    // Hide non-essential icons from non-authenicated users
-    if (auth.currentUser == null) {
-      iconColor = boxBGColor;
-    }
+
     // Calculute how many strikes are needed to show next stimulus
     if (myGroupVacancy != 0) {
       // No group or not a full group
@@ -1582,165 +1586,178 @@ class _DporaAppState extends State<DporaApp> {
       strikesNeeded = 3;
     }
 
-    return Container(
-      padding: EdgeInsets.all(10.0),
-      margin: EdgeInsets.all(10.0),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.yellow),
-        borderRadius: BorderRadius.all(Radius.circular(20.0)),
-        color: boxBGColor,
-      ),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        // Menu button and other icons here
-        Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              SizedBox(
-                height: 30.0 * screenSizeUnit,
-                width: 30.0 * screenSizeUnit,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.menu_rounded,
-                    color: iconColor,
-                    size: _iconSize,
-                  ),
-                  padding: EdgeInsets.zero, // need for alignment
-                  tooltip: 'Φ Menu',
-                  onPressed: () =>
-                      _drawerKey.currentState.openDrawer(), // open drawer
-                ),
-              ),
-              SizedBox(
-                height: 30.0 * screenSizeUnit,
-                width: 30.0 * screenSizeUnit,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.share_rounded,
-                    color: iconColor,
-                    size: _iconSize,
-                  ),
-                  padding: EdgeInsets.zero, // need for alignment
-                  tooltip: 'Share Topic',
-                  onPressed: () {
-                    Share.share(stimulusContent + ' \nΦ dpora.com',
-                        subject: stimulusInstructions);
-                  },
-                ),
-              ),
-              // TODO: add Change Group feature later, when
-              // there are always a few live groups to switch to
-              // child: IconButton(
-              //   icon: Icon(
-              //     Icons.threesixty_rounded,
-              //     color: iconColor,
-              //     size: _iconSize,
-              //   ),
-              //   padding: EdgeInsets.zero, // need for alignment
-              //   tooltip: 'New Group & Topic',
-              //   onPressed: () {},
-              // //set dporian groupName to 'none' and update vacancies and group data
-              // ),
-            ]),
-        // Stimulus is displayed here
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(15.0, 5.0, 10.0, 5.0),
-            child: Text(
-              stimulusContent,
-              style: TextStyle(
-                fontSize: textSize,
-                color: Colors.yellow, //yellowAccent is too bright
-              ),
-            ),
+    return GestureDetector(
+        // Provide place to tap to hide keyboard, if needed
+        onTap: () {
+          WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
+        },
+        child: Container(
+          padding: EdgeInsets.all(10.0 * screenSizeUnit),
+          margin: EdgeInsets.all(10.0 * screenSizeUnit),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.yellow),
+            borderRadius: BorderRadius.all(Radius.circular(20.0)),
+            color: boxBGColor,
           ),
-        ),
-        // Instructions and Next button in this column
-        Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              // Shows the appropriate icon & size
-              _icon(stimulusCategory, textSize),
-              Container(
-                padding: EdgeInsets.all(7.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.yellow),
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  color: Colors.grey[900],
-                ),
-                height: 75.0 * screenSizeUnit,
-                width: 90.0 * screenSizeUnit,
-                child: Text(
-                  stimulusInstructions,
-                  overflow: TextOverflow.clip, // just in case
-                  style: TextStyle(
-                    fontSize: instructionSize,
-                    color: Colors.yellow,
+          child:
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            // Menu button and other icons here
+            Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  SizedBox(
+                    height: 30.0 * screenSizeUnit,
+                    width: 30.0 * screenSizeUnit,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.menu_rounded,
+                        color: iconColor,
+                        size: _iconSize,
+                      ),
+                      padding: EdgeInsets.zero, // need for alignment
+                      tooltip: 'Φ Menu',
+                      onPressed: () =>
+                          _drawerKey.currentState.openDrawer(), // open drawer
+                    ),
                   ),
-                ),
-              ),
-              Row(children: [
-                Text(
-                  'Next',
+                  SizedBox(
+                    height: 30.0 * screenSizeUnit,
+                    width: 30.0 * screenSizeUnit,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.share_rounded,
+                        color: iconColor,
+                        size: _iconSize,
+                      ),
+                      padding: EdgeInsets.zero, // need for alignment
+                      tooltip: 'Share Topic',
+                      onPressed: () {
+                        Share.share(stimulusContent + ' \nΦ dpora.com',
+                            subject: stimulusInstructions);
+                      },
+                    ),
+                  ),
+                  // TODO: add Change Group feature later, when
+                  // there are always a few live groups to switch to
+                  // child: IconButton(
+                  //   icon: Icon(
+                  //     Icons.threesixty_rounded,
+                  //     color: iconColor,
+                  //     size: _iconSize,
+                  //   ),
+                  //   padding: EdgeInsets.zero, // need for alignment
+                  //   tooltip: 'New Group & Topic',
+                  //   onPressed: () {},
+                  // //set dporian groupName to 'none' and update vacancies and group data
+                  // ),
+                ]),
+
+            // Stimulus is displayed here
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    15.0 * screenSizeUnit,
+                    5.0 * screenSizeUnit,
+                    10.0 * screenSizeUnit,
+                    5.0 * screenSizeUnit),
+                child: Text(
+                  stimulusContent,
                   style: TextStyle(
                     fontSize: textSize,
-                    color: iconColor,
-                    fontWeight: FontWeight.bold,
+                    color: Colors.yellow, //yellowAccent is too bright
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                SizedBox(
-                  height: 30.0 * screenSizeUnit,
-                  width: 30.0 * screenSizeUnit,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.forward_rounded,
-                      color: Colors.yellow,
-                      size: _iconSize,
+              ),
+            ),
+
+            // Instructions and Next button in this column
+            Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  // Shows the appropriate icon & size
+                  _icon(stimulusCategory, textSize),
+                  Container(
+                    padding: EdgeInsets.all(7.0 * screenSizeUnit),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.yellow),
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      color: Colors.grey[900],
                     ),
-                    padding: EdgeInsets.zero, // need for alignment
-                    tooltip: 'Next Topic',
-                    onPressed: () {
-                      if (auth.currentUser != null) {
-                        if (strikedContent == stimulusContent) {
-                          if (strikesNeeded == 2) {
-                            rootScaffoldMessengerKey.currentState
-                                .showSnackBar(snackBarNeeds2Strikes);
+                    height: 75.0 * screenSizeUnit,
+                    width: 90.0 * screenSizeUnit,
+                    child: Text(
+                      stimulusInstructions,
+                      overflow: TextOverflow.clip, // just in case
+                      style: TextStyle(
+                        fontSize: instructionSize,
+                        color: Colors.yellow,
+                      ),
+                    ),
+                  ),
+                  Row(children: [
+                    Text(
+                      'Next',
+                      style: TextStyle(
+                        fontSize: textSize,
+                        color: iconColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(
+                      height: 30.0 * screenSizeUnit,
+                      width: 30.0 * screenSizeUnit,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.forward_rounded,
+                          color: Colors.yellow,
+                          size: _iconSize,
+                        ),
+                        padding: EdgeInsets.zero, // need for alignment
+                        tooltip: 'Next Topic',
+                        onPressed: () {
+                          if (auth.currentUser != null) {
+                            if (strikedContent == stimulusContent) {
+                              if (strikesNeeded == 2) {
+                                rootScaffoldMessengerKey.currentState
+                                    .showSnackBar(snackBarNeeds2Strikes);
+                              } else {
+                                rootScaffoldMessengerKey.currentState
+                                    .showSnackBar(snackBarNeeds3Strikes);
+                              }
+                            } else {
+                              // shuffle category and stimulus decks
+                              shuffleDecks();
+                              // update stimulus strike count or stimulus
+                              strikedStimulus(
+                                  auth.currentUser.uid, strikesNeeded);
+                            }
                           } else {
-                            rootScaffoldMessengerKey.currentState
-                                .showSnackBar(snackBarNeeds3Strikes);
+                            // Otherwise, sign the user in anonymously
+                            signInAnonymously();
+                            if (registered == false) {
+                              createUser(auth.currentUser.uid);
+                            }
                           }
-                        } else {
-                          // shuffle category and stimulus decks
-                          shuffleDecks();
-                          // update stimulus strike count or stimulus
-                          strikedStimulus(auth.currentUser.uid, strikesNeeded);
-                        }
-                      } else {
-                        // Otherwise, sign the user in anonymously
-                        signInAnonymously();
-                        if (registered == false) {
-                          createUser(auth.currentUser.uid);
-                        }
-                      }
-                    },
-                  ),
-                ),
-                Text(
-                  ' ' +
-                      stimulusStrikes.toString() +
-                      '/' +
-                      strikesNeeded.toString(),
-                  style: TextStyle(
-                    fontSize: textSize - 2,
-                    color: iconColor,
-                  ),
-                ),
-              ]),
-            ]),
-      ]),
-    );
+                        },
+                      ),
+                    ),
+                    Text(
+                      ' ' +
+                          stimulusStrikes.toString() +
+                          '/' +
+                          strikesNeeded.toString(),
+                      style: TextStyle(
+                        fontSize: textSize * 0.9,
+                        color: iconColor,
+                      ),
+                    ),
+                  ]),
+                ]),
+          ]),
+        ));
   }
 
   Widget _userInput(userColor) {
@@ -1748,18 +1765,25 @@ class _DporaAppState extends State<DporaApp> {
     int _fadeDuration = 10;
     double clearIconSize = 14.0;
     int maxCharacters = 250;
+    String _labelText = 'Tap here, type, hit Enter key';
+    Color _labelColor = userColor;
+    String _hintText = 'Text gone in 30 seconds';
+    Color _hintColor = iconColor;
     if (auth.currentUser == null) {
       boxBGColor = Colors.black;
       clearIconSize = 0.0;
       maxCharacters = 1;
+      _labelText = 'a stranger kind of chat app';
+      _labelColor = Colors.grey[700];
+      _hintText = 'a stranger kind of chat app';
+      _hintColor = Colors.grey[700];
     }
+    // TODO: Maybe use Textbox for landscape mode?
     return TextField(
         controller: inputController,
-        // TODO: Verify backspace works in real android app
-        // because it doesn't work on Chromebook test build.
         style: TextStyle(color: userColor),
         cursorColor: userColor,
-        // show Send instead of Enter with onscreen keyboards
+        // show Send instead of Enter on virtual keyboards
         textInputAction: TextInputAction.send,
         decoration: InputDecoration(
           enabledBorder: OutlineInputBorder(
@@ -1773,10 +1797,10 @@ class _DporaAppState extends State<DporaApp> {
           ),
           fillColor: boxBGColor,
           filled: true,
-          labelText: 'Tap here, type, then hit enter on keyboard.',
-          labelStyle: TextStyle(color: userColor),
-          hintText: 'Text disappears after 30 seconds. Be brief!',
-          hintStyle: TextStyle(color: iconColor),
+          labelText: _labelText,
+          labelStyle: TextStyle(color: _labelColor),
+          hintText: _hintText,
+          hintStyle: TextStyle(color: _hintColor),
           // cancel text button
           suffixIcon: IconButton(
             onPressed: () {
@@ -1793,42 +1817,59 @@ class _DporaAppState extends State<DporaApp> {
         // this is way more than needed but allows for ascii art or venting
         autofocus: false,
         onEditingComplete: () {
-          if (waitStatus == true) {
-            // snackbar reminds user to wait until previous post disappears
-            rootScaffoldMessengerKey.currentState
-                .showSnackBar(snackBarWait2Post);
-          } else {
-            setState(() {
-              userFadeTime = 0;
-              userOpacity = 1.0;
-              submittedText = inputController.text;
-              waitStatus = true;
-            });
-            // post to group
-            int milli = DateTime.now().millisecondsSinceEpoch;
-            postComment(submittedText, milli);
-            // clear text in input box
-            inputController.clear();
-            Timer(Duration(seconds: _timeUntilFade), () {
-              // after 20 seconds...
+          if (auth.currentUser != null) {
+            if (waitStatus == true) {
+              // snackbar reminds user to wait until previous post disappears
+              rootScaffoldMessengerKey.currentState
+                  .showSnackBar(snackBarWait2Post);
+            } else {
               setState(() {
-                userFadeTime = _fadeDuration;
-                userOpacity = 0.0;
+                userFadeTime = 0;
+                userOpacity = 1.0;
+                submittedText = inputController.text;
+                waitStatus = true;
+                showTextField = false; // show user comment
               });
-            });
-            Timer(Duration(seconds: _timeUntilFade + _fadeDuration), () {
-              setState(() {
-                waitStatus = false;
+              // post to group
+              int milli = DateTime.now().millisecondsSinceEpoch;
+              postComment(submittedText, milli);
+              // clear text in input box
+              inputController.clear();
+              Timer(Duration(seconds: _timeUntilFade), () {
+                // after 20 seconds...
+                setState(() {
+                  userFadeTime = _fadeDuration;
+                  userOpacity = 0.0;
+                });
               });
-            });
+              Timer(Duration(seconds: _timeUntilFade + _fadeDuration), () {
+                setState(() {
+                  // user can post again
+                  waitStatus = false;
+                  showTextField = true;
+                });
+              });
+            }
+            // close virtual keyboard
+            WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
           }
         });
   }
 
-  Widget _userOutput(textSize) {
+  Widget _userOutput(textSize, verticalView) {
+    double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
+    double marginSpace = screenSizeUnit * 19;
+    double outputWidth = 0.98; // 98%
+    int outputLines = 2;
+    if (verticalView == false) {
+      marginSpace = 0;
+      outputWidth = 0.48; // 48%
+      outputLines = 5;
+    }
     return Container(
-      padding: EdgeInsets.all(10.0),
-      margin: EdgeInsets.all(10.0),
+      width: MediaQuery.of(context).size.width * outputWidth,
+      margin: EdgeInsets.fromLTRB(0.0, marginSpace, 0.0, marginSpace),
+      padding: EdgeInsets.all(10.0 * screenSizeUnit),
       decoration: BoxDecoration(
         border: Border.all(color: userColor),
         borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -1840,7 +1881,7 @@ class _DporaAppState extends State<DporaApp> {
         child: Text(
           submittedText,
           style: TextStyle(fontSize: textSize, color: userColor),
-          maxLines: 2,
+          maxLines: outputLines,
           overflow: TextOverflow.ellipsis, // truncates, not scrollable
         ),
       ),
@@ -1851,16 +1892,18 @@ class _DporaAppState extends State<DporaApp> {
       postTime, tileVacancy, muteCount) {
     // Multiple object sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
-    String muteStatus = '';
+    String muteStatusText = '';
     // If tile is vacant, don't show its color
     Color _iconColor = iconColor;
     // If tile is muted or vacant,
     // hide its contents or box border
     Color _textColor = textColor;
-    double iconSize = 24.0; // normal size
+    double iconSize = 22.0 * screenSizeUnit; // vertical view
+    double muteStatusSize = 11.0 * screenSizeUnit; // vertical
     if (textSize > 20.0 * screenSizeUnit) {
       // make iconSize larger for horizontal
-      iconSize = 32.0;
+      iconSize = 26.0 * screenSizeUnit;
+      muteStatusSize = 17.0 * screenSizeUnit;
     }
     if (tileVacancy == true) {
       if (registered == true) {
@@ -1892,19 +1935,19 @@ class _DporaAppState extends State<DporaApp> {
         }
         // Show literal mute status
         if (muteCount == 0) {
-          muteStatus = ' Tap icon to mute';
+          muteStatusText = ' Tap icon to mute';
         } else if (muteCount == 1) {
-          muteStatus = ' Group muted once';
+          muteStatusText = ' Group muted once';
         } else if (muteCount == 2) {
-          muteStatus = ' Group muted twice';
+          muteStatusText = ' Group muted twice';
         } else if (muteCount == 3) {
-          muteStatus = ' Group muted thrice';
+          muteStatusText = ' Group muted thrice';
         } else if (muteCount == 4) {
-          muteStatus = ' Whole group muted';
+          muteStatusText = ' Whole group muted';
         }
         // Unmute new member if assigned to a muted color tile
         if (muteCount == 0 && _iconColor == Colors.grey) {
-          muteStatus = ' Unmute new user!';
+          muteStatusText = ' Unmute new user!';
           _textColor = textColor; // unmuted
         }
       }
@@ -1913,8 +1956,8 @@ class _DporaAppState extends State<DporaApp> {
     return Container(
       height: MediaQuery.of(context).size.height * tileHeight,
       width: MediaQuery.of(context).size.width * tileWidth,
-      padding: EdgeInsets.all(10.0),
-      margin: EdgeInsets.all(10.0),
+      padding: EdgeInsets.all(10.0 * screenSizeUnit),
+      margin: EdgeInsets.all(10.0 * screenSizeUnit),
       decoration: BoxDecoration(
         border: Border.all(color: _textColor),
         borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -1937,8 +1980,8 @@ class _DporaAppState extends State<DporaApp> {
         Row(
           children: [
             SizedBox(
-              height: 20.0,
-              width: 20.0,
+              height: 20.0 * screenSizeUnit,
+              width: 20.0 * screenSizeUnit,
               child: IconButton(
                 icon: Icon(
                   Icons.not_interested_rounded,
@@ -1948,28 +1991,30 @@ class _DporaAppState extends State<DporaApp> {
                 padding: EdgeInsets.zero, // need for alignment
                 tooltip: 'Toggle Mute Status',
                 onPressed: () {
-                  if (groupName == groupOfMutedUser) {
-                    // Decrement, if possible
-                    if (muteCount > 0) {
-                      muteButtonPress(groupOfMutedUser, colorOfMutedUser,
-                          muteCount, 'decrement');
-                    }
-                    // Make content visable but update the DB
-                    // first before the variables are reset
-                    setState(() {
-                      groupOfMutedUser = ''; // reset
-                      colorOfMutedUser = boxBGColor; // reset
-                    });
-                  } else {
-                    // set the variables before updating the DB
-                    setState(() {
-                      groupOfMutedUser = groupName;
-                      colorOfMutedUser = textColor;
-                    });
-                    // Increment, if possible
-                    if (muteCount < 4) {
-                      muteButtonPress(groupOfMutedUser, colorOfMutedUser,
-                          muteCount, 'increment');
+                  if (auth.currentUser != null) {
+                    if (groupName == groupOfMutedUser) {
+                      // Decrement, if possible
+                      if (muteCount > 0) {
+                        muteButtonPress(groupOfMutedUser, colorOfMutedUser,
+                            muteCount, 'decrement');
+                      }
+                      // Make content visable but update the DB
+                      // first before the variables are reset
+                      setState(() {
+                        groupOfMutedUser = ''; // reset
+                        colorOfMutedUser = boxBGColor; // reset
+                      });
+                    } else {
+                      // set the variables before updating the DB
+                      setState(() {
+                        groupOfMutedUser = groupName;
+                        colorOfMutedUser = textColor;
+                      });
+                      // Increment, if possible
+                      if (muteCount < 4) {
+                        muteButtonPress(groupOfMutedUser, colorOfMutedUser,
+                            muteCount, 'increment');
+                      }
                     }
                   }
                 },
@@ -1977,14 +2022,14 @@ class _DporaAppState extends State<DporaApp> {
             ),
             // spacer box
             SizedBox(
-              height: 5.0,
-              width: 8.0,
+              height: 5.0 * screenSizeUnit,
+              width: 8.0 * screenSizeUnit,
             ),
             Text(
-              muteStatus,
+              muteStatusText,
               overflow: TextOverflow.clip, // just in case
               style: TextStyle(
-                fontSize: textSize - 4,
+                fontSize: muteStatusSize,
                 color: _iconColor,
               ),
             ),
@@ -2019,9 +2064,11 @@ class _DporaAppState extends State<DporaApp> {
       muteCountRB) {
     // Multiple fonts sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
-    final allTileHeight = 0.19; // 19% screen height
+    double outerspace = screenSizeUnit * 10;
+    final allTileHeight = 0.25; // 25% screen height
     final allTileWidth = 0.44; // 44% screen width
     final allTextSize = 17.0 * screenSizeUnit; // font size for chatters
+    bool verticalView = true;
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -2029,6 +2076,19 @@ class _DporaAppState extends State<DporaApp> {
           height: MediaQuery.of(context).size.height * 0.26, //26%
           width: MediaQuery.of(context).size.width * 0.98, //98%
           child: _stimulus(19.0 * screenSizeUnit), // stimulus text size
+        ),
+        Container(
+          padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
+          width: MediaQuery.of(context).size.width * 0.98, //98%,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 1500),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return RotationTransition(child: child, turns: animation);
+            },
+            child: showTextField
+                ? _userInput(userColor)
+                : _userOutput(allTextSize, verticalView),
+          ),
         ),
         // build the chat titles, the left column (top & bottom) and right
         Row(
@@ -2052,15 +2112,6 @@ class _DporaAppState extends State<DporaApp> {
               ],
             ),
           ],
-        ),
-        Container(
-          width: MediaQuery.of(context).size.width * 0.98, //98%,
-          child: _userOutput(17.0 * screenSizeUnit), // user font size
-        ),
-        Container(
-          padding: EdgeInsets.all(10.0),
-          width: MediaQuery.of(context).size.width * 0.98, //98%,
-          child: _userInput(userColor),
         ),
       ],
     );
@@ -2090,89 +2141,48 @@ class _DporaAppState extends State<DporaApp> {
       muteCountRB) {
     // Multiple fonts sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
-    final allTileHeight = 0.33; // 33% screen height
-    final allTileWidth = 0.21; // 21% screen width
+    double outerspace = screenSizeUnit * 10;
+    final allTileHeight = 0.6; // 33% screen height
+    final allTileWidth = 0.225; // 21% screen width
     final allTextSize = 24.0 * screenSizeUnit; // font size for chatters
+    bool verticalView = false;
     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Column(
-            children: [
-              Container(
-                height: MediaQuery.of(context).size.height * 0.355, //35.5%
-                width: MediaQuery.of(context).size.width / 2.0,
-                child: _stimulus(30.0 * screenSizeUnit), // stimulus text size
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              height: MediaQuery.of(context).size.height * 0.3, // third
+              width: MediaQuery.of(context).size.width * 0.48,
+              child: _stimulus(30.0 * screenSizeUnit), // stimulus text size
+            ),
+            Container(
+              padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
+              width: MediaQuery.of(context).size.width * 0.48,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 1500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return RotationTransition(child: child, turns: animation);
+                },
+                child: showTextField
+                    ? _userInput(userColor)
+                    : _userOutput(allTextSize, verticalView),
               ),
-              Container(
-                height: MediaQuery.of(context).size.height * 0.337, //33.7%
-                width: MediaQuery.of(context).size.width / 2.0,
-                child: _userOutput(24.0 * screenSizeUnit), // user font size
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Column(
-                    children: [
-                      _chatTile(
-                          allTileHeight,
-                          allTileWidth,
-                          allTextSize,
-                          tileTextLT,
-                          textColorLT,
-                          postTimeLT,
-                          tileVacancyLT,
-                          muteCountLT),
-                      _chatTile(
-                          allTileHeight,
-                          allTileWidth,
-                          allTextSize,
-                          tileTextLB,
-                          textColorLB,
-                          postTimeLB,
-                          tileVacancyLB,
-                          muteCountLB),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      _chatTile(
-                          allTileHeight,
-                          allTileWidth,
-                          allTextSize,
-                          tileTextRT,
-                          textColorRT,
-                          postTimeRT,
-                          tileVacancyRT,
-                          muteCountRT),
-                      _chatTile(
-                          allTileHeight,
-                          allTileWidth,
-                          allTextSize,
-                          tileTextRB,
-                          textColorRB,
-                          postTimeRB,
-                          tileVacancyRB,
-                          muteCountRB),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          )
-        ],
-      ),
-      Container(
-        width: MediaQuery.of(context).size.width * 0.935, //93.5%
-        padding: EdgeInsets.all(10.0),
-        child: _userInput(userColor),
-      ),
+            ),
+          ]),
+      Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextLT,
+                textColorLT, postTimeLT, tileVacancyLT, muteCountLT),
+            _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextLB,
+                textColorLB, postTimeLB, tileVacancyLB, muteCountLB),
+            _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextRT,
+                textColorRT, postTimeRT, tileVacancyRT, muteCountRT),
+            _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextRB,
+                textColorRB, postTimeRB, tileVacancyRB, muteCountRB),
+          ])
     ]);
   }
 }

@@ -120,6 +120,8 @@ int redStrikes = 0;
 int redTimestamp;
 bool redVacancy = false;
 
+// True = user input, false = user output
+bool showTextField = true;
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
 
