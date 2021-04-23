@@ -45,7 +45,7 @@ android {
 
     defaultConfig {
         applicationId "com.cosmobi.dpora"
-        minSdkVersion 21
+        minSdkVersion 22
         targetSdkVersion 30
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

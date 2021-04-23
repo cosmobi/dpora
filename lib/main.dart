@@ -29,6 +29,8 @@ void checkConnectivity() async {
   var connectivityResult = await (Connectivity().checkConnectivity());
   if (connectivityResult == ConnectivityResult.none) {
     airplaneMode = true;
+  } else {
+    airplaneMode = false;
   }
 }
 
@@ -36,7 +38,6 @@ void checkConnectivity() async {
 Color boxBGColor = Colors.grey[900];
 // Hide non-essential icons from non-authenicated users
 Color iconColor = Colors.grey[900];
-Color menuColor = Colors.blueGrey;
 
 // Empty default values for the tileText and textColor
 Color userColor = Colors.black;
@@ -81,17 +82,6 @@ final snackBarWait2Post = SnackBar(
   ),
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 4),
-);
-final snackBarNoInternet = SnackBar(
-  content: const Text('No Internet! Get online and relaunch app.'),
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.only(
-      topLeft: Radius.circular(10.0),
-      topRight: Radius.circular(10.0),
-    ),
-  ),
-  backgroundColor: Colors.yellow,
-  duration: const Duration(seconds: 30),
 );
 final snackBarNeeds2Strikes = SnackBar(
   content: const Text('Topic changes after 2 people hit Next'),
@@ -332,11 +322,11 @@ class _DporaAppState extends State<DporaApp> {
           if (orangeSeat == true) {
             seatColor = 'orange';
           } else {
-            if (purpleSeat == true) {
-              seatColor = 'purple';
+            if (redSeat == true) {
+              seatColor = 'red';
             } else {
-              if (redSeat == true) {
-                seatColor = 'red';
+              if (purpleSeat == true) {
+                seatColor = 'purple';
               }
             }
           }
@@ -1125,6 +1115,12 @@ class _DporaAppState extends State<DporaApp> {
   Widget build(BuildContext context) {
     // is mobile data and wifi turned off?
     checkConnectivity();
+    if (airplaneMode == true) {
+      // check for connectivity every 10 seconds...
+      Timer(Duration(seconds: 10), () {
+        checkConnectivity();
+      });
+    }
     // detect platform
     if (kIsWeb) {
       // detect if web app
@@ -1221,12 +1217,12 @@ class _DporaAppState extends State<DporaApp> {
       iconColor = Colors.grey[700];
     } else {
       // Show Terms of service to first time users of this app installation
-      stimulusContent = 'Welcome to dpora';
-      stimulusInstructions = 'Hello';
-      // This sets up the basic Terms and Conditions screen before login
+      stimulusContent = 'Welcome!';
+      stimulusInstructions = 'This is dpora';
+      // This sets up the basic How to and Terms of service screen before login
       userColor = Colors.grey[700];
       tileTextLT =
-          'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each square. If the text does not scroll, that means you are already viewing all the content. The blue or purple square should have enough text for you to test scrolling.';
+          'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each squircle. If the text does not scroll, that means you are already viewing all the content. The blue or purple squircles should have enough text for you to test scrolling.';
       textColorLT = Colors.orangeAccent;
       tileTextLB =
           'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
@@ -1256,40 +1252,27 @@ class _DporaAppState extends State<DporaApp> {
           child: ListView(
             padding: EdgeInsets.zero,
             children: <Widget>[
-              DrawerHeader(
+              // DrawerHeader() made too much empty space
+              Container(
+                padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
                 child: Text.rich(
                   TextSpan(
-                    children: <TextSpan>[
-                      TextSpan(
-                        text: 'Φ dpora',
-                        style: TextStyle(
-                          fontSize: 32 * screenSizeUnit,
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextSpan(
-                        // pick a slogan from the list
-                        text: '\n\n' + slogans[sNum],
-                        style: TextStyle(
-                          fontSize: 16 * screenSizeUnit,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
+                            text: '\n\nΦ dpora\n',
+                            style: TextStyle(
+                              fontSize: 32 * screenSizeUnit,
+                              color: Colors.yellow,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                    ),
                   ),
-                ),
-                decoration: BoxDecoration(
-                  color: menuColor,
-                ),
-              ),
               ListTile(
                 leading: Icon(Icons.arrow_back_outlined),
                 title: Text(
-                  'Back',
+                  slogans[sNum] + '\n',
                   style: TextStyle(
                     fontSize: 16 * screenSizeUnit,
-                    color: Colors.white,
+                    color: Colors.white70,
                   ),
                 ),
                 onTap: () {
@@ -1559,17 +1542,17 @@ class _DporaAppState extends State<DporaApp> {
 
   Widget _stimulus(textSize) {
     if (airplaneMode == true) {
-      // snackbar notice if no internet connection is found
-      rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNoInternet);
+      // Shows only when no internet connection
       setState(() {
-        stimulusContent = 'Please turn on mobile data, WiFi or both.';
+        stimulusContent = 'No Internet Connection! Please turn on mobile data, WiFi or both.';
         stimulusInstructions = 'Airplane Mode?';
       });
     }
+
     // Multiple object sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     // vertical view
-    double instructionSize = 15 * screenSizeUnit;
+    double instructionSize = 14 * screenSizeUnit;
     double _iconSize = 24.0 * screenSizeUnit;
     if (textSize > 25.0 * screenSizeUnit) {
       // horizontal view
@@ -1750,7 +1733,7 @@ class _DporaAppState extends State<DporaApp> {
                           '/' +
                           strikesNeeded.toString(),
                       style: TextStyle(
-                        fontSize: textSize * 0.9,
+                        fontSize: textSize * 0.8,
                         color: iconColor,
                       ),
                     ),
@@ -1767,7 +1750,7 @@ class _DporaAppState extends State<DporaApp> {
     int maxCharacters = 250;
     String _labelText = 'Tap here, type, hit Enter key';
     Color _labelColor = userColor;
-    String _hintText = 'Text gone in 30 seconds';
+    String _hintText = 'You are ' + userColorString;
     Color _hintColor = iconColor;
     if (auth.currentUser == null) {
       boxBGColor = Colors.black;
@@ -1777,8 +1760,8 @@ class _DporaAppState extends State<DporaApp> {
       _labelColor = Colors.grey[700];
       _hintText = 'a stranger kind of chat app';
       _hintColor = Colors.grey[700];
+      // That slogan is also on top of yaml file
     }
-    // TODO: Maybe use Textbox for landscape mode?
     return TextField(
         controller: inputController,
         style: TextStyle(color: userColor),
@@ -1899,7 +1882,7 @@ class _DporaAppState extends State<DporaApp> {
     // hide its contents or box border
     Color _textColor = textColor;
     double iconSize = 22.0 * screenSizeUnit; // vertical view
-    double muteStatusSize = 11.0 * screenSizeUnit; // vertical
+    double muteStatusSize = 10.0 * screenSizeUnit; // vertical
     if (textSize > 20.0 * screenSizeUnit) {
       // make iconSize larger for horizontal
       iconSize = 26.0 * screenSizeUnit;
@@ -1929,7 +1912,7 @@ class _DporaAppState extends State<DporaApp> {
         if (timeElapsed > twentySeconds && auth.currentUser != null) {
           chatFadeTime = 10; // show fade out
           chatOpacity = 0.0;
-        } else {
+        } else if (timeElapsed <= twentySeconds) {
           chatFadeTime = 1; // quick fade in
           chatOpacity = 1.0;
         }
