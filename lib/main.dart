@@ -63,6 +63,11 @@ int postTimeRB = DateTime.now().millisecondsSinceEpoch;
 bool tileVacancyRB = false;
 int muteCountRB = 0;
 
+// Use to update some data daily (if not on relaunch)
+int dataDownloaded = DateTime.now().millisecondsSinceEpoch;
+int oneDay = 24 * 60 * 60 * 1000;
+// hours * minutes * seconds * 1 second of milliseconds
+
 // Use this key to open and close drawer
 // programically (in addition to swiping)
 GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
@@ -202,30 +207,37 @@ class _DporaAppState extends State<DporaApp> {
 
   // Get slogans to display in the menu drawer
   void getSlogans() {
-    firebaseRTDB.child('slogans').once().then((DataSnapshot snapshot) {
-      List<String> sloganList = new List<String>.from(snapshot.value);
-      setState(() {
-        slogans = sloganList;
-        sMax = sloganList.length;
+    if (gotSlogans == false) {
+      firebaseRTDB.child('slogans').once().then((DataSnapshot snapshot) {
+        List<String> sloganList = new List<String>.from(snapshot.value);
+        setState(() {
+          slogans = sloganList;
+          sMax = sloganList.length;
+          gotSlogans = true;
+        });
+      }).catchError((onError) {
+        print(onError);
       });
-    }).catchError((onError) {
-      print(onError);
-    });
+    }
   }
 
-  // Keep the stats in the menu updated in realtime
+  // Update the stats in the menu drawer
   void liveStats() {
-    firebaseRTDB.child('statistics').once().then((DataSnapshot snapshot) {
-      Map<String, dynamic> statMap =
-          new Map<String, dynamic>.from(snapshot.value);
-      var liveStatistics = Stats.fromJson(statMap);
-      setState(() {
-        commentsPosted = liveStatistics.comments;
-        countriesRepresented = liveStatistics.countries;
-        devicesDetected = liveStatistics.devices;
-        version = liveStatistics.version;
+    if (deadStats == false) {
+      firebaseRTDB.child('statistics').once().then((DataSnapshot snapshot) {
+        Map<String, dynamic> statMap =
+            new Map<String, dynamic>.from(snapshot.value);
+        var liveStatistics = Stats.fromJson(statMap);
+        setState(() {
+          commentsPosted = liveStatistics.comments;
+          countriesRepresented = liveStatistics.countries;
+          devicesDetected = liveStatistics.devices;
+          latestVersion = liveStatistics.version;
+          minReqVersion = liveStatistics.minreq;
+          deadStats = true;
+        });
       });
-    });
+    }
   }
 
   // Find or create a group that has a vacancy
@@ -354,13 +366,12 @@ class _DporaAppState extends State<DporaApp> {
     // prep the variables
     String colorContent = seatColor + '-content';
     String colorStrikes = seatColor + '-strikes';
-    String userStatus = '[ ';
+    String userStatus = '';
     String colorTimestamp = seatColor + '-timestamp';
     String seatKey = seatColor + '-vacancy';
     if (v == false) {
-      userStatus = userStatus + 'a new ' + seatColor + ' entered ]';
+      userStatus = '[ new ' + seatColor + ' ]';
     } else {
-      userStatus = userStatus + seatColor + ' exited ]';
       // A user unassigns someone else from group
       updateUser(groupName, seatColor, 'group', true);
     }
@@ -401,85 +412,99 @@ class _DporaAppState extends State<DporaApp> {
 
   // Seek and destroy ghosts occupying vacancies
   void ghostBusters(myGroup) {
-    // Seek all real group members
-    bool blueMember = false;
-    bool greenMember = false;
-    bool orangeMember = false;
-    bool purpleMember = false;
-    bool redMember = false;
-    firebaseRTDB
-        .child('dporians')
-        .orderByChild('group')
-        .equalTo('$myGroup')
-        .once()
-        .then((DataSnapshot snapshot) {
-      var myGroupMembers = new Map<String, dynamic>.from(snapshot.value);
-      for (var entry in myGroupMembers.entries) {
-        if (entry.value['color'] == 'blue') {
-          blueMember = true;
+    if (ghostBusted == false) {
+      // Seek all real group members
+      bool blueMember = false;
+      bool greenMember = false;
+      bool orangeMember = false;
+      bool purpleMember = false;
+      bool redMember = false;
+      firebaseRTDB
+          .child('dporians')
+          .orderByChild('group')
+          .equalTo('$myGroup')
+          .once()
+          .then((DataSnapshot snapshot) {
+        var myGroupMembers = new Map<String, dynamic>.from(snapshot.value);
+        for (var entry in myGroupMembers.entries) {
+          if (entry.value['color'] == 'blue') {
+            blueMember = true;
+          }
+          if (entry.value['color'] == 'green') {
+            greenMember = true;
+          }
+          if (entry.value['color'] == 'orange') {
+            orangeMember = true;
+          }
+          if (entry.value['color'] == 'purple') {
+            purpleMember = true;
+          }
+          if (entry.value['color'] == 'red') {
+            redMember = true;
+          }
         }
-        if (entry.value['color'] == 'green') {
-          greenMember = true;
+        // Destroy all ghost group members
+        if (blueMember == false) {
+          firebaseRTDB
+              .child('groups')
+              .child('$myGroup')
+              .update({'blue-vacancy': true}).catchError((onDestroyError) {
+            print(onDestroyError);
+          });
         }
-        if (entry.value['color'] == 'orange') {
-          orangeMember = true;
+        if (greenMember == false) {
+          firebaseRTDB
+              .child('groups')
+              .child('$myGroup')
+              .update({'green-vacancy': true}).catchError((onDestroyError) {
+            print(onDestroyError);
+          });
         }
-        if (entry.value['color'] == 'purple') {
-          purpleMember = true;
+        if (orangeMember == false) {
+          firebaseRTDB
+              .child('groups')
+              .child('$myGroup')
+              .update({'orange-vacancy': true}).catchError((onDestroyError) {
+            print(onDestroyError);
+          });
         }
-        if (entry.value['color'] == 'red') {
-          redMember = true;
+        if (purpleMember == false) {
+          firebaseRTDB
+              .child('groups')
+              .child('$myGroup')
+              .update({'purple-vacancy': true}).catchError((onDestroyError) {
+            print(onDestroyError);
+          });
         }
-      }
-      // Destroy all ghost group members
-      if (blueMember == false) {
-        firebaseRTDB
-            .child('groups')
-            .child('$myGroup')
-            .update({'blue-vacancy': true}).catchError((onDestroyError) {
-          print(onDestroyError);
-        });
-      }
-      if (greenMember == false) {
-        firebaseRTDB
-            .child('groups')
-            .child('$myGroup')
-            .update({'green-vacancy': true}).catchError((onDestroyError) {
-          print(onDestroyError);
-        });
-      }
-      if (orangeMember == false) {
-        firebaseRTDB
-            .child('groups')
-            .child('$myGroup')
-            .update({'orange-vacancy': true}).catchError((onDestroyError) {
-          print(onDestroyError);
-        });
-      }
-      if (purpleMember == false) {
-        firebaseRTDB
-            .child('groups')
-            .child('$myGroup')
-            .update({'purple-vacancy': true}).catchError((onDestroyError) {
-          print(onDestroyError);
-        });
-      }
-      if (redMember == false) {
-        firebaseRTDB
-            .child('groups')
-            .child('$myGroup')
-            .update({'red-vacancy': true}).catchError((onDestroyError) {
-          print(onDestroyError);
-        });
-      }
-    }).catchError((onSeekError) {
-      print(onSeekError);
-    });
+        if (redMember == false) {
+          firebaseRTDB
+              .child('groups')
+              .child('$myGroup')
+              .update({'red-vacancy': true}).catchError((onDestroyError) {
+            print(onDestroyError);
+          });
+        }
+      }).catchError((onSeekError) {
+        print(onSeekError);
+      });
+      // delete colorless entities
+      firebaseRTDB.child('groups').child('$myGroup').child('-content').remove();
+      firebaseRTDB.child('groups').child('$myGroup').child('-strikes').remove();
+      firebaseRTDB
+          .child('groups')
+          .child('$myGroup')
+          .child('-timestamp')
+          .remove();
+      firebaseRTDB.child('groups').child('$myGroup').child('-vacancy').remove();
+      // don't continuously do this
+      setState(() {
+        ghostBusted = true;
+      });
+    }
   }
 
   // Create new user data
   void createUser(uuid) {
-    // Create user data that links to that group and color
     firebaseRTDB.child('dporians').child('$uuid').set({
       'boots': 0,
       'bootstamp': ServerValue.timestamp,
@@ -488,11 +513,13 @@ class _DporaAppState extends State<DporaApp> {
       'striked': 'never have i ever'
     }).then((_) {
       // update the live stats for devices detected
-      firebaseRTDB
-          .child('statistics')
-          .update({'devices': devicesDetected + 1}).catchError((onErrorGroups) {
-        print(onErrorGroups);
-      });
+      if (upgradeRequired == false) {
+        // increment users who were let in
+        firebaseRTDB.child('statistics').update(
+            {'devices': ServerValue.increment(1)}).catchError((onNewError) {
+          print(onNewError);
+        });
+      }
     }).catchError((onError) {
       print(onError);
     });
@@ -500,11 +527,8 @@ class _DporaAppState extends State<DporaApp> {
 
   // Get user info
   void getUser(dporian) {
-    firebaseRTDB
-        .child('dporians')
-        .child('$dporian')
-        .once()
-        .then((DataSnapshot snapshot) {
+    firebaseRTDB.child('dporians').child('$dporian').onValue.listen((event) {
+      var snapshot = event.snapshot;
       Map<String, dynamic> userMap =
           new Map<String, dynamic>.from(snapshot.value);
       var userDetails = Dporian.fromJson(userMap);
@@ -516,8 +540,8 @@ class _DporaAppState extends State<DporaApp> {
         strikedContent = userDetails.striked;
         registered = true;
       });
-    }).catchError((onError) {
-      print(onError);
+    }).onError((oops) {
+      print(oops);
       setState(() {
         registered = false;
       });
@@ -619,70 +643,81 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  // Pick a stimulus
+  // Pick a new stimulus
   void getStimulus(stimuliCategory, stimulusID) {
-    firebaseRTDB
-        .child('stimuli')
-        .child('$stimuliCategory')
-        .child('$stimulusID')
-        .once()
-        .then((DataSnapshot snapshot) {
-      Map<String, dynamic> stimulusMap =
-          new Map<String, dynamic>.from(snapshot.value);
-      var stimulusDetails = Stimulus.fromJson(stimulusMap);
-      setState(() {
-        nextStimulusContent = stimulusDetails.stimulus;
+    // only if one more strike is needed and
+    // the user needs a new stimulus queued
+    if (strikesNeeded - stimulusStrikes < 2 &&
+        nextStimulusContent == sentStimulusContent) {
+      firebaseRTDB
+          .child('stimuli')
+          .child('$stimuliCategory')
+          .child('$stimulusID')
+          .once()
+          .then((DataSnapshot snapshot) {
+        Map<String, dynamic> stimulusMap =
+            new Map<String, dynamic>.from(snapshot.value);
+        var stimulusDetails = Stimulus.fromJson(stimulusMap);
+        setState(() {
+          nextStimulusContent = stimulusDetails.stimulus;
+        });
       });
-    });
+    }
   }
 
   // Get the stimuli catetory instructions
   void getInstructions() {
-    firebaseRTDB.child('instructions').once().then((DataSnapshot snapshot) {
-      Map<String, dynamic> instructMap =
-          new Map<String, dynamic>.from(snapshot.value);
-      var categoryInstructions = Instruct.fromJson(instructMap);
-      setState(() {
-        instructAds = categoryInstructions.ads;
-        instructDebates = categoryInstructions.debates;
-        instructGames = categoryInstructions.games;
-        instructJokes = categoryInstructions.jokes;
-        instructMyths = categoryInstructions.myths;
-        instructNews = categoryInstructions.news;
-        instructPassion = categoryInstructions.passion;
-        instructPersonal = categoryInstructions.personal;
-        instructPonder = categoryInstructions.ponder;
-        instructProverbs = categoryInstructions.proverbs;
-        instructQuotes = categoryInstructions.quotes;
-        instructShare = categoryInstructions.share;
-        instructTrivia = categoryInstructions.trivia;
+    if (gotInstructions == false) {
+      firebaseRTDB.child('instructions').once().then((DataSnapshot snapshot) {
+        Map<String, dynamic> instructMap =
+            new Map<String, dynamic>.from(snapshot.value);
+        var categoryInstructions = Instruct.fromJson(instructMap);
+        setState(() {
+          instructAds = categoryInstructions.ads;
+          instructDebates = categoryInstructions.debates;
+          instructGames = categoryInstructions.games;
+          instructJokes = categoryInstructions.jokes;
+          instructMyths = categoryInstructions.myths;
+          instructNews = categoryInstructions.news;
+          instructPassion = categoryInstructions.passion;
+          instructPersonal = categoryInstructions.personal;
+          instructPonder = categoryInstructions.ponder;
+          instructProverbs = categoryInstructions.proverbs;
+          instructQuotes = categoryInstructions.quotes;
+          instructShare = categoryInstructions.share;
+          instructTrivia = categoryInstructions.trivia;
+          gotInstructions = true;
+        });
       });
-    });
+    }
   }
 
   // Get the stimuli totals
   void stimuliTotals() {
-    firebaseRTDB.child('totals').once().then((DataSnapshot snapshot) {
-      Map<String, dynamic> totalsMap =
-          new Map<String, dynamic>.from(snapshot.value);
-      var categoryTotals = Totals.fromJson(totalsMap);
-      setState(() {
-        totalAds = categoryTotals.adsT;
-        totalDebates = categoryTotals.debatesT;
-        totalGames = categoryTotals.gamesT;
-        totalJokes = categoryTotals.jokesT;
-        totalMyths = categoryTotals.mythsT;
-        totalNews = categoryTotals.newsT;
-        totalPassion = categoryTotals.passionT;
-        totalPersonal = categoryTotals.personalT;
-        totalPonder = categoryTotals.ponderT;
-        totalProverbs = categoryTotals.proverbsT;
-        totalQuotes = categoryTotals.quotesT;
-        totalShare = categoryTotals.shareT;
-        totalStimuli = categoryTotals.stimuliT;
-        totalTrivia = categoryTotals.triviaT;
+    if (stimuliTotaled == false) {
+      firebaseRTDB.child('totals').once().then((DataSnapshot snapshot) {
+        Map<String, dynamic> totalsMap =
+            new Map<String, dynamic>.from(snapshot.value);
+        var categoryTotals = Totals.fromJson(totalsMap);
+        setState(() {
+          totalAds = categoryTotals.adsT;
+          totalDebates = categoryTotals.debatesT;
+          totalGames = categoryTotals.gamesT;
+          totalJokes = categoryTotals.jokesT;
+          totalMyths = categoryTotals.mythsT;
+          totalNews = categoryTotals.newsT;
+          totalPassion = categoryTotals.passionT;
+          totalPersonal = categoryTotals.personalT;
+          totalPonder = categoryTotals.ponderT;
+          totalProverbs = categoryTotals.proverbsT;
+          totalQuotes = categoryTotals.quotesT;
+          totalShare = categoryTotals.shareT;
+          totalStimuli = categoryTotals.stimuliT;
+          totalTrivia = categoryTotals.triviaT;
+          stimuliTotaled = true;
+        });
       });
-    });
+    }
   }
 
   void strikedStimulus(uuid, neededStrikes) {
@@ -694,6 +729,9 @@ class _DporaAppState extends State<DporaApp> {
         'stimulus-instructions': '$instructStimulus',
         'stimulus-strikes': 0
       }).then((_) {
+        setState(() {
+          sentStimulusContent = nextStimulusContent;
+        });
         // show success
         rootScaffoldMessengerKey.currentState
             .showSnackBar(snackBarNextStimulus);
@@ -708,6 +746,9 @@ class _DporaAppState extends State<DporaApp> {
         'stimulus-instructions': '$instructStimulus',
         'stimulus-strikes': 0
       }).then((_) {
+        setState(() {
+          sentStimulusContent = nextStimulusContent;
+        });
         // show success
         rootScaffoldMessengerKey.currentState
             .showSnackBar(snackBarNextStimulus);
@@ -885,13 +926,10 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-// Relay all the group content
+// Relay all the group value changes
   void getContent(groupID) {
-    firebaseRTDB
-        .child('groups')
-        .child('$groupID')
-        .once()
-        .then((DataSnapshot snapshot) {
+    firebaseRTDB.child('groups').child('$groupID').onValue.listen((event) {
+      var snapshot = event.snapshot;
       Map<String, dynamic> groupMap =
           new Map<String, dynamic>.from(snapshot.value);
       var groupDetails = Content.fromJson(groupMap);
@@ -1051,16 +1089,11 @@ class _DporaAppState extends State<DporaApp> {
 
   // Keep track of current total vacancies in group
   void myGroupVacancyStatus() {
-    firebaseRTDB
-        .child('vacancies')
-        .child('$groupName')
-        .once()
-        .then((DataSnapshot pinpoint) {
+    firebaseRTDB.child('vacancies').child('$groupName').onValue.listen((event) {
+      var pinpoint = event.snapshot;
       setState(() {
         myGroupVacancy = pinpoint.value;
       });
-    }).catchError((onError) {
-      print(onError);
     });
   }
 
@@ -1074,7 +1107,7 @@ class _DporaAppState extends State<DporaApp> {
       // update live stats
       firebaseRTDB
           .child('statistics')
-          .update({'comments': commentsPosted + 1}).then((_) {
+          .update({'comments': ServerValue.increment(1)}).then((_) {
         // unassign inactive users of the group
         var tenMinutes = 10 * 60 * 1000;
         var beingActive = milli - tenMinutes;
@@ -1148,8 +1181,18 @@ class _DporaAppState extends State<DporaApp> {
     // Multiple fonts sizes in menu by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
 
-    // Get slogans to show in menu drawer
-    getSlogans();
+    // Use to update some data daily (if not on relaunch)
+    if (DateTime.now().millisecondsSinceEpoch - dataDownloaded > oneDay) {
+      setState(() {
+        gotSlogans = false;
+        deadStats = false;
+        ghostBusted = false;
+        gotInstructions = false;
+        stimuliTotaled = false;
+        // and update dataDownloaded
+        dataDownloaded = DateTime.now().millisecondsSinceEpoch;
+      });
+    }
 
     // Get the latest stats to show in menu drawer
     liveStats();
@@ -1164,76 +1207,104 @@ class _DporaAppState extends State<DporaApp> {
         'Over ' + devicesDetected.toString() + ' devices detected' + '\n';
     String liveComments =
         'Over ' + commentsPosted.toString() + ' comments posted' + '\n\n';
-    if (version > versionHardcoded) {
-      versionStatus = '(Please update to ' + version.toString() + ')\n';
+    if (latestVersion > thisVersion) {
+      versionStatus = '(Please update to ' + latestVersion.toString() + ')\n';
     } else {
       versionStatus = '(You are up to date)\n';
     }
 
-    // Update the total number of each stimuli category & sum total
-    stimuliTotals();
-
-    // if already signed in...
-    if (auth.currentUser != null) {
-      // Fetch user info
-      getUser(auth.currentUser.uid);
-
-      if (registered == false) {
-        createUser(auth.currentUser.uid);
-      }
-
-      // If not in group (nor have color)...
-      if (userColorString == 'black' || groupName == 'none') {
-        // User needs to be assigned to a group
-        findVacantGroup();
-      }
-
-      // If in group...
-      if (groupName != '' && groupName != 'none') {
-        getContent(groupName);
-        // Assign comments to appropriate color boxes
-        assignChatBoxes(userColorString);
-        // To keep the myGroupVacancy integer updated
-        myGroupVacancyStatus();
-        // Seek and destroy ghosts occupying vacancies
-        ghostBusters(groupName);
-      }
-
-      // Load all stimlui category instructions
-      getInstructions();
-
-      // Choose a category
-      chooseCategory(stimuliDeck[0]);
-      // The default stimulus is "DO NOT DELETE THIS ENTRY"
-      // which serves as a placeholder for...
-      if (nextStimulusContent == 'DO NOT DELETE THIS ENTRY') {
-        shuffleDecks();
-      }
-
-      // Choose a random stimulus
-      randomStimulus();
-
-      // Show icons
-      iconColor = Colors.grey[700];
+    // Check if they have the minimal required app version
+    // This can also be used as an off switch for DB use
+    if (thisVersion < minReqVersion) {
+      // shut the front door
+      setState(() {
+        stimulusInstructions = 'See web page';
+        stimulusContent = 'https://dpora.com/upgrade';
+        // Either the dpora service or app needs an upgrade
+        upgradeRequired = true;
+        iconColor = boxBGColor;
+        userColor = boxBGColor;
+      });
     } else {
-      // Show Terms of service to first time users of this app installation
-      stimulusContent = 'Welcome!';
-      stimulusInstructions = 'This is dpora';
-      // This sets up the basic How to and Terms of service screen before login
-      userColor = Colors.grey[700];
-      tileTextLT =
-          'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each squircle. If the text does not scroll, that means you are already viewing all the content. The blue or purple squircles should have enough text for you to test scrolling.';
-      textColorLT = Colors.orangeAccent;
-      tileTextLB =
-          'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
-      textColorLB = Colors.blueAccent;
-      tileTextRT =
-          'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
-      textColorRT = Colors.purpleAccent;
-      tileTextRB =
-          'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
-      textColorRB = Colors.redAccent;
-      iconColor = Colors.black;
+      // open the front door
+      setState(() {
+        upgradeRequired = false;
+        userColor = Colors.black; // reset to reassign
+      });
+      // Get slogans to show in menu drawer
+      getSlogans();
+
+      // Update the total number of each stimuli category & sum total
+      stimuliTotals();
+
+      // If already signed in...
+      if (auth.currentUser != null) {
+        // Fetch user info
+        getUser(auth.currentUser.uid);
+
+        if (registered == false) {
+          createUser(auth.currentUser.uid);
+        }
+
+        // If not in group (nor have color)...
+        if (userColorString == 'black' || groupName == 'none') {
+          // User needs to be assigned to a group
+          findVacantGroup();
+        }
+
+        // If in group...
+        if (groupName != '' && groupName != 'none') {
+          getContent(groupName);
+          // Assign comments to appropriate color boxes
+          assignChatBoxes(userColorString);
+          // To keep the myGroupVacancy integer updated
+          myGroupVacancyStatus();
+          // Seek and destroy ghosts occupying vacancies
+          ghostBusters(groupName);
+        }
+
+        // Load all stimlui category instructions
+        getInstructions();
+
+        // Choose a category
+        chooseCategory(stimuliDeck[0]);
+        // The default stimulus is "DO NOT DELETE THIS ENTRY"
+        // which serves as a placeholder for...
+        if (nextStimulusContent == 'DO NOT DELETE THIS ENTRY') {
+          sentStimulusContent = nextStimulusContent;
+          shuffleDecks();
+        }
+
+        // Choose a random stimulus
+        randomStimulus();
+        if (nextStimulusContent == stimulusContent) {
+          // That's not a topic change, try again
+          sentStimulusContent = nextStimulusContent;
+          randomStimulus();
+        }
+
+        // Show icons
+        iconColor = Colors.grey[700];
+      } else {
+        // Show Terms of service to first time users of this app installation
+        stimulusContent = 'Welcome!';
+        stimulusInstructions = 'This is dpora';
+        // Show the How to and Terms of service screen before login
+        userColor = Colors.grey[700];
+        tileTextLT =
+            'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each squircle. If the text does not scroll, that means you are already viewing all the content. The blue or purple squircles should have enough text for you to test scrolling.';
+        textColorLT = Colors.orangeAccent;
+        tileTextLB =
+            'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
+        textColorLB = Colors.blueAccent;
+        tileTextRT =
+            'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
+        textColorRT = Colors.purpleAccent;
+        tileTextRB =
+            'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
+        textColorRB = Colors.redAccent;
+        iconColor = Colors.black;
+      }
     }
 
     return MaterialApp(
@@ -1257,15 +1328,15 @@ class _DporaAppState extends State<DporaApp> {
                 padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
                 child: Text.rich(
                   TextSpan(
-                            text: '\n\nΦ dpora\n',
-                            style: TextStyle(
-                              fontSize: 32 * screenSizeUnit,
-                              color: Colors.yellow,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    text: '\n\nΦ dpora\n',
+                    style: TextStyle(
+                      fontSize: 32 * screenSizeUnit,
+                      color: Colors.yellow,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                ),
+              ),
               ListTile(
                 leading: Icon(Icons.arrow_back_outlined),
                 title: Text(
@@ -1360,7 +1431,7 @@ class _DporaAppState extends State<DporaApp> {
                       TextSpan(
                         text: platform +
                             ' Version ' +
-                            versionHardcoded.toString() +
+                            thisVersion.toString() +
                             '\n' +
                             versionStatus +
                             '\n' +
@@ -1544,7 +1615,8 @@ class _DporaAppState extends State<DporaApp> {
     if (airplaneMode == true) {
       // Shows only when no internet connection
       setState(() {
-        stimulusContent = 'No Internet Connection! Please turn on mobile data, WiFi or both.';
+        stimulusContent =
+            'No Internet Connection! Please turn on mobile data, WiFi or both.';
         stimulusInstructions = 'Airplane Mode?';
       });
     }
@@ -1701,27 +1773,29 @@ class _DporaAppState extends State<DporaApp> {
                         padding: EdgeInsets.zero, // need for alignment
                         tooltip: 'Next Topic',
                         onPressed: () {
-                          if (auth.currentUser != null) {
-                            if (strikedContent == stimulusContent) {
-                              if (strikesNeeded == 2) {
-                                rootScaffoldMessengerKey.currentState
-                                    .showSnackBar(snackBarNeeds2Strikes);
+                          if (upgradeRequired == false) {
+                            if (auth.currentUser != null) {
+                              if (strikedContent == stimulusContent) {
+                                if (strikesNeeded == 2) {
+                                  rootScaffoldMessengerKey.currentState
+                                      .showSnackBar(snackBarNeeds2Strikes);
+                                } else {
+                                  rootScaffoldMessengerKey.currentState
+                                      .showSnackBar(snackBarNeeds3Strikes);
+                                }
                               } else {
-                                rootScaffoldMessengerKey.currentState
-                                    .showSnackBar(snackBarNeeds3Strikes);
+                                // shuffle category and stimulus decks
+                                shuffleDecks();
+                                // update stimulus strike count or stimulus
+                                strikedStimulus(
+                                    auth.currentUser.uid, strikesNeeded);
                               }
                             } else {
-                              // shuffle category and stimulus decks
-                              shuffleDecks();
-                              // update stimulus strike count or stimulus
-                              strikedStimulus(
-                                  auth.currentUser.uid, strikesNeeded);
-                            }
-                          } else {
-                            // Otherwise, sign the user in anonymously
-                            signInAnonymously();
-                            if (registered == false) {
-                              createUser(auth.currentUser.uid);
+                              // Otherwise, sign the user in anonymously
+                              signInAnonymously();
+                              if (registered == false) {
+                                createUser(auth.currentUser.uid);
+                              }
                             }
                           }
                         },
@@ -1800,7 +1874,7 @@ class _DporaAppState extends State<DporaApp> {
         // this is way more than needed but allows for ascii art or venting
         autofocus: false,
         onEditingComplete: () {
-          if (auth.currentUser != null) {
+          if (auth.currentUser != null && upgradeRequired == false) {
             if (waitStatus == true) {
               // snackbar reminds user to wait until previous post disappears
               rootScaffoldMessengerKey.currentState

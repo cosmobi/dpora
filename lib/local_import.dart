@@ -29,13 +29,15 @@ final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
 int devicesDetected = 2;
 int countriesRepresented = 2;
 int commentsPosted = 2;
-double version = 0.0;
+double latestVersion = 0.0;
+double minReqVersion = 0.0;
 String versionStatus = '';
+bool upgradeRequired;
 // TODO: Update in 3 places before every app release
 // 1. on the DB
 // 2. in the yaml file
 // 3. below this line
-double versionHardcoded = 0.1;
+double thisVersion = 0.1;
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
@@ -76,6 +78,7 @@ String categoryChoice = '';
 // so transitions between reloads are smoother
 String stimulusContent = '';
 String nextStimulusContent = '';
+String sentStimulusContent = '';
 int strikesNeeded = 1; // Both set at 1 for
 int stimulusStrikes = 1; // Terms of service
 String stimulusCategory = '';
@@ -127,10 +130,18 @@ String submittedText = '';
 
 // The values of slogans and sMax will get updated from the DB
 List<String> slogans = [
-  'Have private yet meaningful\nchats with total strangers',
+  'Have private yet meaningful chats with total strangers',
 ];
 int sNum = 0;
 int sMax = 1;
+
+// To reduce database downloads, only download
+// some stuff once per app launch or once per day
+bool gotSlogans = false;
+bool deadStats = false;
+bool ghostBusted = false;
+bool gotInstructions = false;
+bool stimuliTotaled = false;
 
 // Classes below are for the serialization of
 // json-formatted data to and from the database
@@ -139,20 +150,23 @@ class Stats {
   final int comments;
   final int countries;
   final int devices;
+  final double minreq;
   final double version;
 
-  Stats(this.comments, this.countries, this.devices, this.version);
+  Stats(this.comments, this.countries, this.devices, this.minreq, this.version);
 
   Stats.fromJson(Map<String, dynamic> json)
       : comments = json['comments'],
         countries = json['countries'],
         devices = json['devices'],
+        minreq = json['minreq'],
         version = json['version'];
 
   Map<String, dynamic> toJson() => {
         'comments': comments,
         'countries': countries,
         'devices': devices,
+        'minreq': minreq,
         'version': version
       };
 }
