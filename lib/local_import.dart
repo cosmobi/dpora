@@ -25,7 +25,7 @@ DateTime nowDate = new DateTime.now();
 String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
 final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
 
-// Live Stats gets their latest numbers from the DB
+// Tally gets their latest numbers from the DB
 int devicesDetected = 2;
 int countriesRepresented = 2;
 int commentsPosted = 2;
@@ -37,7 +37,7 @@ bool upgradeRequired;
 // 1. on the DB
 // 2. in the yaml file
 // 3. below this line
-double thisVersion = 0.1;
+double thisVersion = 1.1;
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
@@ -48,8 +48,8 @@ int chatFadeTime = 10;
 // dporian info
 int userBoots;
 int userBootstamp;
-String userColorString = '';
-String groupName = '';
+String userColorString = 'black';
+String groupName = 'none';
 int myGroupVacancy;
 String strikedContent = '';
 String groupOfMutedUser = '';
@@ -84,20 +84,20 @@ int stimulusStrikes = 1; // Terms of service
 String stimulusCategory = '';
 String stimulusInstructions = '';
 
-// These will hold the stimuli category instructions
-String instructAds = '';
-String instructDebates = '';
-String instructGames = '';
-String instructJokes = '';
-String instructMyths = '';
-String instructNews = '';
-String instructPassion = '';
-String instructPersonal = '';
-String instructPonder = '';
-String instructProverbs = '';
-String instructQuotes = '';
-String instructShare = '';
-String instructTrivia = '';
+// Stimuli category instructions may be updated from DB
+String instructAds = 'Ad or sponsor';
+String instructDebates = 'Agree or disagree';
+String instructGames = 'Let\'s play a game';
+String instructJokes = 'Jokes or funny truths';
+String instructMyths = 'Do you know?';
+String instructNews = 'What\'s new?';
+String instructPassion = 'Am I right or wrong?';
+String instructPersonal = 'All about you';
+String instructPonder = 'Food for thought';
+String instructProverbs = 'Wise, wrong or weird?';
+String instructQuotes = 'Was it well said?';
+String instructShare = 'Friend talk';
+String instructTrivia = instructMyths;
 // And this will hold the currently selected category
 String instructStimulus = '';
 
@@ -128,17 +128,26 @@ bool showTextField = true;
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
 
-// The values of slogans and sMax will get updated from the DB
+// The values of slogans and sMax can get updated from the DB
 List<String> slogans = [
   'Have private yet meaningful chats with total strangers',
+  'No registration. No tracking. No data mining. No spam.',
+  'Educate and learn with others. Disagree and grow together.',
+  'Be social and be private. The best of both worlds.',
+  'Speak your mind and gain multiple perspectives',
+  'Totally social. Totally private. Totally awesome!',
+  'The road to peace and wisdom always starts with open dialog',
+  'With true social media, everyone is active. There are no passive followers here.',
+  'Finding a middle ground of our one world',
 ];
 int sNum = 0;
-int sMax = 1;
+// TODO: Modify slogan listS above and update sMax below
+int sMax = 9;
 
 // To reduce database downloads, only download
 // some stuff once per app launch or once per day
 bool gotSlogans = false;
-bool deadStats = false;
+bool deadTally = false;
 bool ghostBusted = false;
 bool gotInstructions = false;
 bool stimuliTotaled = false;
@@ -146,16 +155,16 @@ bool stimuliTotaled = false;
 // Classes below are for the serialization of
 // json-formatted data to and from the database
 
-class Stats {
+class Tally {
   final int comments;
   final int countries;
   final int devices;
   final double minreq;
   final double version;
 
-  Stats(this.comments, this.countries, this.devices, this.minreq, this.version);
+  Tally(this.comments, this.countries, this.devices, this.minreq, this.version);
 
-  Stats.fromJson(Map<String, dynamic> json)
+  Tally.fromJson(Map<String, dynamic> json)
       : comments = json['comments'],
         countries = json['countries'],
         devices = json['devices'],
@@ -181,19 +190,14 @@ class Dporian {
   Dporian(this.boots, this.bootstamp, this.color, this.group, this.striked);
 
   Dporian.fromJson(Map<String, dynamic> json)
-      : boots = json['boots'],
-        bootstamp = json['bootstamp'],
-        color = json['color'],
-        group = json['group'],
-        striked = json['striked'];
+      : boots = json['b'],
+        bootstamp = json['t'],
+        color = json['c'],
+        group = json['g'],
+        striked = json['s'];
 
-  Map<String, dynamic> toJson() => {
-        'boots': boots,
-        'bootstamp': bootstamp,
-        'color': color,
-        'group': group,
-        'striked': striked
-      };
+  Map<String, dynamic> toJson() =>
+      {'b': boots, 't': bootstamp, 'c': color, 'g': group, 's': striked};
 }
 
 class Stimulus {
@@ -399,55 +403,55 @@ class Content {
       this.stimulusStrikes);
 
   Content.fromJson(Map<String, dynamic> json)
-      : blueContent = json['blue-content'],
-        blueStrikes = json['blue-strikes'],
-        blueTimestamp = json['blue-timestamp'],
-        blueVacancy = json['blue-vacancy'],
-        greenContent = json['green-content'],
-        greenStrikes = json['green-strikes'],
-        greenTimestamp = json['green-timestamp'],
-        greenVacancy = json['green-vacancy'],
-        orangeContent = json['orange-content'],
-        orangeStrikes = json['orange-strikes'],
-        orangeTimestamp = json['orange-timestamp'],
-        orangeVacancy = json['orange-vacancy'],
-        purpleContent = json['purple-content'],
-        purpleStrikes = json['purple-strikes'],
-        purpleTimestamp = json['purple-timestamp'],
-        purpleVacancy = json['purple-vacancy'],
-        redContent = json['red-content'],
-        redStrikes = json['red-strikes'],
-        redTimestamp = json['red-timestamp'],
-        redVacancy = json['red-vacancy'],
-        stimulusCategory = json['stimulus-category'],
-        stimulusContent = json['stimulus-content'],
-        stimulusInstructions = json['stimulus-instructions'],
-        stimulusStrikes = json['stimulus-strikes'];
+      : blueContent = json['bc'],
+        blueStrikes = json['bs'],
+        blueTimestamp = json['bt'],
+        blueVacancy = json['bv'],
+        greenContent = json['gc'],
+        greenStrikes = json['gs'],
+        greenTimestamp = json['gt'],
+        greenVacancy = json['gv'],
+        orangeContent = json['oc'],
+        orangeStrikes = json['os'],
+        orangeTimestamp = json['ot'],
+        orangeVacancy = json['ov'],
+        purpleContent = json['pc'],
+        purpleStrikes = json['ps'],
+        purpleTimestamp = json['pt'],
+        purpleVacancy = json['pv'],
+        redContent = json['rc'],
+        redStrikes = json['rs'],
+        redTimestamp = json['rt'],
+        redVacancy = json['rv'],
+        stimulusCategory = json['scat'],
+        stimulusContent = json['sc'],
+        stimulusInstructions = json['si'],
+        stimulusStrikes = json['ss'];
 
   Map<String, dynamic> toJson() => {
-        'blue-content': blueContent,
-        'blue-strikes': blueStrikes,
-        'blue-timestamp': blueTimestamp,
-        'blue-vacancy': blueVacancy,
-        'green-content': greenContent,
-        'green-strikes': greenStrikes,
-        'green-timestamp': greenTimestamp,
-        'green-vacancy': greenVacancy,
-        'orange-content': orangeContent,
-        'orange-strikes': orangeStrikes,
-        'orange-timestamp': orangeTimestamp,
-        'orange-vacancy': orangeVacancy,
-        'purple-content': purpleContent,
-        'purple-strikes': purpleStrikes,
-        'purple-timestamp': purpleTimestamp,
-        'purple-vacancy': purpleVacancy,
-        'red-content': redContent,
-        'red-strikes': redStrikes,
-        'red-timestamp': redTimestamp,
-        'red-vacancy': redVacancy,
-        'stimulus-category': stimulusCategory,
-        'stimulus-content': stimulusContent,
-        'stimulus-instructions': stimulusInstructions,
-        'stimulus-strikes': stimulusStrikes
+        'bc': blueContent,
+        'bs': blueStrikes,
+        'bt': blueTimestamp,
+        'bv': blueVacancy,
+        'gc': greenContent,
+        'gs': greenStrikes,
+        'gt': greenTimestamp,
+        'gv': greenVacancy,
+        'oc': orangeContent,
+        'os': orangeStrikes,
+        'ot': orangeTimestamp,
+        'ov': orangeVacancy,
+        'pc': purpleContent,
+        'ps': purpleStrikes,
+        'pt': purpleTimestamp,
+        'pv': purpleVacancy,
+        'rc': redContent,
+        'rs': redStrikes,
+        'rt': redTimestamp,
+        'rv': redVacancy,
+        'scat': stimulusCategory,
+        'sc': stimulusContent,
+        'si': stimulusInstructions,
+        'ss': stimulusStrikes
       };
 }

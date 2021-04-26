@@ -63,7 +63,7 @@ int postTimeRB = DateTime.now().millisecondsSinceEpoch;
 bool tileVacancyRB = false;
 int muteCountRB = 0;
 
-// Use to update some data daily (if not on relaunch)
+// Use to update some data daily or on relaunch
 int dataDownloaded = DateTime.now().millisecondsSinceEpoch;
 int oneDay = 24 * 60 * 60 * 1000;
 // hours * minutes * seconds * 1 second of milliseconds
@@ -221,20 +221,20 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  // Update the stats in the menu drawer
-  void liveStats() {
-    if (deadStats == false) {
-      firebaseRTDB.child('statistics').once().then((DataSnapshot snapshot) {
+  // Update the tally in the menu drawer
+  void liveTally() {
+    if (deadTally == false) {
+      firebaseRTDB.child('tally').once().then((DataSnapshot snapshot) {
         Map<String, dynamic> statMap =
             new Map<String, dynamic>.from(snapshot.value);
-        var liveStatistics = Stats.fromJson(statMap);
+        var liveStatistics = Tally.fromJson(statMap);
         setState(() {
           commentsPosted = liveStatistics.comments;
           countriesRepresented = liveStatistics.countries;
           devicesDetected = liveStatistics.devices;
           latestVersion = liveStatistics.version;
           minReqVersion = liveStatistics.minreq;
-          deadStats = true;
+          deadTally = true;
         });
       });
     }
@@ -242,7 +242,6 @@ class _DporaAppState extends State<DporaApp> {
 
   // Find or create a group that has a vacancy
   void findVacantGroup() {
-    String groupName = '';
     firebaseRTDB.child('vacancies').once().then((DataSnapshot snapshotGroups) {
       var vacancyCheck = new Map<String, dynamic>.from(snapshotGroups.value);
       // First gather some keys before assigning one in priority order
@@ -258,73 +257,73 @@ class _DporaAppState extends State<DporaApp> {
           .firstWhere((k5) => vacancyCheck[k5] == 5, orElse: () => null);
       if (key4 != null) {
         // only 1 other person in group, so priority assignment is here
-        groupName = key4;
+        assignVacantColor(key4);
       } else if (key3 != null) {
-        groupName = key3;
+        assignVacantColor(key3);
       } else if (key2 != null) {
-        groupName = key2;
+        assignVacantColor(key2);
       } else if (key1 != null) {
-        groupName = key1;
+        assignVacantColor(key1);
       } else if (key5 != null) {
         // empty group, assign first person there
-        groupName = key5;
+        assignVacantColor(key5);
       } else {
         // new group is needed, first create a new group name/uid
-        groupName = firebaseRTDB.child('groups').push().key;
+        var newGroupName = firebaseRTDB.child('groups').push().key;
         // Now use this to add the key/value pairs
-        firebaseRTDB.child('groups').child('$groupName').set({
-          'blue-content': '',
-          'blue-strikes': 0,
-          'blue-timestamp': ServerValue.timestamp,
-          'blue-vacancy': true,
-          'green-content': '',
-          'green-strikes': 0,
-          'green-timestamp': ServerValue.timestamp,
-          'green-vacancy': true,
-          'orange-content': '',
-          'orange-strikes': 0,
-          'orange-timestamp': ServerValue.timestamp,
-          'orange-vacancy': true,
-          'purple-content': '',
-          'purple-strikes': 0,
-          'purple-timestamp': ServerValue.timestamp,
-          'purple-vacancy': true,
-          'red-content': '',
-          'red-strikes': 0,
-          'red-timestamp': ServerValue.timestamp,
-          'red-vacancy': true,
-          'stimulus-category': '',
-          'stimulus-content': 'What would you like to talk about?',
-          'stimulus-instructions': 'All about you',
-          'stimulus-strikes': 0
+        firebaseRTDB.child('groups').child('$newGroupName').set({
+          'bc': '',
+          'bs': 0,
+          'bt': ServerValue.timestamp,
+          'bv': true,
+          'gc': '',
+          'gs': 0,
+          'gt': ServerValue.timestamp,
+          'gv': true,
+          'oc': '',
+          'os': 0,
+          'ot': ServerValue.timestamp,
+          'ov': true,
+          'pc': '',
+          'ps': 0,
+          'pt': ServerValue.timestamp,
+          'pv': true,
+          'rc': '',
+          'rs': 0,
+          'rt': ServerValue.timestamp,
+          'rv': true,
+          'scat': 'personal',
+          'sc': 'What would you like to talk about?',
+          'si': 'All about you',
+          'ss': 0
         }).then((_) {
-          // update the vacancy status in vacancies node
+          // add the new group to the vacancies node
           firebaseRTDB
               .child('vacancies')
-              .set({'$groupName': 5}).catchError((onError) {
+              .set({'$newGroupName': 5}).catchError((onError) {
             print(onError);
           });
         });
+        // And now assign a vacant seat in the new group
+        assignVacantColor(newGroupName);
       }
-      // And now assign a vacant seat in that group
-      assignVacantColor(groupName);
     });
   }
 
-  void assignVacantColor(groupName) {
+  void assignVacantColor(grouper) {
     // Looking for a vacant color (an open seat)
     var seatColor = ''; // The color in that group
     firebaseRTDB
         .child('groups')
-        .child('$groupName')
+        .child('$grouper')
         .once()
         .then((DataSnapshot snapshotColors) {
       var colorVacancies = new Map<String, dynamic>.from(snapshotColors.value);
-      var blueSeat = colorVacancies['blue-vacancy'];
-      var greenSeat = colorVacancies['green-vacancy'];
-      var orangeSeat = colorVacancies['orange-vacancy'];
-      var purpleSeat = colorVacancies['purple-vacancy'];
-      var redSeat = colorVacancies['red-vacancy'];
+      var blueSeat = colorVacancies['bv'];
+      var greenSeat = colorVacancies['gv'];
+      var orangeSeat = colorVacancies['ov'];
+      var purpleSeat = colorVacancies['pv'];
+      var redSeat = colorVacancies['rv'];
       if (blueSeat == true) {
         seatColor = 'blue';
       } else {
@@ -344,15 +343,15 @@ class _DporaAppState extends State<DporaApp> {
           }
         }
       }
-      // double-check that user still (definately) needs a seat
+      // double-check this user still (definately) needs a seat
       if (userColorString == 'black' || groupName == 'none') {
         // Then assign the open seat (group and color) to the user
         firebaseRTDB
             .child('dporians')
             .child(auth.currentUser.uid)
-            .update({'color': '$seatColor', 'group': '$groupName'}).then((_) {
+            .update({'c': '$seatColor', 'g': '$grouper'}).then((_) {
           // update group vacancy status
-          updateVacancy(groupName, seatColor, false);
+          updateVacancy(seatColor, false);
         }).catchError((onAssignError) {
           print(onAssignError);
         });
@@ -362,18 +361,34 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
-  void updateVacancy(groupName, seatColor, v) {
+  void updateVacancy(seatColor, v) {
     // prep the variables
-    String colorContent = seatColor + '-content';
-    String colorStrikes = seatColor + '-strikes';
+    String sC = '';
+    if (seatColor == 'blue') {
+      sC = 'b';
+    }
+    if (seatColor == 'green') {
+      sC = 'g';
+    }
+    if (seatColor == 'orange') {
+      sC = 'o';
+    }
+    if (seatColor == 'purple') {
+      sC = 'p';
+    }
+    if (seatColor == 'red') {
+      sC = 'r';
+    }
+    String colorContent = sC + 'c';
+    String colorStrikes = sC + 's';
+    String colorTimestamp = sC + 't';
+    String seatKey = sC + 'v';
     String userStatus = '';
-    String colorTimestamp = seatColor + '-timestamp';
-    String seatKey = seatColor + '-vacancy';
     if (v == false) {
       userStatus = '[ new ' + seatColor + ' ]';
     } else {
       // A user unassigns someone else from group
-      updateUser(groupName, seatColor, 'group', true);
+      updateUser(groupName, seatColor, 'group');
     }
     // Update the vacancy in groups node
     firebaseRTDB.child('groups').child('$groupName').update({
@@ -382,31 +397,40 @@ class _DporaAppState extends State<DporaApp> {
       '$colorTimestamp': ServerValue.timestamp,
       '$seatKey': v
     }).then((_) {
-      // Update the vacancy in vacancies node
-      firebaseRTDB
-          .child('dporians')
-          .orderByChild('group')
-          .equalTo('$groupName')
-          .once()
-          .then((DataSnapshot snapshot) {
-        int memberCount = 0;
-        var myGroupMembers = new Map<String, dynamic>.from(snapshot.value);
-        for (var entry in myGroupMembers.entries) {
-          if (entry.value['color'] != 'black' || entry.value['color'] != '') {
-            memberCount++;
-          }
-        }
-        int vacancyCount = 5 - memberCount;
-        // Update group's vacancy count
+      if (v == false) {
+        // increment group vacancy total immediately
         firebaseRTDB.child('vacancies').update(
-            {'$groupName': vacancyCount}).catchError((onErrorUpdateVacancies) {
-          print(onErrorUpdateVacancies);
+            {'$groupName': ServerValue.increment(1)}).catchError((onErrorSit) {
+          print(onErrorSit);
         });
-      }).catchError((onErrorCheckGroups) {
-        print(onErrorCheckGroups);
-      });
+      }
     }).catchError((onErrorUpdateGroups) {
       print(onErrorUpdateGroups);
+    });
+  }
+
+  void vacancyCount(groupie) {
+    firebaseRTDB
+        .child('dporians')
+        .orderByChild('g')
+        .equalTo('$groupie')
+        .once()
+        .then((DataSnapshot snapshot) {
+      int memberCount = 0;
+      var myGroupMembers = new Map<String, dynamic>.from(snapshot.value);
+      for (var entry in myGroupMembers.entries) {
+        if (entry.value['c'] != 'black' || entry.value['c'] != '') {
+          memberCount++;
+        }
+      }
+      int vacancyCount = 5 - memberCount;
+      // Update group's vacancy count
+      firebaseRTDB.child('vacancies').update(
+          {'$groupie': vacancyCount}).catchError((onErrorUpdateVacancies) {
+        print(onErrorUpdateVacancies);
+      });
+    }).catchError((onErrorCheckGroups) {
+      print(onErrorCheckGroups);
     });
   }
 
@@ -421,25 +445,25 @@ class _DporaAppState extends State<DporaApp> {
       bool redMember = false;
       firebaseRTDB
           .child('dporians')
-          .orderByChild('group')
+          .orderByChild('g')
           .equalTo('$myGroup')
           .once()
           .then((DataSnapshot snapshot) {
         var myGroupMembers = new Map<String, dynamic>.from(snapshot.value);
         for (var entry in myGroupMembers.entries) {
-          if (entry.value['color'] == 'blue') {
+          if (entry.value['c'] == 'blue') {
             blueMember = true;
           }
-          if (entry.value['color'] == 'green') {
+          if (entry.value['c'] == 'green') {
             greenMember = true;
           }
-          if (entry.value['color'] == 'orange') {
+          if (entry.value['c'] == 'orange') {
             orangeMember = true;
           }
-          if (entry.value['color'] == 'purple') {
+          if (entry.value['c'] == 'purple') {
             purpleMember = true;
           }
-          if (entry.value['color'] == 'red') {
+          if (entry.value['c'] == 'red') {
             redMember = true;
           }
         }
@@ -448,7 +472,7 @@ class _DporaAppState extends State<DporaApp> {
           firebaseRTDB
               .child('groups')
               .child('$myGroup')
-              .update({'blue-vacancy': true}).catchError((onDestroyError) {
+              .update({'bv': true}).catchError((onDestroyError) {
             print(onDestroyError);
           });
         }
@@ -456,7 +480,7 @@ class _DporaAppState extends State<DporaApp> {
           firebaseRTDB
               .child('groups')
               .child('$myGroup')
-              .update({'green-vacancy': true}).catchError((onDestroyError) {
+              .update({'gv': true}).catchError((onDestroyError) {
             print(onDestroyError);
           });
         }
@@ -464,7 +488,7 @@ class _DporaAppState extends State<DporaApp> {
           firebaseRTDB
               .child('groups')
               .child('$myGroup')
-              .update({'orange-vacancy': true}).catchError((onDestroyError) {
+              .update({'ov': true}).catchError((onDestroyError) {
             print(onDestroyError);
           });
         }
@@ -472,7 +496,7 @@ class _DporaAppState extends State<DporaApp> {
           firebaseRTDB
               .child('groups')
               .child('$myGroup')
-              .update({'purple-vacancy': true}).catchError((onDestroyError) {
+              .update({'pv': true}).catchError((onDestroyError) {
             print(onDestroyError);
           });
         }
@@ -480,7 +504,7 @@ class _DporaAppState extends State<DporaApp> {
           firebaseRTDB
               .child('groups')
               .child('$myGroup')
-              .update({'red-vacancy': true}).catchError((onDestroyError) {
+              .update({'rv': true}).catchError((onDestroyError) {
             print(onDestroyError);
           });
         }
@@ -488,14 +512,10 @@ class _DporaAppState extends State<DporaApp> {
         print(onSeekError);
       });
       // delete colorless entities
-      firebaseRTDB.child('groups').child('$myGroup').child('-content').remove();
-      firebaseRTDB.child('groups').child('$myGroup').child('-strikes').remove();
-      firebaseRTDB
-          .child('groups')
-          .child('$myGroup')
-          .child('-timestamp')
-          .remove();
-      firebaseRTDB.child('groups').child('$myGroup').child('-vacancy').remove();
+      firebaseRTDB.child('groups').child('$myGroup').child('c').remove();
+      firebaseRTDB.child('groups').child('$myGroup').child('s').remove();
+      firebaseRTDB.child('groups').child('$myGroup').child('t').remove();
+      firebaseRTDB.child('groups').child('$myGroup').child('v').remove();
       // don't continuously do this
       setState(() {
         ghostBusted = true;
@@ -506,20 +526,16 @@ class _DporaAppState extends State<DporaApp> {
   // Create new user data
   void createUser(uuid) {
     firebaseRTDB.child('dporians').child('$uuid').set({
-      'boots': 0,
-      'bootstamp': ServerValue.timestamp,
-      'color': 'black',
-      'group': 'none',
-      'striked': 'never have i ever'
+      'b': 0,
+      't': ServerValue.timestamp,
+      'c': 'black',
+      'g': 'none',
+      's': 'never'
     }).then((_) {
-      // update the live stats for devices detected
-      if (upgradeRequired == false) {
-        // increment users who were let in
-        firebaseRTDB.child('statistics').update(
-            {'devices': ServerValue.increment(1)}).catchError((onNewError) {
-          print(onNewError);
-        });
-      }
+      firebaseRTDB.child('tally').update(
+          {'devices': ServerValue.increment(1)}).catchError((onNewError) {
+        print(onNewError);
+      });
     }).catchError((onError) {
       print(onError);
     });
@@ -552,18 +568,24 @@ class _DporaAppState extends State<DporaApp> {
   void muteButtonPress(groupOfMutedUser, colorOfMutedUser, muteCount, crement) {
     // Convert Color to String
     String _colorString = '';
+    String _cS = '';
     if (colorOfMutedUser == Colors.blueAccent) {
       _colorString = 'blue';
+      _cS = 'b';
     } else if (colorOfMutedUser == Colors.greenAccent) {
       _colorString = 'green';
+      _cS = 'g';
     } else if (colorOfMutedUser == Colors.orangeAccent) {
       _colorString = 'orange';
+      _cS = 'o';
     } else if (colorOfMutedUser == Colors.purpleAccent) {
       _colorString = 'purple';
+      _cS = 'p';
     } else if (colorOfMutedUser == Colors.redAccent) {
       _colorString = 'red';
+      _cS = 'r';
     }
-    String _colorStriked = _colorString + '-strikes';
+    String _colorStriked = _cS + 's';
     // Increment mute/strike counter for group member
     if (crement == 'increment') {
       firebaseRTDB
@@ -576,7 +598,7 @@ class _DporaAppState extends State<DporaApp> {
         rootScaffoldMessengerKey.currentState.showSnackBar(snackBarMutedUser);
         // if whole group muted user, increment their boot count
         if (muteCount == 3 && myGroupVacancy == 0) {
-          updateUser(groupOfMutedUser, _colorString, 'boots', false);
+          updateUser(groupOfMutedUser, _colorString, 'boots');
         }
       }).catchError((onIncrementError) {
         print(onIncrementError);
@@ -596,45 +618,36 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  void updateUser(groupOf, colorString, updateWhat, withdrawl) {
+  void updateUser(groupOf, colorString, updateWhat) {
     // Find all group members
     firebaseRTDB
         .child('dporians')
-        .orderByChild('group')
+        .orderByChild('g')
         .equalTo('$groupOf')
         .once()
         .then((DataSnapshot snapshot) {
       var mapMembers = new Map<String, dynamic>.from(snapshot.value);
       for (var entry in mapMembers.entries) {
-        // Find bootee (the one getting booted)
-        if (entry.value['color'] == colorString) {
+        // Find bootee (the one getting booted or unassigned)
+        if (entry.value['c'] == colorString) {
           var bootee = entry.key;
           if (updateWhat == 'boots') {
-            if (withdrawl == false) {
-              // Increment boot count
-              firebaseRTDB.child('dporians').child('$bootee').update({
-                'boots': ServerValue.increment(1),
-                'bootstamp': ServerValue.timestamp
-              }).catchError((onBootError) {
-                print(onBootError);
-              });
-            } else {
-              // TODO: Add functionality to roll-off boots after time
-            }
-          } else if (updateWhat == 'group') {
-            if (withdrawl == true) {
-              // Another user unassign someone else from group
-              firebaseRTDB
-                  .child('dporians')
-                  .child('$bootee')
-                  .update({'color': 'black', 'group': 'none'}).catchError(
-                      (onGroupError) {
-                print(onGroupError);
-              });
-            } else {
-              // Users was self-assigned to group,
-              // so no need to do that here
-            }
+            // Increment boot count
+            firebaseRTDB.child('dporians').child('$bootee').update({
+              'b': ServerValue.increment(1),
+              't': ServerValue.timestamp
+            }).catchError((onBootError) {
+              print(onBootError);
+            });
+          }
+          if (updateWhat == 'group') {
+            // Another user unassign someone else from group
+            firebaseRTDB
+                .child('dporians')
+                .child('$bootee')
+                .update({'c': 'black', 'g': 'none'}).catchError((onGroupError) {
+              print(onGroupError);
+            });
           }
         }
       }
@@ -646,7 +659,7 @@ class _DporaAppState extends State<DporaApp> {
   // Pick a new stimulus
   void getStimulus(stimuliCategory, stimulusID) {
     // only if one more strike is needed and
-    // the user needs a new stimulus queued
+    // if the user needs a new stimulus queued
     if (strikesNeeded - stimulusStrikes < 2 &&
         nextStimulusContent == sentStimulusContent) {
       firebaseRTDB
@@ -724,10 +737,10 @@ class _DporaAppState extends State<DporaApp> {
     // Show next if 3 strikes in a full group
     if (stimulusStrikes > 1 && myGroupVacancy == 0) {
       firebaseRTDB.child('groups').child('$groupName').update({
-        'stimulus-category': '$categoryChoice',
-        'stimulus-content': '$nextStimulusContent',
-        'stimulus-instructions': '$instructStimulus',
-        'stimulus-strikes': 0
+        'scat': '$categoryChoice',
+        'sc': '$nextStimulusContent',
+        'si': '$instructStimulus',
+        'ss': 0
       }).then((_) {
         setState(() {
           sentStimulusContent = nextStimulusContent;
@@ -741,10 +754,10 @@ class _DporaAppState extends State<DporaApp> {
       // Show next if 2 strikes in not a full group
     } else if (stimulusStrikes > 0 && myGroupVacancy != 0) {
       firebaseRTDB.child('groups').child('$groupName').update({
-        'stimulus-category': '$categoryChoice',
-        'stimulus-content': '$nextStimulusContent',
-        'stimulus-instructions': '$instructStimulus',
-        'stimulus-strikes': 0
+        'scat': '$categoryChoice',
+        'sc': '$nextStimulusContent',
+        'si': '$instructStimulus',
+        'ss': 0
       }).then((_) {
         setState(() {
           sentStimulusContent = nextStimulusContent;
@@ -757,18 +770,16 @@ class _DporaAppState extends State<DporaApp> {
       });
     } else {
       // Increment the counter
-      int striked = stimulusStrikes + 1;
-      // Update DB
       firebaseRTDB
           .child('groups')
           .child('$groupName')
-          .update({'stimulus-strikes': striked}).then((_) {
+          .update({'ss': ServerValue.increment(1)}).then((_) {
         // Note this user striked that content to prevent
         // multiple strikes on same content by same user
         firebaseRTDB
             .child('dporians')
             .child('$uuid')
-            .update({'striked': stimulusContent}).catchError((onErrorGroups) {
+            .update({'s': stimulusContent}).catchError((onErrorGroups) {
           print(onErrorGroups);
         });
         // Inform that more strikes are needed
@@ -1097,16 +1108,45 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
+  // Users can roll of a boot once a week
+  // if they haven't got one for a week
+  void rollBoot() {
+    firebaseRTDB.child('dporians')
+      .child(auth.currentUser.uid)
+      .update({
+        'b': ServerValue.increment(-1),
+        't': ServerValue.timestamp
+      }).catchError((onError) {
+        print(onError);
+    });
+  }
+
   void postComment(submitted, milli) {
-    String colorContent = userColorString + '-content';
-    String colorTimestamp = userColorString + '-timestamp';
+    String uCS = '';
+    if (userColorString == 'blue') {
+      uCS = 'b';
+    }
+    if (userColorString == 'green') {
+      uCS = 'g';
+    }
+    if (userColorString == 'orange') {
+      uCS = 'o';
+    }
+    if (userColorString == 'purple') {
+      uCS = 'p';
+    }
+    if (userColorString == 'red') {
+      uCS = 'r';
+    }
+    String colorContent = uCS + 'c';
+    String colorTimestamp = uCS + 't';
     firebaseRTDB.child('groups').child('$groupName').update({
       '$colorContent': '$submitted',
       '$colorTimestamp': ServerValue.timestamp
     }).then((_) {
-      // update live stats
+      // update tally
       firebaseRTDB
-          .child('statistics')
+          .child('tally')
           .update({'comments': ServerValue.increment(1)}).then((_) {
         // unassign inactive users of the group
         var tenMinutes = 10 * 60 * 1000;
@@ -1114,28 +1154,34 @@ class _DporaAppState extends State<DporaApp> {
         if (blueTimestamp < beingActive &&
             userColorString != 'blue' &&
             blueVacancy == false) {
-          updateVacancy(groupName, 'blue', true);
+          updateVacancy('blue', true);
         }
         if (greenTimestamp < beingActive &&
             userColorString != 'green' &&
             greenVacancy == false) {
-          updateVacancy(groupName, 'green', true);
+          updateVacancy('green', true);
         }
         if (orangeTimestamp < beingActive &&
             userColorString != 'orange' &&
             orangeVacancy == false) {
-          updateVacancy(groupName, 'orange', true);
+          updateVacancy('orange', true);
         }
         if (purpleTimestamp < beingActive &&
             userColorString != 'purple' &&
             purpleVacancy == false) {
-          updateVacancy(groupName, 'purple', true);
+          updateVacancy('purple', true);
         }
         if (redTimestamp < beingActive &&
             userColorString != 'red' &&
             redVacancy == false) {
-          updateVacancy(groupName, 'red', true);
+          updateVacancy('red', true);
         }
+        // wait a bit, then update group vacancy total
+        // once. timer may prevent user from switching
+        // into the same group, or color of same group
+        Timer(Duration(seconds: 20), () {
+          vacancyCount(groupName);
+        });
       }).catchError((onErrorStats) {
         print(onErrorStats);
       });
@@ -1181,11 +1227,11 @@ class _DporaAppState extends State<DporaApp> {
     // Multiple fonts sizes in menu by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
 
-    // Use to update some data daily (if not on relaunch)
+    // Use to update some data daily or on relaunch
     if (DateTime.now().millisecondsSinceEpoch - dataDownloaded > oneDay) {
       setState(() {
         gotSlogans = false;
-        deadStats = false;
+        deadTally = false;
         ghostBusted = false;
         gotInstructions = false;
         stimuliTotaled = false;
@@ -1194,9 +1240,8 @@ class _DporaAppState extends State<DporaApp> {
       });
     }
 
-    // Get the latest stats to show in menu drawer
-    liveStats();
-    // Show live stats in menu drawer
+    // Get the latest tally to show in menu drawer
+    liveTally();
     String liveCountries = 'Over ' +
         countriesRepresented.toString() +
         ' countries represented' +
@@ -1231,11 +1276,17 @@ class _DporaAppState extends State<DporaApp> {
         upgradeRequired = false;
         userColor = Colors.black; // reset to reassign
       });
-      // Get slogans to show in menu drawer
-      getSlogans();
 
-      // Update the total number of each stimuli category & sum total
-      stimuliTotals();
+      // If this is an old version, update some data
+      // during app launch or daily (whatever's first)
+      if (thisVersion < latestVersion) {
+        // Get slogans to show in menu drawer
+        getSlogans();
+        // Update totals of each stimuli category & sum total
+        stimuliTotals();
+        // Load all stimuli category instructions
+        getInstructions();
+      }
 
       // If already signed in...
       if (auth.currentUser != null) {
@@ -1250,10 +1301,7 @@ class _DporaAppState extends State<DporaApp> {
         if (userColorString == 'black' || groupName == 'none') {
           // User needs to be assigned to a group
           findVacantGroup();
-        }
-
-        // If in group...
-        if (groupName != '' && groupName != 'none') {
+        } else {
           getContent(groupName);
           // Assign comments to appropriate color boxes
           assignChatBoxes(userColorString);
@@ -1261,10 +1309,12 @@ class _DporaAppState extends State<DporaApp> {
           myGroupVacancyStatus();
           // Seek and destroy ghosts occupying vacancies
           ghostBusters(groupName);
+          // Roll off a boot if not booted for a week
+          if (dataDownloaded - userBootstamp > oneDay * 7 &&
+              userBoots > 0) {
+            rollBoot();
+          }
         }
-
-        // Load all stimlui category instructions
-        getInstructions();
 
         // Choose a category
         chooseCategory(stimuliDeck[0]);
@@ -1295,7 +1345,7 @@ class _DporaAppState extends State<DporaApp> {
             'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each squircle. If the text does not scroll, that means you are already viewing all the content. The blue or purple squircles should have enough text for you to test scrolling.';
         textColorLT = Colors.orangeAccent;
         tileTextLB =
-            'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments disappear after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
+            'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments start vanishing after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
         textColorLB = Colors.blueAccent;
         tileTextRT =
             'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
@@ -1394,7 +1444,7 @@ class _DporaAppState extends State<DporaApp> {
                   TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: '\nLive Stats',
+                        text: '\nTally',
                         style: TextStyle(
                           fontSize: 18 * screenSizeUnit,
                           color: Colors.white,
@@ -1981,12 +2031,12 @@ class _DporaAppState extends State<DporaApp> {
         chatOpacity = 1.0;
         int timeElapsed = DateTime.now().millisecondsSinceEpoch - postTime;
         // Start fading text if it was posted more than 30 seconds ago
-        int twentySeconds = 20 * 1000;
+        int thirtySeconds = 30 * 1000;
         // Fade action only occurs to chat text, not Terms of service
-        if (timeElapsed > twentySeconds && auth.currentUser != null) {
-          chatFadeTime = 10; // show fade out
+        if (timeElapsed > thirtySeconds && auth.currentUser != null) {
+          chatFadeTime = 10; // slow fade out
           chatOpacity = 0.0;
-        } else if (timeElapsed <= twentySeconds) {
+        } else if (timeElapsed <= thirtySeconds) {
           chatFadeTime = 1; // quick fade in
           chatOpacity = 1.0;
         }
