@@ -26,18 +26,20 @@ String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
 final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
 
 // Tally gets their latest numbers from the DB
+// TODO: Update minimum tally numbers
 int devicesDetected = 2;
 int countriesRepresented = 2;
 int commentsPosted = 2;
-double latestVersion = 0.0;
-double minReqVersion = 0.0;
+double latestVersion = 0.0; // keep 0.0
+double minReqVersion = 1.2;
+// version 1.1 could not create new users properly
 String versionStatus = '';
 bool upgradeRequired;
 // TODO: Update in 3 places before every app release
 // 1. on the DB
 // 2. in the yaml file
 // 3. below this line
-double thisVersion = 1.1;
+double thisVersion = 1.2;
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
@@ -53,7 +55,7 @@ String groupName = 'none';
 int myGroupVacancy;
 String strikedContent = '';
 String groupOfMutedUser = '';
-var registered; // check the registration status
+bool registered = false; // is user in DB?
 
 // Create lists (decks) containing all the stimuli counts
 // These decks will be shuffled later to choose a random entry
@@ -141,11 +143,12 @@ List<String> slogans = [
   'Finding a middle ground of our one world',
 ];
 int sNum = 0;
-// TODO: Modify slogan listS above and update sMax below
+// TODO: Modify slogan list above and update sMax below
 int sMax = 9;
 
 // To reduce database downloads, only download
 // some stuff once per app launch or once per day
+bool checkedUser = false;
 bool gotSlogans = false;
 bool deadTally = false;
 bool ghostBusted = false;

@@ -161,7 +161,7 @@ showAlertDialog(BuildContext context) {
         Container(
             margin: EdgeInsets.only(left: 5),
             child: Text(
-              'Welcome to dpora!',
+              '3, 2, 1...',
               style: TextStyle(
                 fontSize: 20,
               ),
@@ -398,9 +398,9 @@ class _DporaAppState extends State<DporaApp> {
       '$seatKey': v
     }).then((_) {
       if (v == false) {
-        // increment group vacancy total immediately
+        // decrement group vacancy total immediately
         firebaseRTDB.child('vacancies').update(
-            {'$groupName': ServerValue.increment(1)}).catchError((onErrorSit) {
+            {'$groupName': ServerValue.increment(-1)}).catchError((onErrorSit) {
           print(onErrorSit);
         });
       }
@@ -419,7 +419,7 @@ class _DporaAppState extends State<DporaApp> {
       int memberCount = 0;
       var myGroupMembers = new Map<String, dynamic>.from(snapshot.value);
       for (var entry in myGroupMembers.entries) {
-        if (entry.value['c'] != 'black' || entry.value['c'] != '') {
+        if (entry.value['c'] != 'black') {
           memberCount++;
         }
       }
@@ -516,6 +516,8 @@ class _DporaAppState extends State<DporaApp> {
       firebaseRTDB.child('groups').child('$myGroup').child('s').remove();
       firebaseRTDB.child('groups').child('$myGroup').child('t').remove();
       firebaseRTDB.child('groups').child('$myGroup').child('v').remove();
+      // delete group called 'none'
+      firebaseRTDB.child('groups').child('none').remove();
       // don't continuously do this
       setState(() {
         ghostBusted = true;
@@ -541,6 +543,33 @@ class _DporaAppState extends State<DporaApp> {
     });
   }
 
+  // Check if user exists in DB or create one
+  void checkUser(dporian) {
+    if (checkedUser == false) {
+      firebaseRTDB
+          .child('dporians')
+          .child('$dporian')
+          .once()
+          .then((DataSnapshot snappy) {
+        Map<String, dynamic> userChecker =
+            new Map<String, dynamic>.from(snappy.value);
+        var gotUser = Dporian.fromJson(userChecker);
+        if (gotUser.boots != null) {
+          // User exists
+          setState(() {
+            checkedUser = true;
+            registered = true;
+          });
+        }
+      }).catchError((onError) {
+        // User does not exist
+        print(onError);
+        // Add user, if not already
+        createUser(dporian);
+      });
+    }
+  }
+
   // Get user info
   void getUser(dporian) {
     firebaseRTDB.child('dporians').child('$dporian').onValue.listen((event) {
@@ -554,12 +583,6 @@ class _DporaAppState extends State<DporaApp> {
         userColorString = userDetails.color;
         groupName = userDetails.group;
         strikedContent = userDetails.striked;
-        registered = true;
-      });
-    }).onError((oops) {
-      print(oops);
-      setState(() {
-        registered = false;
       });
     });
   }
@@ -1111,13 +1134,11 @@ class _DporaAppState extends State<DporaApp> {
   // Users can roll of a boot once a week
   // if they haven't got one for a week
   void rollBoot() {
-    firebaseRTDB.child('dporians')
-      .child(auth.currentUser.uid)
-      .update({
-        'b': ServerValue.increment(-1),
-        't': ServerValue.timestamp
-      }).catchError((onError) {
-        print(onError);
+    firebaseRTDB.child('dporians').child(auth.currentUser.uid).update({
+      'b': ServerValue.increment(-1),
+      't': ServerValue.timestamp
+    }).catchError((onError) {
+      print(onError);
     });
   }
 
@@ -1235,6 +1256,7 @@ class _DporaAppState extends State<DporaApp> {
         ghostBusted = false;
         gotInstructions = false;
         stimuliTotaled = false;
+        checkedUser = false;
         // and update dataDownloaded
         dataDownloaded = DateTime.now().millisecondsSinceEpoch;
       });
@@ -1257,6 +1279,13 @@ class _DporaAppState extends State<DporaApp> {
     } else {
       versionStatus = '(You are up to date)\n';
     }
+    String deviceID = 'No dpora ID yet';
+    if (auth.currentUser != null) {
+      setState(() {
+        // The last 10 digits of auth id
+        deviceID = 'dpora ID: ' + auth.currentUser.uid.substring(18);
+      });
+    }
 
     // Check if they have the minimal required app version
     // This can also be used as an off switch for DB use
@@ -1264,8 +1293,8 @@ class _DporaAppState extends State<DporaApp> {
       // shut the front door
       setState(() {
         stimulusInstructions = 'See web page';
-        stimulusContent = 'https://dpora.com/upgrade';
-        // Either the dpora service or app needs an upgrade
+        stimulusContent = 'https://dpora.com/update';
+        // Either the dpora service or app needs to be updated
         upgradeRequired = true;
         iconColor = boxBGColor;
         userColor = boxBGColor;
@@ -1290,51 +1319,50 @@ class _DporaAppState extends State<DporaApp> {
 
       // If already signed in...
       if (auth.currentUser != null) {
-        // Fetch user info
-        getUser(auth.currentUser.uid);
+        // See if user data exists
+        checkUser(auth.currentUser.uid);
 
-        if (registered == false) {
-          createUser(auth.currentUser.uid);
-        }
+        if (registered == true) {
+          getUser(auth.currentUser.uid);
 
-        // If not in group (nor have color)...
-        if (userColorString == 'black' || groupName == 'none') {
-          // User needs to be assigned to a group
-          findVacantGroup();
-        } else {
-          getContent(groupName);
-          // Assign comments to appropriate color boxes
-          assignChatBoxes(userColorString);
-          // To keep the myGroupVacancy integer updated
-          myGroupVacancyStatus();
-          // Seek and destroy ghosts occupying vacancies
-          ghostBusters(groupName);
-          // Roll off a boot if not booted for a week
-          if (dataDownloaded - userBootstamp > oneDay * 7 &&
-              userBoots > 0) {
-            rollBoot();
+          // If not in group (nor have color)...
+          if (userColorString == 'black' || groupName == 'none') {
+            // User needs to be assigned to a group
+            findVacantGroup();
+          } else {
+            getContent(groupName);
+            // Assign comments to appropriate color boxes
+            assignChatBoxes(userColorString);
+            // To keep the myGroupVacancy integer updated
+            myGroupVacancyStatus();
+            // Seek and destroy ghosts occupying vacancies
+            ghostBusters(groupName);
+            // Roll off a boot if not booted for a week
+            if (dataDownloaded - userBootstamp > oneDay * 7 && userBoots > 0) {
+              rollBoot();
+            }
           }
-        }
 
-        // Choose a category
-        chooseCategory(stimuliDeck[0]);
-        // The default stimulus is "DO NOT DELETE THIS ENTRY"
-        // which serves as a placeholder for...
-        if (nextStimulusContent == 'DO NOT DELETE THIS ENTRY') {
-          sentStimulusContent = nextStimulusContent;
-          shuffleDecks();
-        }
+          // Choose a category
+          chooseCategory(stimuliDeck[0]);
+          // The default stimulus is "DO NOT DELETE THIS ENTRY"
+          // which serves as a placeholder for...
+          if (nextStimulusContent == 'DO NOT DELETE THIS ENTRY') {
+            sentStimulusContent = nextStimulusContent;
+            shuffleDecks();
+          }
 
-        // Choose a random stimulus
-        randomStimulus();
-        if (nextStimulusContent == stimulusContent) {
-          // That's not a topic change, try again
-          sentStimulusContent = nextStimulusContent;
+          // Choose a random stimulus
           randomStimulus();
-        }
+          if (nextStimulusContent == stimulusContent) {
+            // That's not a topic change, try again
+            sentStimulusContent = nextStimulusContent;
+            randomStimulus();
+          }
 
-        // Show icons
-        iconColor = Colors.grey[700];
+          // Show icons
+          iconColor = Colors.grey[700];
+        }
       } else {
         // Show Terms of service to first time users of this app installation
         stimulusContent = 'Welcome!';
@@ -1342,13 +1370,13 @@ class _DporaAppState extends State<DporaApp> {
         // Show the How to and Terms of service screen before login
         userColor = Colors.grey[700];
         tileTextLT =
-            'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each squircle. If the text does not scroll, that means you are already viewing all the content. The blue or purple squircles should have enough text for you to test scrolling.';
+            'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each colored squircle. If the text does not scroll, you are already viewing all the content. The blue or purple squircles should have enough text for you to test scrolling.';
         textColorLT = Colors.orangeAccent;
         tileTextLB =
             'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments start vanishing after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
         textColorLB = Colors.blueAccent;
         tileTextRT =
-            'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora does not save, and is not responsible for, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
+            'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora is not responsible for, and does not save a history of, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
         textColorRT = Colors.purpleAccent;
         tileTextRB =
             'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
@@ -1484,6 +1512,8 @@ class _DporaAppState extends State<DporaApp> {
                             thisVersion.toString() +
                             '\n' +
                             versionStatus +
+                            '\n' +
+                            deviceID +
                             '\n' +
                             copyright +
                             '\n',
@@ -1843,9 +1873,18 @@ class _DporaAppState extends State<DporaApp> {
                             } else {
                               // Otherwise, sign the user in anonymously
                               signInAnonymously();
-                              if (registered == false) {
-                                createUser(auth.currentUser.uid);
-                              }
+                              Timer(Duration(seconds: 3), () {
+                                if (auth.currentUser != null) {
+                                  setState(() {
+                                    checkedUser = false;
+                                    stimulusContent =
+                                        'You can scroll this area too. You have been assigned the private and random ID: ' +
+                                            auth.currentUser.uid.substring(18) +
+                                            ' (accessible from the menu icon). Now tap the arrow once more to join a group!';
+                                    stimulusInstructions = 'Topic theme goes here';
+                                  });
+                                }
+                              });
                             }
                           }
                         },
