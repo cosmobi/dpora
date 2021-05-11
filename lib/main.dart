@@ -161,7 +161,7 @@ showAlertDialog(BuildContext context) {
         Container(
             margin: EdgeInsets.only(left: 5),
             child: Text(
-              '3, 2, 1...',
+              'new device',
               style: TextStyle(
                 fontSize: 20,
               ),
@@ -1376,7 +1376,7 @@ class _DporaAppState extends State<DporaApp> {
             'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments start vanishing after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
         textColorLB = Colors.blueAccent;
         tileTextRT =
-            'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora is not responsible for, and does not save a history of, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. These changes will be announced at news.dpora.com, which you can subscribe to by email or RSS to be personally notified.';
+            'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora is not responsible for, and does not save a history of, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. Any policy updates will be announced at news.dpora.com and its RSS feed can be subscribed to at dpora.noticeable.news/policy.rss to be personally and immediately notified of any policy updates.';
         textColorRT = Colors.purpleAccent;
         tileTextRB =
             'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
@@ -1512,13 +1512,16 @@ class _DporaAppState extends State<DporaApp> {
                             thisVersion.toString() +
                             '\n' +
                             versionStatus +
-                            '\n' +
-                            deviceID +
-                            '\n' +
-                            copyright +
                             '\n',
                         style: TextStyle(
                           fontSize: 14 * screenSizeUnit,
+                          color: Colors.white38,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Available on Google Play* (QR code shortcut)',
+                        style: TextStyle(
+                          fontSize: 12 * screenSizeUnit,
                           color: Colors.white38,
                         ),
                       ),
@@ -1529,6 +1532,30 @@ class _DporaAppState extends State<DporaApp> {
               Divider(
                 height: 1.0,
                 thickness: 1.0,
+              ),
+              Image.asset('assets/images/qrcode_googleplay.png'),
+              Container(
+                padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
+                child: Text.rich(
+                  TextSpan(
+                    children: <TextSpan>[
+                      TextSpan(
+                        text: '*Google Play is a trademark of Google LLC.',
+                        style: TextStyle(
+                          fontSize: 12 * screenSizeUnit,
+                          color: Colors.white38,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '\n\n' + deviceID + '\n\n' + copyright + '\n',
+                        style: TextStyle(
+                          fontSize: 14 * screenSizeUnit,
+                          color: Colors.white38,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               ListTile(
                 leading: Icon(Icons.arrow_back_outlined),
@@ -1550,6 +1577,7 @@ class _DporaAppState extends State<DporaApp> {
             ],
           ),
         ),
+        resizeToAvoidBottomInset: false,
         body: OrientationBuilder(
           builder: (context, orientation) {
             return orientation == Orientation.portrait
@@ -1701,7 +1729,7 @@ class _DporaAppState extends State<DporaApp> {
       });
     }
 
-    // Multiple object sizes by this to fit different screen sizes
+    // Multiply object sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     // vertical view
     double instructionSize = 14 * screenSizeUnit;
@@ -1710,6 +1738,8 @@ class _DporaAppState extends State<DporaApp> {
       // horizontal view
       instructionSize = 12 * screenSizeUnit;
       _iconSize = 28.0 * screenSizeUnit;
+      // prepend a space to give spacer from border
+      stimulusInstructions = '  ' + stimulusInstructions;
     }
 
     // Calculute how many strikes are needed to show next stimulus
@@ -1820,7 +1850,7 @@ class _DporaAppState extends State<DporaApp> {
                       borderRadius: BorderRadius.all(Radius.circular(20)),
                       color: Colors.grey[900],
                     ),
-                    height: 75.0 * screenSizeUnit,
+                    height: 70.0 * screenSizeUnit,
                     width: 90.0 * screenSizeUnit,
                     child: Text(
                       stimulusInstructions,
@@ -1881,7 +1911,10 @@ class _DporaAppState extends State<DporaApp> {
                                         'You can scroll this area too. You have been assigned the private and random ID: ' +
                                             auth.currentUser.uid.substring(18) +
                                             ' (accessible from the menu icon). Now tap the arrow once more to join a group!';
-                                    stimulusInstructions = 'Topic theme goes here';
+                                    stimulusInstructions =
+                                        'Topic theme goes here';
+                                    iconColor =
+                                        Colors.grey[700]; //TODO test this
                                   });
                                 }
                               });
@@ -2046,6 +2079,9 @@ class _DporaAppState extends State<DporaApp> {
     Color _textColor = textColor;
     double iconSize = 22.0 * screenSizeUnit; // vertical view
     double muteStatusSize = 10.0 * screenSizeUnit; // vertical
+    if (platform == 'iOS' && textSize <= 20.0 * screenSizeUnit) {
+      muteStatusSize = 8.0 * screenSizeUnit;
+    }
     if (textSize > 20.0 * screenSizeUnit) {
       // make iconSize larger for horizontal
       iconSize = 26.0 * screenSizeUnit;
@@ -2212,8 +2248,13 @@ class _DporaAppState extends State<DporaApp> {
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     double outerspace = screenSizeUnit * 10;
     final allTileHeight = 0.25; // 25% screen height
-    final allTileWidth = 0.44; // 44% screen width
-    final allTextSize = 17.0 * screenSizeUnit; // font size for chatters
+    final allTileWidth = 0.43; // 43% screen width
+    double allTextSize = 17.0 * screenSizeUnit; // font size for chatters
+    double _stimulusTextSize = 19.0;
+    if (platform == 'iOS') {
+      allTextSize = 14 * screenSizeUnit;
+      _stimulusTextSize = 16.0;
+    }
     bool verticalView = true;
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -2221,7 +2262,8 @@ class _DporaAppState extends State<DporaApp> {
         Container(
           height: MediaQuery.of(context).size.height * 0.26, //26%
           width: MediaQuery.of(context).size.width * 0.98, //98%
-          child: _stimulus(19.0 * screenSizeUnit), // stimulus text size
+          child: _stimulus(
+              _stimulusTextSize * screenSizeUnit), // stimulus text size
         ),
         Container(
           padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
@@ -2288,8 +2330,8 @@ class _DporaAppState extends State<DporaApp> {
     // Multiple fonts sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     double outerspace = screenSizeUnit * 10;
-    final allTileHeight = 0.6; // 33% screen height
-    final allTileWidth = 0.225; // 21% screen width
+    final allTileHeight = 0.6; // 60% screen height
+    final allTileWidth = 0.22; // 22% screen width
     final allTextSize = 24.0 * screenSizeUnit; // font size for chatters
     bool verticalView = false;
     return Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
@@ -2304,7 +2346,7 @@ class _DporaAppState extends State<DporaApp> {
             ),
             Container(
               padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
-              width: MediaQuery.of(context).size.width * 0.48,
+              width: MediaQuery.of(context).size.width * 0.47,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 1500),
                 transitionBuilder: (Widget child, Animation<double> animation) {

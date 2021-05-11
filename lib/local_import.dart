@@ -37,7 +37,8 @@ String versionStatus = '';
 bool upgradeRequired;
 // TODO: Update in 3 places before every app release
 // 1. on the DB
-// 2. in the yaml file
+// 2. in the yaml file 
+// (also increment number on right side of + sign)
 // 3. below this line
 double thisVersion = 1.2;
 
@@ -141,10 +142,11 @@ List<String> slogans = [
   'The road to peace and wisdom always starts with open dialog',
   'With true social media, everyone is active. There are no passive followers here.',
   'Finding a middle ground of our one world',
+  'Micro chats, macro ideas',
 ];
 int sNum = 0;
 // TODO: Modify slogan list above and update sMax below
-int sMax = 9;
+int sMax = 10;
 
 // To reduce database downloads, only download
 // some stuff once per app launch or once per day
