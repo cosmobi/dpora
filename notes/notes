@@ -25,6 +25,46 @@ final String uid = randomNumber + milliseconds;
 
 *********************************************************************************
 
+Some usable code, if needed, for translation tasks using the Google ML Kit plugin
+
+[ the following code goes in the class _DporaAppState extends State<DporaApp> ]
+
+Future<void> getAvailableModels() async {
+    var result = await _languageModelManager.getAvailableModels();
+    print('Available models: $result');
+  }
+
+[ not working... ]
+// @override
+  // void dispose() {
+  //   _onDeviceTranslator.close();
+  //   super.dispose();
+  // }
+
+
+[ the following code goes somewhere in the build code, e.g., the sidebar]
+
+TextButton(
+  onPressed: downloadModel,
+  child: Text(
+    'Download Translation Engine',
+    style: TextStyle(
+      fontSize: 12 * screenSizeUnit,
+      color: Colors.blueAccent,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
+
+ElevatedButton(
+    onPressed: getAvailableModels,
+    child: Text('Get Available models')),
+
+ElevatedButton(
+    onPressed: isModelDownloaded, child: Text('Check download')),
+
+*********************************************************************************
+
 var blueSeat = colorVacancies['blue-vacancy'];
 // if blueSeat gives error, try = colorVacancies[groupName]['blue-vacancy']
 // because the json result might be nested (as it happened before)

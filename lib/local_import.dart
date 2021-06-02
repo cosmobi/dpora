@@ -37,7 +37,7 @@ String versionStatus = '';
 bool upgradeRequired;
 // TODO: Update in 3 places before every app release
 // 1. on the DB
-// 2. in the yaml file 
+// 2. in the yaml file
 // (also increment number on right side of + sign)
 // 3. below this line
 double thisVersion = 1.2;
@@ -147,6 +147,72 @@ List<String> slogans = [
 int sNum = 0;
 // TODO: Modify slogan list above and update sMax below
 int sMax = 10;
+
+// To change language
+String translatedText = '';
+String selectedLanguageName = 'English';
+String selectedLanguageCode = 'en';
+List languageOptions = [
+  'af -	Afrikaans',
+  'ar	- Arabic',
+  'be	- Belarusian',
+  'bg -	Bulgarian',
+  'bn -	Bengali',
+  'ca -	Catalan',
+  'cs -	Czech',
+  'cy	- Welsh',
+  'da	- Danish',
+  'de	- German',
+  'el	- Greek',
+  'en	- English',
+  'eo	- Esperanto',
+  'es	- Spanish',
+  'et	- Estonian',
+  'fa	- Persian',
+  'fi	- Finnish',
+  'fr	- French',
+  'ga	- Irish',
+  'gl	- Galician',
+  'gu	- Gujarati',
+  'he	- Hebrew',
+  'hi	- Hindi',
+  'hr	- Croatian',
+  'ht	- Haitian',
+  'hu	- Hungarian',
+  'id	- Indonesian',
+  'is	- Icelandic',
+  'it	- Italian',
+  'ja	- Japanese',
+  'ka	- Georgian',
+  'kn	- Kannada',
+  'ko	- Korean',
+  'lt	- Lithuanian',
+  'lv	- Latvian',
+  'mk	- Macedonian',
+  'mr	- Marathi',
+  'ms	- Malay',
+  'mt	- Maltese',
+  'nl	- Dutch',
+  'no	- Norwegian',
+  'pl	- Polish',
+  'pt	- Portuguese',
+  'ro	- Romanian',
+  'ru	- Russian',
+  'sk	- Slovak',
+  'sl	- Slovenian',
+  'sq	- Albanian',
+  'sv	- Swedish',
+  'sw	- Swahili',
+  'ta	- Tamil',
+  'te	- Telugu',
+  'th	- Thai',
+  'tl	- Tagalog',
+  'tr	- Turkish',
+  'uk	- Ukrainian',
+  'ur	- Urdu',
+  'vi	- Vietnamese',
+  'zh	- Chinese'
+];
 
 // To reduce database downloads, only download
 // some stuff once per app launch or once per day

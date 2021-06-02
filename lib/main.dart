@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'local_import.dart';
-import 'package:connectivity/connectivity.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// ignore: import_of_legacy_library_into_null_safe
 import 'package:firebase_database/firebase_database.dart';
+import 'package:connectivity/connectivity.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
 
 // Initialize FlutterFire and also wrap the
 // DporaApp widget within a MaterialApp widget
@@ -143,6 +143,17 @@ final snackBarUnmutedUser = SnackBar(
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 4),
 );
+final snackBarModelDownloading = SnackBar(
+  content: const Text('Language engine loading. Please wait...'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 30),
+);
 
 // Circular process indicator while registering users
 showAlertDialog(BuildContext context) {
@@ -203,6 +214,47 @@ class _DporaAppState extends State<DporaApp> {
       print(e.toString());
       return null;
     }
+  }
+
+  // For translating text
+  final _languageModelManager = GoogleMlKit.nlp.translateLanguageModelManager();
+  final _onDeviceTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+      sourceLanguage: TranslateLanguage.GERMAN,
+      targetLanguage: TranslateLanguage.ENGLISH);
+
+  Future<void> downloadModel() async {
+    var result = await _languageModelManager.downloadModel('en');
+    print('Model downloaded: $result');
+    result = await _languageModelManager.downloadModel(selectedLanguageCode);
+    print('Model downloaded: $result');
+  }
+
+  Future<void> deleteModel() async {
+    var result = await _languageModelManager.deleteModel('en');
+    print('Model deleted: $result');
+    result = await _languageModelManager.deleteModel(selectedLanguageCode);
+    print('Model deleted: $result');
+  }
+
+  Future<void> isModelDownloaded() async {
+    var result = await _languageModelManager.isModelDownloaded('en');
+    print('Is model downloaded: $result');
+    if (result == false) {
+      rootScaffoldMessengerKey.currentState.showSnackBar(snackBarModelDownloading);
+    }
+    result =
+        await _languageModelManager.isModelDownloaded(selectedLanguageCode);
+    print('Is model downloaded: $result');
+    if (result == false) {
+      rootScaffoldMessengerKey.currentState.showSnackBar(snackBarModelDownloading);
+    }
+  }
+
+  Future<void> translateText() async {
+    var result = await _onDeviceTranslator.translateText(submittedText);
+    setState(() {
+      translatedText = result;
+    });
   }
 
   // Get slogans to display in the menu drawer
@@ -1376,7 +1428,7 @@ class _DporaAppState extends State<DporaApp> {
             'The topic is always on top in yellow. You will be randomly matched with other people, who may be anywhere in the world, to discuss the topic. All comments start vanishing after 30 seconds! So talk openly, but be respectful. You may mute a person\'s comment stream by tapping the icon under their text. The next topic will appear after enough of your group taps the little yellow arrow.';
         textColorLB = Colors.blueAccent;
         tileTextRT =
-            'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora is not responsible for, and does not save a history of, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. dpora reserves the right to make changes to these terms of service at any time. Any policy updates will be announced at news.dpora.com and its RSS feed can be subscribed to at dpora.noticeable.news/policy.rss to be personally and immediately notified of any policy updates.';
+            'TERMS OF SERVICE: You must be at least 18 years old to use this app (dpora). dpora is not responsible for, and does not save a history of, user-created chat content. dpora is also not liable for any consequences attributed to the use of this app. Nonetheless, objectionable content or abusive users will not be tolerated. dpora reserves the right to make changes to these terms of service at any time. Any policy updates will be announced at news.dpora.com and its RSS feed can be subscribed to at dpora.noticeable.news/policy.rss to be personally and immediately notified of any policy updates.';
         textColorRT = Colors.purpleAccent;
         tileTextRB =
             'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
@@ -1436,6 +1488,86 @@ class _DporaAppState extends State<DporaApp> {
                 height: 1.0,
                 thickness: 1.0,
               ),
+              Row(
+                children: [
+                  SizedBox(width: 20),
+                  Text(
+                    'Language: ',
+                    style: TextStyle(
+                      fontSize: 18 * screenSizeUnit,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    selectedLanguageName,
+                    style: TextStyle(
+                      fontSize: 16 * screenSizeUnit,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+              Center(
+                child: PopupMenuButton(
+                  child: Text(
+                    '\nTap here to change',
+                    style: TextStyle(
+                      fontSize: 12 * screenSizeUnit,
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  itemBuilder: (BuildContext bc) {
+                    return languageOptions
+                        .map((langs) => PopupMenuItem(
+                              child: Text(langs),
+                              value: langs,
+                            ))
+                        .toList();
+                  },
+                  onSelected: (value) {
+                    setState(() {
+                      selectedLanguageName = value.substring(5);
+                      selectedLanguageCode = value.substring(0, 2);
+                    });
+                    downloadModel();
+                    isModelDownloaded();
+                    // close menu drawer to snackbar is visable
+                    _drawerKey.currentState.openEndDrawer();
+                  },
+                ),
+              ),
+              // if needed, uncomment...
+              // ElevatedButton(
+              //   onPressed: deleteModel, child: Text('Delete Translation Engine')
+              // ),
+              Center(
+                child: Text(
+                  'On-device translations',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'powered by',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Image.asset('assets/images/greyscale-regular.png'),
+                ],
+              ),
+              Divider(
+                height: 1.0,
+                thickness: 1.0,
+              ),
               Container(
                 padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
                 child: Text.rich(
@@ -1450,7 +1582,7 @@ class _DporaAppState extends State<DporaApp> {
                       ),
                       TextSpan(
                         text: 'If you discover a software bug or have a problem with dpora, please email chat+bug@dpora.com\n\n' +
-                            'If something is wrong with a topic (misspelled, offensive, outdated dumb or incorrect in some way), email chat+topic@dpora.com\n\n' +
+                            'If something is wrong with a topic (misspelled, offensive, outdated, dumb or incorrect in some way), email chat+topic@dpora.com\n\n' +
                             'If you want a new feature, have suggestions, comments or concerns  email chat+feedback@dpora.com\n\n' +
                             'If you have any questions or anything else, email chat@dpora.com\n',
                         style: TextStyle(
@@ -1500,29 +1632,10 @@ class _DporaAppState extends State<DporaApp> {
                         ),
                       ),
                       TextSpan(
-                        text: liveComments + '\n',
+                        text: liveComments,
                         style: TextStyle(
                           fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
-                        ),
-                      ),
-                      TextSpan(
-                        text: platform +
-                            ' Version ' +
-                            thisVersion.toString() +
-                            '\n' +
-                            versionStatus +
-                            '\n',
-                        style: TextStyle(
-                          fontSize: 14 * screenSizeUnit,
-                          color: Colors.white38,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'Available on Google Play* (QR code shortcut)',
-                        style: TextStyle(
-                          fontSize: 12 * screenSizeUnit,
-                          color: Colors.white38,
                         ),
                       ),
                     ],
@@ -1533,27 +1646,58 @@ class _DporaAppState extends State<DporaApp> {
                 height: 1.0,
                 thickness: 1.0,
               ),
+              Center(
+                child: Text(
+                  '\n' +
+                      platform +
+                      ' Version ' +
+                      thisVersion.toString() +
+                      '\n ' +
+                      versionStatus,
+                  style: TextStyle(
+                    fontSize: 14 * screenSizeUnit,
+                    color: Colors.white38,
+                  ),
+                ),
+              ),
+              Center(
+                child: Text(
+                  deviceID + '\n',
+                  style: TextStyle(
+                    fontSize: 14 * screenSizeUnit,
+                    color: Colors.white38,
+                  ),
+                ),
+              ),
+              Divider(
+                height: 1.0,
+                thickness: 1.0,
+              ),
+              Center(
+                child: Text(
+                  '\nAvailable on Google Play* (QR code shortcut)',
+                  style: TextStyle(
+                    fontSize: 12 * screenSizeUnit,
+                    color: Colors.white38,
+                  ),
+                ),
+              ),
               Image.asset('assets/images/qrcode_googleplay.png'),
-              Container(
-                padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
-                child: Text.rich(
-                  TextSpan(
-                    children: <TextSpan>[
-                      TextSpan(
-                        text: '*Google Play is a trademark of Google LLC.',
-                        style: TextStyle(
-                          fontSize: 12 * screenSizeUnit,
-                          color: Colors.white38,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '\n\n' + deviceID + '\n\n' + copyright + '\n',
-                        style: TextStyle(
-                          fontSize: 14 * screenSizeUnit,
-                          color: Colors.white38,
-                        ),
-                      ),
-                    ],
+              Center(
+                child: Text(
+                  '*Google Play is a trademark of Google LLC. \n',
+                  style: TextStyle(
+                    fontSize: 12 * screenSizeUnit,
+                    color: Colors.white38,
+                  ),
+                ),
+              ),
+              Center(
+                child: Text(
+                  copyright,
+                  style: TextStyle(
+                    fontSize: 14 * screenSizeUnit,
+                    color: Colors.white38,
                   ),
                 ),
               ),
@@ -1913,8 +2057,8 @@ class _DporaAppState extends State<DporaApp> {
                                             ' (accessible from the menu icon). Now tap the arrow once more to join a group!';
                                     stimulusInstructions =
                                         'Topic theme goes here';
-                                    iconColor =
-                                        Colors.grey[700]; //TODO test this
+                                    iconColor = Colors.grey[
+                                        700]; //TODO test this when convenient, no rush
                                   });
                                 }
                               });
@@ -2003,15 +2147,25 @@ class _DporaAppState extends State<DporaApp> {
                   .showSnackBar(snackBarWait2Post);
             } else {
               setState(() {
+                submittedText = inputController.text;
                 userFadeTime = 0;
                 userOpacity = 1.0;
-                submittedText = inputController.text;
                 waitStatus = true;
                 showTextField = false; // show user comment
               });
-              // post to group
-              int milli = DateTime.now().millisecondsSinceEpoch;
-              postComment(submittedText, milli);
+              if (selectedLanguageCode != 'en') {
+                // translate text
+                translateText();
+                Timer(Duration(seconds: 3), () {
+                  // allow time for translation before posting to group
+                  postComment(
+                      translatedText, DateTime.now().millisecondsSinceEpoch);
+                });
+              } else {
+                // no translation needed, post immediately
+                postComment(inputController.text,
+                    DateTime.now().millisecondsSinceEpoch);
+              }
               // clear text in input box
               inputController.clear();
               Timer(Duration(seconds: _timeUntilFade), () {
@@ -2268,15 +2422,16 @@ class _DporaAppState extends State<DporaApp> {
         Container(
           padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
           width: MediaQuery.of(context).size.width * 0.98, //98%,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 1500),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return RotationTransition(child: child, turns: animation);
-            },
-            child: showTextField
-                ? _userInput(userColor)
-                : _userOutput(allTextSize, verticalView),
-          ),
+          // TODO: Decide whether or not to take out, to reduce task load
+          // child: AnimatedSwitcher(
+          //   duration: const Duration(milliseconds: 1500),
+          //   transitionBuilder: (Widget child, Animation<double> animation) {
+          //     return RotationTransition(child: child, turns: animation);
+          //   },
+          child: showTextField
+              ? _userInput(userColor)
+              : _userOutput(allTextSize, verticalView),
+          //),
         ),
         // build the chat titles, the left column (top & bottom) and right
         Row(
@@ -2301,6 +2456,19 @@ class _DporaAppState extends State<DporaApp> {
             ),
           ],
         ),
+        Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'On-device translations powered by',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Image.asset('assets/images/greyscale-regular.png'),
+            ]),
       ],
     );
   }
@@ -2347,15 +2515,16 @@ class _DporaAppState extends State<DporaApp> {
             Container(
               padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
               width: MediaQuery.of(context).size.width * 0.47,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 1500),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return RotationTransition(child: child, turns: animation);
-                },
-                child: showTextField
-                    ? _userInput(userColor)
-                    : _userOutput(allTextSize, verticalView),
-              ),
+              // TODO: Decide whether or not to take out, to reduce task load
+              // child: AnimatedSwitcher(
+              //   duration: const Duration(milliseconds: 500),
+              //   transitionBuilder: (Widget child, Animation<double> animation) {
+              //     return RotationTransition(child: child, turns: animation);
+              //   },
+              child: showTextField
+                  ? _userInput(userColor)
+                  : _userOutput(allTextSize, verticalView),
+              // ),
             ),
           ]),
       Row(
@@ -2370,6 +2539,19 @@ class _DporaAppState extends State<DporaApp> {
                 textColorRT, postTimeRT, tileVacancyRT, muteCountRT),
             _chatTile(allTileHeight, allTileWidth, allTextSize, tileTextRB,
                 textColorRB, postTimeRB, tileVacancyRB, muteCountRB),
+          ]),
+      Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'On-device translations powered by',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[600],
+              ),
+            ),
+            Image.asset('assets/images/greyscale-regular.png'),
           ])
     ]);
   }
