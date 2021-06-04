@@ -216,10 +216,13 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  // For translating text
+  // For on-device translation using Google's ML Kit
   final _languageModelManager = GoogleMlKit.nlp.translateLanguageModelManager();
-  final _onDeviceTranslator = GoogleMlKit.nlp.onDeviceTranslator(
-      sourceLanguage: TranslateLanguage.GERMAN,
+  var _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+      sourceLanguage: TranslateLanguage.ENGLISH,
+      targetLanguage: TranslateLanguage.ENGLISH);
+  var _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+      sourceLanguage: TranslateLanguage.ENGLISH,
       targetLanguage: TranslateLanguage.ENGLISH);
 
   Future<void> downloadModel() async {
@@ -229,32 +232,45 @@ class _DporaAppState extends State<DporaApp> {
     print('Model downloaded: $result');
   }
 
-  Future<void> deleteModel() async {
-    var result = await _languageModelManager.deleteModel('en');
-    print('Model deleted: $result');
-    result = await _languageModelManager.deleteModel(selectedLanguageCode);
-    print('Model deleted: $result');
-  }
-
   Future<void> isModelDownloaded() async {
     var result = await _languageModelManager.isModelDownloaded('en');
     print('Is model downloaded: $result');
     if (result == false) {
-      rootScaffoldMessengerKey.currentState.showSnackBar(snackBarModelDownloading);
+      rootScaffoldMessengerKey.currentState
+          .showSnackBar(snackBarModelDownloading);
     }
     result =
         await _languageModelManager.isModelDownloaded(selectedLanguageCode);
     print('Is model downloaded: $result');
     if (result == false) {
-      rootScaffoldMessengerKey.currentState.showSnackBar(snackBarModelDownloading);
+      rootScaffoldMessengerKey.currentState
+          .showSnackBar(snackBarModelDownloading);
     }
   }
 
-  Future<void> translateText() async {
-    var result = await _onDeviceTranslator.translateText(submittedText);
+  Future<void> translateToEnglish() async {
+    var result =
+        await _onDeviceToEnglishTranslator.translateText(submittedText);
     setState(() {
-      translatedText = result;
+      translatedToEnglish = result;
     });
+  }
+
+  Future<void> translateFromEnglish(textContent) async {
+    if (textContent == 'stimulus') {
+      var result =
+          await _onDeviceFromEnglishTranslator.translateText(stimulusContent);
+      setState(() {
+        translatedStimulus = result;
+      });
+    }
+    if (textContent == 'instructions') {
+      var result = await _onDeviceFromEnglishTranslator
+          .translateText(stimulusInstructions);
+      setState(() {
+        translatedInstructions = result;
+      });
+    }
   }
 
   // Get slogans to display in the menu drawer
@@ -1344,8 +1360,8 @@ class _DporaAppState extends State<DporaApp> {
     if (thisVersion < minReqVersion) {
       // shut the front door
       setState(() {
-        stimulusInstructions = 'See web page';
-        stimulusContent = 'https://dpora.com/update';
+        translatedInstructions = 'See web page';
+        translatedStimulus = 'https://dpora.com/update';
         // Either the dpora service or app needs to be updated
         upgradeRequired = true;
         iconColor = boxBGColor;
@@ -1417,8 +1433,8 @@ class _DporaAppState extends State<DporaApp> {
         }
       } else {
         // Show Terms of service to first time users of this app installation
-        stimulusContent = 'Welcome!';
-        stimulusInstructions = 'This is dpora';
+        translatedStimulus = 'Welcome!';
+        translatedInstructions = 'This is dpora';
         // Show the How to and Terms of service screen before login
         userColor = Colors.grey[700];
         tileTextLT =
@@ -1512,7 +1528,7 @@ class _DporaAppState extends State<DporaApp> {
                   child: Text(
                     '\nTap here to change',
                     style: TextStyle(
-                      fontSize: 12 * screenSizeUnit,
+                      fontSize: 16 * screenSizeUnit,
                       color: Colors.blueAccent,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1530,17 +1546,607 @@ class _DporaAppState extends State<DporaApp> {
                       selectedLanguageName = value.substring(5);
                       selectedLanguageCode = value.substring(0, 2);
                     });
-                    downloadModel();
+                    // show snackbar if download is needed
                     isModelDownloaded();
-                    // close menu drawer to snackbar is visable
+                    // download language model
+                    downloadModel();
+                    // close menu drawer so snackbar is visable
                     _drawerKey.currentState.openEndDrawer();
+                    // set user's preferred language
+                    if (selectedLanguageCode == 'af') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.AFRIKAANS,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.AFRIKAANS);
+                    }
+                    if (selectedLanguageCode == 'sq') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ALBANIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ALBANIAN);
+                    }
+                    if (selectedLanguageCode == 'ar') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ARABIC,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ARABIC);
+                    }
+                    if (selectedLanguageCode == 'be') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.BELARUSIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.BELARUSIAN);
+                    }
+                    if (selectedLanguageCode == 'bn') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.BENGALI,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.BENGALI);
+                    }
+                    if (selectedLanguageCode == 'bg') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.BULGARIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.BULGARIAN);
+                    }
+                    if (selectedLanguageCode == 'ca') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.CATALAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.CATALAN);
+                    }
+                    if (selectedLanguageCode == 'zh') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.CHINESE,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.CHINESE);
+                    }
+                    if (selectedLanguageCode == 'hr') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.CROATIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.CROATIAN);
+                    }
+                    if (selectedLanguageCode == 'cs') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.CZECH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.CZECH);
+                    }
+                    if (selectedLanguageCode == 'da') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.DANISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.DANISH);
+                    }
+                    if (selectedLanguageCode == 'nl') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.DUTCH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.DUTCH);
+                    }
+                    // the default
+                    if (selectedLanguageCode == 'en') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                    }
+                    if (selectedLanguageCode == 'eo') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ESPERANTO,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ESPERANTO);
+                    }
+                    if (selectedLanguageCode == 'et') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ESTONIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ESTONIAN);
+                    }
+                    if (selectedLanguageCode == 'fi') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.FINNISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.FINNISH);
+                    }
+                    if (selectedLanguageCode == 'fr') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.FRENCH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.FRENCH);
+                    }
+                    if (selectedLanguageCode == 'gl') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.GALICIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.GALICIAN);
+                    }
+                    if (selectedLanguageCode == 'ka') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.GEORGIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.GEORGIAN);
+                    }
+                    if (selectedLanguageCode == 'de') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.GERMAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.GERMAN);
+                    }
+                    if (selectedLanguageCode == 'el') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.GREEK,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.GREEK);
+                    }
+                    if (selectedLanguageCode == 'gu') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.GUJARATI,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.GUJARATI);
+                    }
+                    if (selectedLanguageCode == 'ht') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.HAITIAN_CREOLE,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.HAITIAN_CREOLE);
+                    }
+                    if (selectedLanguageCode == 'he') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.HEBREW,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.HEBREW);
+                    }
+                    if (selectedLanguageCode == 'hi') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.HINDI,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.HINDI);
+                    }
+                    if (selectedLanguageCode == 'hu') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.HUNGARIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.HUNGARIAN);
+                    }
+                    if (selectedLanguageCode == 'is') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ICELANDIC,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ICELANDIC);
+                    }
+                    if (selectedLanguageCode == 'id') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.INDONESIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.INDONESIAN);
+                    }
+                    if (selectedLanguageCode == 'ga') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.IRISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.IRISH);
+                    }
+                    if (selectedLanguageCode == 'it') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ITALIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ITALIAN);
+                    }
+                    if (selectedLanguageCode == 'ja') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.JAPANESE,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.JAPANESE);
+                    }
+                    if (selectedLanguageCode == 'kn') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.KANNADA,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.KANNADA);
+                    }
+                    if (selectedLanguageCode == 'ko') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.KOREAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.KOREAN);
+                    }
+                    if (selectedLanguageCode == 'lv') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.LATVIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.LATVIAN);
+                    }
+                    if (selectedLanguageCode == 'lt') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.LITHUANIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.LITHUANIAN);
+                    }
+                    if (selectedLanguageCode == 'mk') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.MACEDONIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.MACEDONIAN);
+                    }
+                    if (selectedLanguageCode == 'ms') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.MALAY,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.MALAY);
+                    }
+                    if (selectedLanguageCode == 'mt') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.MALTESE,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.MALTESE);
+                    }
+                    if (selectedLanguageCode == 'mr') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.MARATHI,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.MARATHI);
+                    }
+                    if (selectedLanguageCode == 'no') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.NORWEGIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.NORWEGIAN);
+                    }
+                    if (selectedLanguageCode == 'fa') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.PERSIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.PERSIAN);
+                    }
+                    if (selectedLanguageCode == 'pl') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.POLISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.POLISH);
+                    }
+                    if (selectedLanguageCode == 'pt') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.PORTUGUESE,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.PORTUGUESE);
+                    }
+                    if (selectedLanguageCode == 'ro') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ROMANIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.ROMANIAN);
+                    }
+                    if (selectedLanguageCode == 'ru') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.RUSSIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.RUSSIAN);
+                    }
+                    if (selectedLanguageCode == 'sk') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.SLOVAK,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.SLOVAK);
+                    }
+                    if (selectedLanguageCode == 'sl') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.SLOVENIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.SLOVENIAN);
+                    }
+                    if (selectedLanguageCode == 'es') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.SPANISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.SPANISH);
+                    }
+                    if (selectedLanguageCode == 'sw') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.SWAHILI,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.SWAHILI);
+                    }
+                    if (selectedLanguageCode == 'sv') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.SWEDISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.SWEDISH);
+                    }
+                    if (selectedLanguageCode == 'tl') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.TAGALOG,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.TAGALOG);
+                    }
+                    if (selectedLanguageCode == 'ta') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.TAMIL,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.TAMIL);
+                    }
+                    if (selectedLanguageCode == 'te') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.TELUGU,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.TELUGU);
+                    }
+                    if (selectedLanguageCode == 'th') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.THAI,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.THAI);
+                    }
+                    if (selectedLanguageCode == 'tr') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.TURKISH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.TURKISH);
+                    }
+                    if (selectedLanguageCode == 'uk') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.UKRAINIAN,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.UKRAINIAN);
+                    }
+                    if (selectedLanguageCode == 'ur') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.URDU,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.URDU);
+                    }
+                    if (selectedLanguageCode == 'vi') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.VIETNAMESE,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.VIETNAMESE);
+                    }
+                    if (selectedLanguageCode == 'cy') {
+                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.WELSH,
+                              targetLanguage: TranslateLanguage.ENGLISH);
+                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
+                          .onDeviceTranslator(
+                              sourceLanguage: TranslateLanguage.ENGLISH,
+                              targetLanguage: TranslateLanguage.WELSH);
+                    }
                   },
                 ),
               ),
-              // if needed, uncomment...
-              // ElevatedButton(
-              //   onPressed: deleteModel, child: Text('Delete Translation Engine')
-              // ),
               Center(
                 child: Text(
                   'On-device translations',
@@ -1867,9 +2473,9 @@ class _DporaAppState extends State<DporaApp> {
     if (airplaneMode == true) {
       // Shows only when no internet connection
       setState(() {
-        stimulusContent =
+        translatedStimulus =
             'No Internet Connection! Please turn on mobile data, WiFi or both.';
-        stimulusInstructions = 'Airplane Mode?';
+        translatedInstructions = 'Airplane Mode?';
       });
     }
 
@@ -1893,6 +2499,30 @@ class _DporaAppState extends State<DporaApp> {
     } else {
       // It's a full group
       strikesNeeded = 3;
+    }
+
+    // Translate stimulus content and instructions, if needed
+    if (selectedLanguageCode == 'en') {
+      // No translation needed
+      translatedStimulus = stimulusContent;
+      translatedInstructions = stimulusInstructions;
+    } else {
+      // Translate stimulus content
+      if (priorStimulus != stimulusContent) {
+        translateFromEnglish('stimulus');
+        // Using timer to set priorStimulus once, not continuously
+        Timer.run(() {
+          priorStimulus = stimulusContent;
+        });
+      }
+      // Translate stimulus instructions
+      if (priorInstructions != stimulusInstructions) {
+        translateFromEnglish('instructions');
+        // Using timer to set priorInstructions once, not continuously
+        Timer.run(() {
+          priorInstructions = stimulusInstructions;
+        });
+      }      
     }
 
     return GestureDetector(
@@ -1942,8 +2572,8 @@ class _DporaAppState extends State<DporaApp> {
                       padding: EdgeInsets.zero, // need for alignment
                       tooltip: 'Share Topic',
                       onPressed: () {
-                        Share.share(stimulusContent + ' \nΦ dpora.com',
-                            subject: stimulusInstructions);
+                        Share.share(translatedStimulus + ' \nΦ dpora.com',
+                            subject: translatedInstructions);
                       },
                     ),
                   ),
@@ -1971,7 +2601,7 @@ class _DporaAppState extends State<DporaApp> {
                     10.0 * screenSizeUnit,
                     5.0 * screenSizeUnit),
                 child: Text(
-                  stimulusContent,
+                  translatedStimulus,
                   style: TextStyle(
                     fontSize: textSize,
                     color: Colors.yellow, //yellowAccent is too bright
@@ -1997,7 +2627,7 @@ class _DporaAppState extends State<DporaApp> {
                     height: 70.0 * screenSizeUnit,
                     width: 90.0 * screenSizeUnit,
                     child: Text(
-                      stimulusInstructions,
+                      translatedInstructions,
                       overflow: TextOverflow.clip, // just in case
                       style: TextStyle(
                         fontSize: instructionSize,
@@ -2051,11 +2681,11 @@ class _DporaAppState extends State<DporaApp> {
                                 if (auth.currentUser != null) {
                                   setState(() {
                                     checkedUser = false;
-                                    stimulusContent =
+                                    translatedStimulus =
                                         'You can scroll this area too. You have been assigned the private and random ID: ' +
                                             auth.currentUser.uid.substring(18) +
                                             ' (accessible from the menu icon). Now tap the arrow once more to join a group!';
-                                    stimulusInstructions =
+                                    translatedInstructions =
                                         'Topic theme goes here';
                                     iconColor = Colors.grey[
                                         700]; //TODO test this when convenient, no rush
@@ -2155,11 +2785,12 @@ class _DporaAppState extends State<DporaApp> {
               });
               if (selectedLanguageCode != 'en') {
                 // translate text
-                translateText();
-                Timer(Duration(seconds: 3), () {
+                translateToEnglish();
+                Timer(Duration(seconds: 5), () {
                   // allow time for translation before posting to group
-                  postComment(
-                      translatedText, DateTime.now().millisecondsSinceEpoch);
+                  // and this might take a while on sub-par phones
+                  postComment(translatedToEnglish,
+                      DateTime.now().millisecondsSinceEpoch);
                 });
               } else {
                 // no translation needed, post immediately

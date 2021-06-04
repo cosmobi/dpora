@@ -30,9 +30,16 @@ Some usable code, if needed, for translation tasks using the Google ML Kit plugi
 [ the following code goes in the class _DporaAppState extends State<DporaApp> ]
 
 Future<void> getAvailableModels() async {
-    var result = await _languageModelManager.getAvailableModels();
-    print('Available models: $result');
-  }
+  var result = await _languageModelManager.getAvailableModels();
+  print('Available models: $result');
+}
+
+Future<void> deleteModel() async {
+  var result = await _languageModelManager.deleteModel('en');
+  print('Model deleted: $result');
+  result = await _languageModelManager.deleteModel(selectedLanguageCode);
+  print('Model deleted: $result');
+}
 
 [ not working... ]
 // @override
@@ -57,11 +64,15 @@ TextButton(
 ),
 
 ElevatedButton(
-    onPressed: getAvailableModels,
-    child: Text('Get Available models')),
+  onPressed: getAvailableModels,
+  child: Text('Get Available models')),
 
 ElevatedButton(
-    onPressed: isModelDownloaded, child: Text('Check download')),
+  onPressed: deleteModel,
+  child: Text('Delete Translation Engine')),
+
+ElevatedButton(
+  onPressed: isModelDownloaded, child: Text('Check download')),
 
 *********************************************************************************
 

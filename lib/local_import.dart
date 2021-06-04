@@ -149,7 +149,11 @@ int sNum = 0;
 int sMax = 10;
 
 // To change language
-String translatedText = '';
+String translatedToEnglish = '';
+String priorStimulus = '';
+String translatedStimulus = '';
+String priorInstructions = '';
+String translatedInstructions = '';
 String selectedLanguageName = 'English';
 String selectedLanguageCode = 'en';
 List languageOptions = [
