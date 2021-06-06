@@ -39,7 +39,7 @@ Color boxBGColor = Colors.grey[900];
 // Hide non-essential icons from non-authenicated users
 Color iconColor = Colors.grey[900];
 
-// Empty default values for the tileText and textColor
+// Default values for dporians
 Color userColor = Colors.black;
 Color colorOfMutedUser = boxBGColor;
 String tileTextLT = '';
@@ -269,6 +269,30 @@ class _DporaAppState extends State<DporaApp> {
           .translateText(stimulusInstructions);
       setState(() {
         translatedInstructions = result;
+      });
+    }
+  }
+
+  Future<void> translateEnglishComments(tileText, textColor) async {
+    var result = await _onDeviceFromEnglishTranslator.translateText(tileText);
+    if (textColor == textColorLT) {
+      setState(() {
+        translatedTextLT = result;
+      });
+    }
+    if (textColor == textColorLB) {
+      setState(() {
+        translatedTextLB = result;
+      });
+    }
+    if (textColor == textColorRT) {
+      setState(() {
+        translatedTextRT = result;
+      });
+    }
+    if (textColor == textColorRB) {
+      setState(() {
+        translatedTextRB = result;
       });
     }
   }
@@ -2522,7 +2546,7 @@ class _DporaAppState extends State<DporaApp> {
         Timer.run(() {
           priorInstructions = stimulusInstructions;
         });
-      }      
+      }
     }
 
     return GestureDetector(
@@ -2856,6 +2880,7 @@ class _DporaAppState extends State<DporaApp> {
       postTime, tileVacancy, muteCount) {
     // Multiple object sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
+    String translatedText = '';
     String muteStatusText = '';
     // If tile is vacant, don't show its color
     Color _iconColor = iconColor;
@@ -2900,6 +2925,28 @@ class _DporaAppState extends State<DporaApp> {
           chatFadeTime = 1; // quick fade in
           chatOpacity = 1.0;
         }
+        // If needed, translate all comments to user's language preference
+        if (selectedLanguageCode != 'en') {
+          // Adding 10 extra seconds to give time to translate and fade away
+          if (timeElapsed < thirtySeconds + 10) {
+              translateEnglishComments(tileText, textColor);
+            if (textColor == textColorLT) {
+              translatedText = translatedTextLT;
+            }
+            if (textColor == textColorLB) {
+              translatedText = translatedTextLB;
+            }
+            if (textColor == textColorRT) {
+              translatedText = translatedTextRT;
+            }
+            if (textColor == textColorRB) {
+              translatedText = translatedTextRB;
+            }
+          }
+        } else {
+          // No translation needed
+          translatedText = tileText;
+        }
         // Show literal mute status
         if (muteCount == 0) {
           muteStatusText = ' Tap icon to mute';
@@ -2938,7 +2985,7 @@ class _DporaAppState extends State<DporaApp> {
               duration: Duration(seconds: chatFadeTime), // fade duration
               opacity: chatOpacity,
               child: Text(
-                tileText,
+                translatedText,
                 style: TextStyle(fontSize: textSize, color: _textColor),
               ),
             ),
