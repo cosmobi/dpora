@@ -49,7 +49,7 @@ Future<void> deleteModel() async {
   // }
 
 
-[ the following code goes somewhere in the build code, e.g., the sidebar]
+[ the following code could go somewhere in the build code, e.g., the sidebar]
 
 TextButton(
   onPressed: downloadModel,

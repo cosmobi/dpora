@@ -27,9 +27,9 @@ final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
 
 // Tally gets their latest numbers from the DB
 // TODO: Update minimum tally numbers
-int devicesDetected = 2;
+int devicesDetected = 14;
 int countriesRepresented = 2;
-int commentsPosted = 2;
+int commentsPosted = 400;
 double latestVersion = 0.0; // keep 0.0
 double minReqVersion = 1.2;
 // version 1.1 could not create new users properly
@@ -40,7 +40,7 @@ bool upgradeRequired;
 // 2. in the yaml file
 // (also increment number on right side of + sign)
 // 3. below this line
-double thisVersion = 1.2;
+double thisVersion = 1.3;
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;

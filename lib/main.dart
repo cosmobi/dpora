@@ -143,8 +143,8 @@ final snackBarUnmutedUser = SnackBar(
   backgroundColor: Colors.yellow,
   duration: const Duration(seconds: 4),
 );
-final snackBarModelDownloading = SnackBar(
-  content: const Text('Language engine loading. Please wait...'),
+final snackBarModelDownloaded = SnackBar(
+  content: const Text('Language set! Quit & Restart App.'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -152,7 +152,7 @@ final snackBarModelDownloading = SnackBar(
     ),
   ),
   backgroundColor: Colors.yellow,
-  duration: const Duration(seconds: 30),
+  duration: const Duration(minutes: 5),
 );
 
 // Circular process indicator while registering users
@@ -172,7 +172,7 @@ showAlertDialog(BuildContext context) {
         Container(
             margin: EdgeInsets.only(left: 5),
             child: Text(
-              'new device',
+              'please standby...',
               style: TextStyle(
                 fontSize: 20,
               ),
@@ -226,26 +226,33 @@ class _DporaAppState extends State<DporaApp> {
       targetLanguage: TranslateLanguage.ENGLISH);
 
   Future<void> downloadModel() async {
+    showAlertDialog(context); // start standby msg
     var result = await _languageModelManager.downloadModel('en');
     print('Model downloaded: $result');
     result = await _languageModelManager.downloadModel(selectedLanguageCode);
     print('Model downloaded: $result');
+    Navigator.pop(context); // end standby msg
+    rootScaffoldMessengerKey.currentState.showSnackBar(snackBarModelDownloaded);
   }
+
+  //
+  // TODO
+  //
+  Future<void> deleteModel() async {
+    var result = await _languageModelManager.deleteModel('en');
+    print('Model deleted: $result');
+    result = await _languageModelManager.deleteModel('de');
+    print('Model deleted: $result');
+  }
+  //
+  // TODO
+  //
 
   Future<void> isModelDownloaded() async {
     var result = await _languageModelManager.isModelDownloaded('en');
-    print('Is model downloaded: $result');
-    if (result == false) {
-      rootScaffoldMessengerKey.currentState
-          .showSnackBar(snackBarModelDownloading);
-    }
-    result =
-        await _languageModelManager.isModelDownloaded(selectedLanguageCode);
-    print('Is model downloaded: $result');
-    if (result == false) {
-      rootScaffoldMessengerKey.currentState
-          .showSnackBar(snackBarModelDownloading);
-    }
+    print('Model checked: $result');
+    result = await _languageModelManager.isModelDownloaded(selectedLanguageCode);
+    print('Model checked: $result');
   }
 
   Future<void> translateToEnglish() async {
@@ -273,27 +280,31 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  Future<void> translateEnglishComments(tileText, textColor) async {
-    var result = await _onDeviceFromEnglishTranslator.translateText(tileText);
-    if (textColor == textColorLT) {
-      setState(() {
-        translatedTextLT = result;
-      });
-    }
-    if (textColor == textColorLB) {
-      setState(() {
-        translatedTextLB = result;
-      });
-    }
-    if (textColor == textColorRT) {
-      setState(() {
-        translatedTextRT = result;
-      });
-    }
-    if (textColor == textColorRB) {
-      setState(() {
-        translatedTextRB = result;
-      });
+  Future<void> translateEnglishComments(
+      tileText, textColor, postTime) async {
+    int elapsedTime = DateTime.now().millisecondsSinceEpoch - postTime;
+    if (elapsedTime < 6000) { // 1 sec = 1000 millisecs
+      var result = await _onDeviceFromEnglishTranslator.translateText(tileText);
+      if (textColor == textColorLT) {
+        setState(() {
+          translatedTextLT = result;
+        });
+      }
+      if (textColor == textColorLB) {
+        setState(() {
+          translatedTextLB = result;
+        });
+      }
+      if (textColor == textColorRT) {
+        setState(() {
+          translatedTextRT = result;
+        });
+      }
+      if (textColor == textColorRB) {
+        setState(() {
+          translatedTextRB = result;
+        });
+      }
     }
   }
 
@@ -1547,13 +1558,22 @@ class _DporaAppState extends State<DporaApp> {
                   ),
                 ],
               ),
+              //
+              // TODO
+              //
+              ElevatedButton(
+                onPressed: deleteModel,
+                child: Text('Delete Translation Engine')),
+              //
+              // TODO
+              //
               Center(
                 child: PopupMenuButton(
                   child: Text(
                     '\nTap here to change',
                     style: TextStyle(
                       fontSize: 16 * screenSizeUnit,
-                      color: Colors.blueAccent,
+                      color: Colors.greenAccent,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -2168,7 +2188,17 @@ class _DporaAppState extends State<DporaApp> {
                               sourceLanguage: TranslateLanguage.ENGLISH,
                               targetLanguage: TranslateLanguage.WELSH);
                     }
+                    // Force-change the stimuli
                   },
+                ),
+              ),
+              Center(
+                child: Text(
+                  'Experimental feature.\nRestart required.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.redAccent,
+                  ),
                 ),
               ),
               Center(
@@ -2712,7 +2742,7 @@ class _DporaAppState extends State<DporaApp> {
                                     translatedInstructions =
                                         'Topic theme goes here';
                                     iconColor = Colors.grey[
-                                        700]; //TODO test this when convenient, no rush
+                                        700];
                                   });
                                 }
                               });
@@ -2927,21 +2957,18 @@ class _DporaAppState extends State<DporaApp> {
         }
         // If needed, translate all comments to user's language preference
         if (selectedLanguageCode != 'en') {
-          // Adding 10 extra seconds to give time to translate and fade away
-          if (timeElapsed < thirtySeconds + 10) {
-              translateEnglishComments(tileText, textColor);
-            if (textColor == textColorLT) {
-              translatedText = translatedTextLT;
-            }
-            if (textColor == textColorLB) {
-              translatedText = translatedTextLB;
-            }
-            if (textColor == textColorRT) {
-              translatedText = translatedTextRT;
-            }
-            if (textColor == textColorRB) {
-              translatedText = translatedTextRB;
-            }
+          translateEnglishComments(tileText, textColor, postTime);
+          if (textColor == textColorLT) {
+            translatedText = translatedTextLT;
+          }
+          if (textColor == textColorLB) {
+            translatedText = translatedTextLB;
+          }
+          if (textColor == textColorRT) {
+            translatedText = translatedTextRT;
+          }
+          if (textColor == textColorRB) {
+            translatedText = translatedTextRB;
           }
         } else {
           // No translation needed
@@ -3079,7 +3106,7 @@ class _DporaAppState extends State<DporaApp> {
     // Multiple fonts sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     double outerspace = screenSizeUnit * 10;
-    final allTileHeight = 0.25; // 25% screen height
+    final allTileHeight = 0.23; // 23% screen height
     final allTileWidth = 0.43; // 43% screen width
     double allTextSize = 17.0 * screenSizeUnit; // font size for chatters
     double _stimulusTextSize = 19.0;
@@ -3100,16 +3127,15 @@ class _DporaAppState extends State<DporaApp> {
         Container(
           padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
           width: MediaQuery.of(context).size.width * 0.98, //98%,
-          // TODO: Decide whether or not to take out, to reduce task load
-          // child: AnimatedSwitcher(
-          //   duration: const Duration(milliseconds: 1500),
-          //   transitionBuilder: (Widget child, Animation<double> animation) {
-          //     return RotationTransition(child: child, turns: animation);
-          //   },
+          child: AnimatedSwitcher(
+            duration: const Duration(seconds: 1),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return RotationTransition(child: child, turns: animation);
+            },
           child: showTextField
               ? _userInput(userColor)
               : _userOutput(allTextSize, verticalView),
-          //),
+          ),
         ),
         // build the chat titles, the left column (top & bottom) and right
         Row(
@@ -3141,7 +3167,7 @@ class _DporaAppState extends State<DporaApp> {
               Text(
                 'On-device translations powered by',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 12 * screenSizeUnit,
                   color: Colors.grey[600],
                 ),
               ),
@@ -3176,7 +3202,7 @@ class _DporaAppState extends State<DporaApp> {
     // Multiple fonts sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     double outerspace = screenSizeUnit * 10;
-    final allTileHeight = 0.6; // 60% screen height
+    final allTileHeight = 0.55; // 55% screen height
     final allTileWidth = 0.22; // 22% screen width
     final allTextSize = 24.0 * screenSizeUnit; // font size for chatters
     bool verticalView = false;
@@ -3193,16 +3219,15 @@ class _DporaAppState extends State<DporaApp> {
             Container(
               padding: EdgeInsets.fromLTRB(outerspace, 0.0, outerspace, 0.0),
               width: MediaQuery.of(context).size.width * 0.47,
-              // TODO: Decide whether or not to take out, to reduce task load
-              // child: AnimatedSwitcher(
-              //   duration: const Duration(milliseconds: 500),
-              //   transitionBuilder: (Widget child, Animation<double> animation) {
-              //     return RotationTransition(child: child, turns: animation);
-              //   },
+              child: AnimatedSwitcher(
+                duration: const Duration(seconds: 1),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return RotationTransition(child: child, turns: animation);
+                },
               child: showTextField
                   ? _userInput(userColor)
                   : _userOutput(allTextSize, verticalView),
-              // ),
+              ),
             ),
           ]),
       Row(
@@ -3225,7 +3250,7 @@ class _DporaAppState extends State<DporaApp> {
             Text(
               'On-device translations powered by',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 13 * screenSizeUnit,
                 color: Colors.grey[600],
               ),
             ),
