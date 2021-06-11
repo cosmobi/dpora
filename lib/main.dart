@@ -144,7 +144,7 @@ final snackBarUnmutedUser = SnackBar(
   duration: const Duration(seconds: 4),
 );
 final snackBarModelDownloaded = SnackBar(
-  content: const Text('Language set! Quit & Restart App.'),
+  content: const Text('Language set!'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -152,7 +152,7 @@ final snackBarModelDownloaded = SnackBar(
     ),
   ),
   backgroundColor: Colors.yellow,
-  duration: const Duration(minutes: 5),
+  duration: const Duration(seconds: 4),
 );
 
 // Circular process indicator while registering users
@@ -225,18 +225,35 @@ class _DporaAppState extends State<DporaApp> {
       sourceLanguage: TranslateLanguage.ENGLISH,
       targetLanguage: TranslateLanguage.ENGLISH);
 
-  Future<void> downloadModel() async {
-    showAlertDialog(context); // start standby msg
+  Future<void> downloadModel(languageCode) async {
+    // Notify user to standby...
+    showAlertDialog(context);
     var result = await _languageModelManager.downloadModel('en');
     print('Model downloaded: $result');
-    result = await _languageModelManager.downloadModel(selectedLanguageCode);
+    result = await _languageModelManager.downloadModel(languageCode);
     print('Model downloaded: $result');
-    Navigator.pop(context); // end standby msg
+    // End standby notice
+    Navigator.pop(context);
+    // Inform user that language is set
     rootScaffoldMessengerKey.currentState.showSnackBar(snackBarModelDownloaded);
+    // Clear any previous translations
+    setState(() {
+      translatedLabel = '';
+      translatedHint = '';
+      translationTranslation = '';
+      priorStimulus = '';
+      priorInstructions = '';
+    });
+    String _setColor = 'this color';
+    if (userColorString != 'black') {
+      _setColor = userColorString;
+    }
+    // Translate to new language
+    languageTranslation(languageCode, _setColor);
   }
 
   //
-  // TODO
+  // TODO: Keep until can confirm new user signup
   //
   Future<void> deleteModel() async {
     var result = await _languageModelManager.deleteModel('en');
@@ -245,14 +262,19 @@ class _DporaAppState extends State<DporaApp> {
     print('Model deleted: $result');
   }
   //
-  // TODO
+  // TODO: Then uncomment & test isModelDownloaded
   //
 
   Future<void> isModelDownloaded() async {
     var result = await _languageModelManager.isModelDownloaded('en');
-    print('Model checked: $result');
-    result = await _languageModelManager.isModelDownloaded(selectedLanguageCode);
-    print('Model checked: $result');
+    if (result == false) {
+      downloadModel('en');
+    }
+    result =
+        await _languageModelManager.isModelDownloaded(selectedLanguageCode);
+    if (result == false) {
+      downloadModel(selectedLanguageCode);
+    }
   }
 
   Future<void> translateToEnglish() async {
@@ -261,6 +283,27 @@ class _DporaAppState extends State<DporaApp> {
     setState(() {
       translatedToEnglish = result;
     });
+  }
+
+  Future<void> translateThisTextFromEnglish(thing, stuff) async {
+    if (thing == 'label' && translatedLabel == '') {
+      var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
+      setState(() {
+        translatedLabel = result;
+      });
+    }
+    if (thing == 'hint' && translatedHint == '') {
+      var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
+      setState(() {
+        translatedHint = result;
+      });
+    }
+    if (thing == 'credit' && translationTranslation == '') {
+      var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
+      setState(() {
+        translationTranslation = result;
+      });
+    }
   }
 
   Future<void> translateFromEnglish(textContent) async {
@@ -280,10 +323,10 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  Future<void> translateEnglishComments(
-      tileText, textColor, postTime) async {
+  Future<void> translateEnglishComments(tileText, textColor, postTime) async {
     int elapsedTime = DateTime.now().millisecondsSinceEpoch - postTime;
-    if (elapsedTime < 6000) { // 1 sec = 1000 millisecs
+    if (elapsedTime < 6000) {
+      // 1 sec = 1000 millisecs
       var result = await _onDeviceFromEnglishTranslator.translateText(tileText);
       if (textColor == textColorLT) {
         setState(() {
@@ -635,7 +678,9 @@ class _DporaAppState extends State<DporaApp> {
       't': ServerValue.timestamp,
       'c': 'black',
       'g': 'none',
-      's': 'never'
+      's': 'never',
+      //'l': '$languageCode'
+      'l': 'en'
     }).then((_) {
       firebaseRTDB.child('tally').update(
           {'devices': ServerValue.increment(1)}).catchError((onNewError) {
@@ -686,7 +731,12 @@ class _DporaAppState extends State<DporaApp> {
         userColorString = userDetails.color;
         groupName = userDetails.group;
         strikedContent = userDetails.striked;
+        selectedLanguageCode = userDetails.language;
       });
+      // Set language pairing (even if EN to EN)
+      setTranslationPairings(userDetails.language);
+      // Display content in set language (even if EN)
+      languageTranslation(userDetails.language, userDetails.color);
     });
   }
 
@@ -745,41 +795,563 @@ class _DporaAppState extends State<DporaApp> {
   }
 
   void updateUser(groupOf, colorString, updateWhat) {
-    // Find all group members
-    firebaseRTDB
-        .child('dporians')
-        .orderByChild('g')
-        .equalTo('$groupOf')
-        .once()
-        .then((DataSnapshot snapshot) {
-      var mapMembers = new Map<String, dynamic>.from(snapshot.value);
-      for (var entry in mapMembers.entries) {
-        // Find bootee (the one getting booted or unassigned)
-        if (entry.value['c'] == colorString) {
-          var bootee = entry.key;
-          if (updateWhat == 'boots') {
-            // Increment boot count
-            firebaseRTDB.child('dporians').child('$bootee').update({
-              'b': ServerValue.increment(1),
-              't': ServerValue.timestamp
-            }).catchError((onBootError) {
-              print(onBootError);
-            });
-          }
-          if (updateWhat == 'group') {
-            // Another user unassign someone else from group
-            firebaseRTDB
-                .child('dporians')
-                .child('$bootee')
-                .update({'c': 'black', 'g': 'none'}).catchError((onGroupError) {
-              print(onGroupError);
-            });
+    if (updateWhat == 'language') {
+      // Update the language preference
+      // groupOf is really the user id
+      // colorString is really selectedLanguageCode
+      firebaseRTDB
+          .child('dporians')
+          .child('$groupOf')
+          .update({'l': '$colorString'}).catchError((onLangError) {
+        print(onLangError);
+      });
+    } else {
+      // Find all group members
+      firebaseRTDB
+          .child('dporians')
+          .orderByChild('g')
+          .equalTo('$groupOf')
+          .once()
+          .then((DataSnapshot snapshot) {
+        var mapMembers = new Map<String, dynamic>.from(snapshot.value);
+        for (var entry in mapMembers.entries) {
+          // Find bootee (the one getting booted or unassigned)
+          if (entry.value['c'] == colorString) {
+            var bootee = entry.key;
+            if (updateWhat == 'boots') {
+              // Increment boot count
+              firebaseRTDB.child('dporians').child('$bootee').update({
+                'b': ServerValue.increment(1),
+                't': ServerValue.timestamp
+              }).catchError((onBootError) {
+                print(onBootError);
+              });
+            }
+            if (updateWhat == 'group') {
+              // Another user unassign someone else from group
+              firebaseRTDB.child('dporians').child('$bootee').update(
+                  {'c': 'black', 'g': 'none'}).catchError((onGroupError) {
+                print(onGroupError);
+              });
+            }
           }
         }
+      }).catchError((onFindError) {
+        print(onFindError);
+      });
+    }
+  }
+
+  void setTranslationPairings(languageCode) {
+    if (languageCode == 'af') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.AFRIKAANS,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.AFRIKAANS);
+    }
+    if (languageCode == 'sq') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ALBANIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ALBANIAN);
+    }
+    if (languageCode == 'ar') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ARABIC,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ARABIC);
+    }
+    if (languageCode == 'be') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.BELARUSIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.BELARUSIAN);
+    }
+    if (languageCode == 'bn') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.BENGALI,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.BENGALI);
+    }
+    if (languageCode == 'bg') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.BULGARIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.BULGARIAN);
+    }
+    if (languageCode == 'ca') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.CATALAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.CATALAN);
+    }
+    if (languageCode == 'zh') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.CHINESE,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.CHINESE);
+    }
+    if (languageCode == 'hr') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.CROATIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.CROATIAN);
+    }
+    if (languageCode == 'cs') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.CZECH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.CZECH);
+    }
+    if (languageCode == 'da') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.DANISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.DANISH);
+    }
+    if (languageCode == 'nl') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.DUTCH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.DUTCH);
+    }
+    // the default
+    if (languageCode == 'en') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+    }
+    if (languageCode == 'eo') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ESPERANTO,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ESPERANTO);
+    }
+    if (languageCode == 'et') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ESTONIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ESTONIAN);
+    }
+    if (languageCode == 'fi') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.FINNISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.FINNISH);
+    }
+    if (languageCode == 'fr') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.FRENCH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.FRENCH);
+    }
+    if (languageCode == 'gl') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.GALICIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.GALICIAN);
+    }
+    if (languageCode == 'ka') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.GEORGIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.GEORGIAN);
+    }
+    if (languageCode == 'de') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.GERMAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.GERMAN);
+    }
+    if (languageCode == 'el') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.GREEK,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.GREEK);
+    }
+    if (languageCode == 'gu') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.GUJARATI,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.GUJARATI);
+    }
+    if (languageCode == 'ht') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.HAITIAN_CREOLE,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.HAITIAN_CREOLE);
+    }
+    if (languageCode == 'he') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.HEBREW,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.HEBREW);
+    }
+    if (languageCode == 'hi') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.HINDI,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.HINDI);
+    }
+    if (languageCode == 'hu') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.HUNGARIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.HUNGARIAN);
+    }
+    if (languageCode == 'is') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ICELANDIC,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ICELANDIC);
+    }
+    if (languageCode == 'id') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.INDONESIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.INDONESIAN);
+    }
+    if (languageCode == 'ga') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.IRISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.IRISH);
+    }
+    if (languageCode == 'it') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ITALIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ITALIAN);
+    }
+    if (languageCode == 'ja') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.JAPANESE,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.JAPANESE);
+    }
+    if (languageCode == 'kn') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.KANNADA,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.KANNADA);
+    }
+    if (languageCode == 'ko') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.KOREAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.KOREAN);
+    }
+    if (languageCode == 'lv') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.LATVIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.LATVIAN);
+    }
+    if (languageCode == 'lt') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.LITHUANIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.LITHUANIAN);
+    }
+    if (languageCode == 'mk') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.MACEDONIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.MACEDONIAN);
+    }
+    if (languageCode == 'ms') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.MALAY,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.MALAY);
+    }
+    if (languageCode == 'mt') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.MALTESE,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.MALTESE);
+    }
+    if (languageCode == 'mr') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.MARATHI,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.MARATHI);
+    }
+    if (languageCode == 'no') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.NORWEGIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.NORWEGIAN);
+    }
+    if (languageCode == 'fa') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.PERSIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.PERSIAN);
+    }
+    if (languageCode == 'pl') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.POLISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.POLISH);
+    }
+    if (languageCode == 'pt') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.PORTUGUESE,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.PORTUGUESE);
+    }
+    if (languageCode == 'ro') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ROMANIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.ROMANIAN);
+    }
+    if (languageCode == 'ru') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.RUSSIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.RUSSIAN);
+    }
+    if (languageCode == 'sk') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.SLOVAK,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.SLOVAK);
+    }
+    if (languageCode == 'sl') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.SLOVENIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.SLOVENIAN);
+    }
+    if (languageCode == 'es') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.SPANISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.SPANISH);
+    }
+    if (languageCode == 'sw') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.SWAHILI,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.SWAHILI);
+    }
+    if (languageCode == 'sv') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.SWEDISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.SWEDISH);
+    }
+    if (languageCode == 'tl') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.TAGALOG,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.TAGALOG);
+    }
+    if (languageCode == 'ta') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.TAMIL,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.TAMIL);
+    }
+    if (languageCode == 'te') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.TELUGU,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.TELUGU);
+    }
+    if (languageCode == 'th') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.THAI,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.THAI);
+    }
+    if (languageCode == 'tr') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.TURKISH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.TURKISH);
+    }
+    if (languageCode == 'uk') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.UKRAINIAN,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.UKRAINIAN);
+    }
+    if (languageCode == 'ur') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.URDU,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.URDU);
+    }
+    if (languageCode == 'vi') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.VIETNAMESE,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.VIETNAMESE);
+    }
+    if (languageCode == 'cy') {
+      _onDeviceToEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.WELSH,
+          targetLanguage: TranslateLanguage.ENGLISH);
+      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp.onDeviceTranslator(
+          sourceLanguage: TranslateLanguage.ENGLISH,
+          targetLanguage: TranslateLanguage.WELSH);
+    }
+  }
+
+  // Translate content to selected language
+  void languageTranslation(setLanguage, setColor) {
+    // Misc main screen content
+    String _label = 'Tap here, type, hit Enter key';
+    String _hint = 'You are ' + setColor;
+    String _credit = 'Translation';
+    if (setLanguage == 'en') {
+      // No translation needed
+      translatedStimulus = stimulusContent;
+      translatedInstructions = stimulusInstructions;
+      translatedHint = _hint;
+      translatedLabel = _label;
+      translationTranslation = _credit;
+    } else {
+      translateThisTextFromEnglish('label', _label);
+      translateThisTextFromEnglish('hint', _hint);
+      translateThisTextFromEnglish('credit', _credit);
+      // Translate stimulus content, once
+      if (priorStimulus != stimulusContent) {
+        translateFromEnglish('stimulus');
+        // Using timer to set priorStimulus once, not continuously
+        Timer.run(() {
+          priorStimulus = stimulusContent;
+        });
       }
-    }).catchError((onFindError) {
-      print(onFindError);
-    });
+      // Translate stimulus instructions, once
+      if (priorInstructions != stimulusInstructions) {
+        translateFromEnglish('instructions');
+        // Using timer to set priorInstructions once, not continuously
+        Timer.run(() {
+          priorInstructions = stimulusInstructions;
+        });
+      }
+    }
   }
 
   // Pick a new stimulus
@@ -1395,8 +1967,17 @@ class _DporaAppState extends State<DporaApp> {
     if (thisVersion < minReqVersion) {
       // shut the front door
       setState(() {
-        translatedInstructions = 'See web page';
-        translatedStimulus = 'https://dpora.com/update';
+        //
+        // translatedInstructions = 'See web page';
+        // translatedStimulus = 'https://dpora.com/update';
+        //
+        // TODO NEXT
+        // 1. Put in Spanish
+        // 2. Change minReq on DB to 1.4
+        // 3. See if new instructions are translated to Spanish
+        //
+        stimulusInstructions = 'See web page';
+        stimulusContent = 'https://dpora.com/update';
         // Either the dpora service or app needs to be updated
         upgradeRequired = true;
         iconColor = boxBGColor;
@@ -1427,7 +2008,8 @@ class _DporaAppState extends State<DporaApp> {
 
         if (registered == true) {
           getUser(auth.currentUser.uid);
-
+          // if language model is not downloaded, do it!
+          // isModelDownloaded(); // TODO: uncomment after deleting deleteModel
           // If not in group (nor have color)...
           if (userColorString == 'black' || groupName == 'none') {
             // User needs to be assigned to a group
@@ -1550,7 +2132,7 @@ class _DporaAppState extends State<DporaApp> {
                     ),
                   ),
                   Text(
-                    selectedLanguageName,
+                    selectedLanguageCode,
                     style: TextStyle(
                       fontSize: 16 * screenSizeUnit,
                       color: Colors.white70,
@@ -1559,13 +2141,13 @@ class _DporaAppState extends State<DporaApp> {
                 ],
               ),
               //
-              // TODO
+              // TODO: Keep until can confirm new user signup
               //
               ElevatedButton(
-                onPressed: deleteModel,
-                child: Text('Delete Translation Engine')),
+                  onPressed: deleteModel,
+                  child: Text('Delete Translation Engine')),
               //
-              // TODO
+              // TODO: Then uncomment & test isModelDownloaded
               //
               Center(
                 child: PopupMenuButton(
@@ -1586,627 +2168,21 @@ class _DporaAppState extends State<DporaApp> {
                         .toList();
                   },
                   onSelected: (value) {
-                    setState(() {
-                      selectedLanguageName = value.substring(5);
-                      selectedLanguageCode = value.substring(0, 2);
-                    });
-                    // show snackbar if download is needed
-                    isModelDownloaded();
+                    updateUser(auth.currentUser.uid, value.substring(0, 2),
+                        'language');
                     // download language model
-                    downloadModel();
+                    downloadModel(value.substring(0, 2));
                     // close menu drawer so snackbar is visable
                     _drawerKey.currentState.openEndDrawer();
-                    // set user's preferred language
-                    if (selectedLanguageCode == 'af') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.AFRIKAANS,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.AFRIKAANS);
-                    }
-                    if (selectedLanguageCode == 'sq') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ALBANIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ALBANIAN);
-                    }
-                    if (selectedLanguageCode == 'ar') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ARABIC,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ARABIC);
-                    }
-                    if (selectedLanguageCode == 'be') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.BELARUSIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.BELARUSIAN);
-                    }
-                    if (selectedLanguageCode == 'bn') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.BENGALI,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.BENGALI);
-                    }
-                    if (selectedLanguageCode == 'bg') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.BULGARIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.BULGARIAN);
-                    }
-                    if (selectedLanguageCode == 'ca') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.CATALAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.CATALAN);
-                    }
-                    if (selectedLanguageCode == 'zh') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.CHINESE,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.CHINESE);
-                    }
-                    if (selectedLanguageCode == 'hr') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.CROATIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.CROATIAN);
-                    }
-                    if (selectedLanguageCode == 'cs') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.CZECH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.CZECH);
-                    }
-                    if (selectedLanguageCode == 'da') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.DANISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.DANISH);
-                    }
-                    if (selectedLanguageCode == 'nl') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.DUTCH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.DUTCH);
-                    }
-                    // the default
-                    if (selectedLanguageCode == 'en') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                    }
-                    if (selectedLanguageCode == 'eo') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ESPERANTO,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ESPERANTO);
-                    }
-                    if (selectedLanguageCode == 'et') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ESTONIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ESTONIAN);
-                    }
-                    if (selectedLanguageCode == 'fi') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.FINNISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.FINNISH);
-                    }
-                    if (selectedLanguageCode == 'fr') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.FRENCH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.FRENCH);
-                    }
-                    if (selectedLanguageCode == 'gl') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.GALICIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.GALICIAN);
-                    }
-                    if (selectedLanguageCode == 'ka') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.GEORGIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.GEORGIAN);
-                    }
-                    if (selectedLanguageCode == 'de') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.GERMAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.GERMAN);
-                    }
-                    if (selectedLanguageCode == 'el') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.GREEK,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.GREEK);
-                    }
-                    if (selectedLanguageCode == 'gu') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.GUJARATI,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.GUJARATI);
-                    }
-                    if (selectedLanguageCode == 'ht') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.HAITIAN_CREOLE,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.HAITIAN_CREOLE);
-                    }
-                    if (selectedLanguageCode == 'he') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.HEBREW,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.HEBREW);
-                    }
-                    if (selectedLanguageCode == 'hi') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.HINDI,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.HINDI);
-                    }
-                    if (selectedLanguageCode == 'hu') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.HUNGARIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.HUNGARIAN);
-                    }
-                    if (selectedLanguageCode == 'is') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ICELANDIC,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ICELANDIC);
-                    }
-                    if (selectedLanguageCode == 'id') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.INDONESIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.INDONESIAN);
-                    }
-                    if (selectedLanguageCode == 'ga') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.IRISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.IRISH);
-                    }
-                    if (selectedLanguageCode == 'it') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ITALIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ITALIAN);
-                    }
-                    if (selectedLanguageCode == 'ja') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.JAPANESE,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.JAPANESE);
-                    }
-                    if (selectedLanguageCode == 'kn') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.KANNADA,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.KANNADA);
-                    }
-                    if (selectedLanguageCode == 'ko') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.KOREAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.KOREAN);
-                    }
-                    if (selectedLanguageCode == 'lv') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.LATVIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.LATVIAN);
-                    }
-                    if (selectedLanguageCode == 'lt') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.LITHUANIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.LITHUANIAN);
-                    }
-                    if (selectedLanguageCode == 'mk') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.MACEDONIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.MACEDONIAN);
-                    }
-                    if (selectedLanguageCode == 'ms') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.MALAY,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.MALAY);
-                    }
-                    if (selectedLanguageCode == 'mt') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.MALTESE,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.MALTESE);
-                    }
-                    if (selectedLanguageCode == 'mr') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.MARATHI,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.MARATHI);
-                    }
-                    if (selectedLanguageCode == 'no') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.NORWEGIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.NORWEGIAN);
-                    }
-                    if (selectedLanguageCode == 'fa') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.PERSIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.PERSIAN);
-                    }
-                    if (selectedLanguageCode == 'pl') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.POLISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.POLISH);
-                    }
-                    if (selectedLanguageCode == 'pt') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.PORTUGUESE,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.PORTUGUESE);
-                    }
-                    if (selectedLanguageCode == 'ro') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ROMANIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.ROMANIAN);
-                    }
-                    if (selectedLanguageCode == 'ru') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.RUSSIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.RUSSIAN);
-                    }
-                    if (selectedLanguageCode == 'sk') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.SLOVAK,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.SLOVAK);
-                    }
-                    if (selectedLanguageCode == 'sl') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.SLOVENIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.SLOVENIAN);
-                    }
-                    if (selectedLanguageCode == 'es') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.SPANISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.SPANISH);
-                    }
-                    if (selectedLanguageCode == 'sw') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.SWAHILI,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.SWAHILI);
-                    }
-                    if (selectedLanguageCode == 'sv') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.SWEDISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.SWEDISH);
-                    }
-                    if (selectedLanguageCode == 'tl') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.TAGALOG,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.TAGALOG);
-                    }
-                    if (selectedLanguageCode == 'ta') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.TAMIL,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.TAMIL);
-                    }
-                    if (selectedLanguageCode == 'te') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.TELUGU,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.TELUGU);
-                    }
-                    if (selectedLanguageCode == 'th') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.THAI,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.THAI);
-                    }
-                    if (selectedLanguageCode == 'tr') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.TURKISH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.TURKISH);
-                    }
-                    if (selectedLanguageCode == 'uk') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.UKRAINIAN,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.UKRAINIAN);
-                    }
-                    if (selectedLanguageCode == 'ur') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.URDU,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.URDU);
-                    }
-                    if (selectedLanguageCode == 'vi') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.VIETNAMESE,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.VIETNAMESE);
-                    }
-                    if (selectedLanguageCode == 'cy') {
-                      _onDeviceToEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.WELSH,
-                              targetLanguage: TranslateLanguage.ENGLISH);
-                      _onDeviceFromEnglishTranslator = GoogleMlKit.nlp
-                          .onDeviceTranslator(
-                              sourceLanguage: TranslateLanguage.ENGLISH,
-                              targetLanguage: TranslateLanguage.WELSH);
-                    }
-                    // Force-change the stimuli
                   },
                 ),
               ),
               Center(
                 child: Text(
-                  'Experimental feature.\nRestart required.',
+                  'Experimental feature',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.redAccent,
-                  ),
-                ),
-              ),
-              Center(
-                child: Text(
-                  'On-device translations',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey[600],
                   ),
                 ),
               ),
@@ -2215,14 +2191,23 @@ class _DporaAppState extends State<DporaApp> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'powered by',
+                    'Translation powered by',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       color: Colors.grey[600],
                     ),
                   ),
                   Image.asset('assets/images/greyscale-regular.png'),
                 ],
+              ),
+              Center(
+                child: Text(
+                  'but this data is not sent to Google.\nTranslations occur on the device only!',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
               ),
               Divider(
                 height: 1.0,
@@ -2532,7 +2517,6 @@ class _DporaAppState extends State<DporaApp> {
         translatedInstructions = 'Airplane Mode?';
       });
     }
-
     // Multiply object sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
     // vertical view
@@ -2545,7 +2529,6 @@ class _DporaAppState extends State<DporaApp> {
       // prepend a space to give spacer from border
       stimulusInstructions = '  ' + stimulusInstructions;
     }
-
     // Calculute how many strikes are needed to show next stimulus
     if (myGroupVacancy != 0) {
       // No group or not a full group
@@ -2554,31 +2537,6 @@ class _DporaAppState extends State<DporaApp> {
       // It's a full group
       strikesNeeded = 3;
     }
-
-    // Translate stimulus content and instructions, if needed
-    if (selectedLanguageCode == 'en') {
-      // No translation needed
-      translatedStimulus = stimulusContent;
-      translatedInstructions = stimulusInstructions;
-    } else {
-      // Translate stimulus content
-      if (priorStimulus != stimulusContent) {
-        translateFromEnglish('stimulus');
-        // Using timer to set priorStimulus once, not continuously
-        Timer.run(() {
-          priorStimulus = stimulusContent;
-        });
-      }
-      // Translate stimulus instructions
-      if (priorInstructions != stimulusInstructions) {
-        translateFromEnglish('instructions');
-        // Using timer to set priorInstructions once, not continuously
-        Timer.run(() {
-          priorInstructions = stimulusInstructions;
-        });
-      }
-    }
-
     return GestureDetector(
         // Provide place to tap to hide keyboard, if needed
         onTap: () {
@@ -2741,8 +2699,7 @@ class _DporaAppState extends State<DporaApp> {
                                             ' (accessible from the menu icon). Now tap the arrow once more to join a group!';
                                     translatedInstructions =
                                         'Topic theme goes here';
-                                    iconColor = Colors.grey[
-                                        700];
+                                    iconColor = Colors.grey[700];
                                   });
                                 }
                               });
@@ -2772,19 +2729,25 @@ class _DporaAppState extends State<DporaApp> {
     int _fadeDuration = 10;
     double clearIconSize = 14.0;
     int maxCharacters = 250;
-    String _labelText = 'Tap here, type, hit Enter key';
     Color _labelColor = userColor;
-    String _hintText = 'You are ' + userColorString;
     Color _hintColor = iconColor;
     if (auth.currentUser == null) {
       boxBGColor = Colors.black;
       clearIconSize = 0.0;
       maxCharacters = 1;
-      _labelText = 'a stranger kind of chat app';
+      // A slogan is also on top of yaml file
+      var _labelText = 'a stranger kind of chat app';
       _labelColor = Colors.grey[700];
-      _hintText = 'a stranger kind of chat app';
+      var _hintText = 'Micro chats, macro ideas';
       _hintColor = Colors.grey[700];
-      // That slogan is also on top of yaml file
+      if (selectedLanguageCode == '' || selectedLanguageCode == 'en') {
+        // No translation needed
+        translatedLabel = _labelText;
+        translatedHint = _hintText;
+      } else {
+        translateThisTextFromEnglish('label', _labelText);
+        translateThisTextFromEnglish('hint', _hintText);
+      }
     }
     return TextField(
         controller: inputController,
@@ -2804,9 +2767,9 @@ class _DporaAppState extends State<DporaApp> {
           ),
           fillColor: boxBGColor,
           filled: true,
-          labelText: _labelText,
+          labelText: translatedLabel,
           labelStyle: TextStyle(color: _labelColor),
-          hintText: _hintText,
+          hintText: translatedHint,
           hintStyle: TextStyle(color: _hintColor),
           // cancel text button
           suffixIcon: IconButton(
@@ -2837,19 +2800,19 @@ class _DporaAppState extends State<DporaApp> {
                 waitStatus = true;
                 showTextField = false; // show user comment
               });
-              if (selectedLanguageCode != 'en') {
+              if (selectedLanguageCode == '' || selectedLanguageCode == 'en') {
+                // no translation needed, post immediately
+                postComment(inputController.text,
+                    DateTime.now().millisecondsSinceEpoch);
+              } else {
                 // translate text
                 translateToEnglish();
                 Timer(Duration(seconds: 5), () {
                   // allow time for translation before posting to group
                   // and this might take a while on sub-par phones
-                  postComment(translatedToEnglish,
+                  postComment(translatedToEnglish + ' 💬',
                       DateTime.now().millisecondsSinceEpoch);
                 });
-              } else {
-                // no translation needed, post immediately
-                postComment(inputController.text,
-                    DateTime.now().millisecondsSinceEpoch);
               }
               // clear text in input box
               inputController.clear();
@@ -2956,7 +2919,10 @@ class _DporaAppState extends State<DporaApp> {
           chatOpacity = 1.0;
         }
         // If needed, translate all comments to user's language preference
-        if (selectedLanguageCode != 'en') {
+        if (selectedLanguageCode == '' || selectedLanguageCode == 'en') {
+          // No translation needed
+          translatedText = tileText;
+        } else {
           translateEnglishComments(tileText, textColor, postTime);
           if (textColor == textColorLT) {
             translatedText = translatedTextLT;
@@ -2970,9 +2936,6 @@ class _DporaAppState extends State<DporaApp> {
           if (textColor == textColorRB) {
             translatedText = translatedTextRB;
           }
-        } else {
-          // No translation needed
-          translatedText = tileText;
         }
         // Show literal mute status
         if (muteCount == 0) {
@@ -2993,7 +2956,6 @@ class _DporaAppState extends State<DporaApp> {
         }
       }
     }
-
     return Container(
       height: MediaQuery.of(context).size.height * tileHeight,
       width: MediaQuery.of(context).size.width * tileWidth,
@@ -3132,9 +3094,9 @@ class _DporaAppState extends State<DporaApp> {
             transitionBuilder: (Widget child, Animation<double> animation) {
               return RotationTransition(child: child, turns: animation);
             },
-          child: showTextField
-              ? _userInput(userColor)
-              : _userOutput(allTextSize, verticalView),
+            child: showTextField
+                ? _userInput(userColor)
+                : _userOutput(allTextSize, verticalView),
           ),
         ),
         // build the chat titles, the left column (top & bottom) and right
@@ -3165,9 +3127,9 @@ class _DporaAppState extends State<DporaApp> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'On-device translations powered by',
+                '💬 ' + translationTranslation + ' powered by',
                 style: TextStyle(
-                  fontSize: 12 * screenSizeUnit,
+                  fontSize: 11 * screenSizeUnit,
                   color: Colors.grey[600],
                 ),
               ),
@@ -3224,9 +3186,9 @@ class _DporaAppState extends State<DporaApp> {
                 transitionBuilder: (Widget child, Animation<double> animation) {
                   return RotationTransition(child: child, turns: animation);
                 },
-              child: showTextField
-                  ? _userInput(userColor)
-                  : _userOutput(allTextSize, verticalView),
+                child: showTextField
+                    ? _userInput(userColor)
+                    : _userOutput(allTextSize, verticalView),
               ),
             ),
           ]),
@@ -3248,7 +3210,7 @@ class _DporaAppState extends State<DporaApp> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              'On-device translations powered by',
+              '💬 ' + translationTranslation + ' powered by',
               style: TextStyle(
                 fontSize: 13 * screenSizeUnit,
                 color: Colors.grey[600],

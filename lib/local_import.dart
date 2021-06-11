@@ -154,12 +154,14 @@ String priorStimulus = '';
 String translatedStimulus = '';
 String priorInstructions = '';
 String translatedInstructions = '';
+String translatedLabel = '';
+String translatedHint = '';
+String translationTranslation = '';
 String translatedTextLT = '';
 String translatedTextLB = '';
 String translatedTextRT = '';
 String translatedTextRB = '';
-String selectedLanguageName = 'English';
-String selectedLanguageCode = 'en';
+String selectedLanguageCode = '';
 List languageOptions = [
   'af -	Afrikaans',
   'ar	- Arabic',
@@ -265,18 +267,27 @@ class Dporian {
   final String color;
   final String group;
   final String striked;
+  final String language;
 
-  Dporian(this.boots, this.bootstamp, this.color, this.group, this.striked);
+  Dporian(this.boots, this.bootstamp, this.color, this.group, this.striked,
+      this.language);
 
   Dporian.fromJson(Map<String, dynamic> json)
       : boots = json['b'],
         bootstamp = json['t'],
         color = json['c'],
         group = json['g'],
-        striked = json['s'];
+        striked = json['s'],
+        language = json['l'];
 
-  Map<String, dynamic> toJson() =>
-      {'b': boots, 't': bootstamp, 'c': color, 'g': group, 's': striked};
+  Map<String, dynamic> toJson() => {
+        'b': boots,
+        't': bootstamp,
+        'c': color,
+        'g': group,
+        's': striked,
+        'l': language
+      };
 }
 
 class Stimulus {
