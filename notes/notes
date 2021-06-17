@@ -51,15 +51,18 @@ Future<void> deleteModel() async {
 
 [ the following code could go somewhere in the build code, e.g., the sidebar]
 
-TextButton(
-  onPressed: downloadModel,
-  child: Text(
-    'Download Translation Engine',
-    style: TextStyle(
-      fontSize: 12 * screenSizeUnit,
-      color: Colors.blueAccent,
-      fontWeight: FontWeight.bold,
+SizedBox(
+  height: 30.0 * screenSizeUnit,
+  width: 30.0 * screenSizeUnit,
+  child: IconButton(
+    icon: Icon(
+      Icons.delete_rounded,
+      color: iconColor,
+      size: 28,
     ),
+    padding: EdgeInsets.zero, // need for alignment
+    tooltip: 'delete Spanish',
+    onPressed: () => deleteModel('es'),
   ),
 ),
 

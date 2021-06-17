@@ -144,7 +144,7 @@ final snackBarUnmutedUser = SnackBar(
   duration: const Duration(seconds: 4),
 );
 final snackBarModelDownloaded = SnackBar(
-  content: const Text('Language set!'),
+  content: const Text('✔️ Language set!'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -229,9 +229,9 @@ class _DporaAppState extends State<DporaApp> {
     // Notify user to standby...
     showAlertDialog(context);
     var result = await _languageModelManager.downloadModel('en');
-    print('Model downloaded: $result');
+    print('en model download: $result');
     result = await _languageModelManager.downloadModel(languageCode);
-    print('Model downloaded: $result');
+    print(languageCode + ' model download: $result');
     // End standby notice
     Navigator.pop(context);
     // Inform user that language is set
@@ -250,31 +250,6 @@ class _DporaAppState extends State<DporaApp> {
     }
     // Translate to new language
     languageTranslation(languageCode, _setColor);
-  }
-
-  //
-  // TODO: Keep until can confirm new user signup
-  //
-  Future<void> deleteModel() async {
-    var result = await _languageModelManager.deleteModel('en');
-    print('Model deleted: $result');
-    result = await _languageModelManager.deleteModel('de');
-    print('Model deleted: $result');
-  }
-  //
-  // TODO: Then uncomment & test isModelDownloaded
-  //
-
-  Future<void> isModelDownloaded() async {
-    var result = await _languageModelManager.isModelDownloaded('en');
-    if (result == false) {
-      downloadModel('en');
-    }
-    result =
-        await _languageModelManager.isModelDownloaded(selectedLanguageCode);
-    if (result == false) {
-      downloadModel(selectedLanguageCode);
-    }
   }
 
   Future<void> translateToEnglish() async {
@@ -302,6 +277,30 @@ class _DporaAppState extends State<DporaApp> {
       var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
       setState(() {
         translationTranslation = result;
+      });
+    }
+    if (thing == 'termsLT' && translatedTextLT == '') {
+      var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
+      setState(() {
+        translatedTextLT = result;
+      });
+    }
+    if (thing == 'termsLB' && translatedTextLB == '') {
+      var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
+      setState(() {
+        translatedTextLB = result;
+      });
+    }
+    if (thing == 'termsRT' && translatedTextRT == '') {
+      var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
+      setState(() {
+        translatedTextRT = result;
+      });
+    }
+    if (thing == 'termsRB' && translatedTextRB == '') {
+      var result = await _onDeviceFromEnglishTranslator.translateText(stuff);
+      setState(() {
+        translatedTextRB = result;
       });
     }
   }
@@ -673,14 +672,17 @@ class _DporaAppState extends State<DporaApp> {
 
   // Create new user data
   void createUser(uuid) {
+    String languageCode = 'en';
+    if (selectedLanguageCode != '') {
+      languageCode = selectedLanguageCode;
+    }
     firebaseRTDB.child('dporians').child('$uuid').set({
       'b': 0,
       't': ServerValue.timestamp,
       'c': 'black',
       'g': 'none',
       's': 'never',
-      //'l': '$languageCode'
-      'l': 'en'
+      'l': '$languageCode'
     }).then((_) {
       firebaseRTDB.child('tally').update(
           {'devices': ServerValue.increment(1)}).catchError((onNewError) {
@@ -1321,10 +1323,24 @@ class _DporaAppState extends State<DporaApp> {
   // Translate content to selected language
   void languageTranslation(setLanguage, setColor) {
     // Misc main screen content
-    String _label = 'Tap here, type, hit Enter key';
-    String _hint = 'You are ' + setColor;
+    String _label = '';
+    String _hint = '';
     String _credit = 'Translation';
-    if (setLanguage == 'en') {
+    if (setColor == 'black') {
+      if (userColorString != 'black') {
+        setColor = userColorString;
+      } else {
+        setColor = 'this color';
+      }
+    }
+    if (auth.currentUser == null) {
+      _label = 'http://dpora.com/onboard';
+      _hint = 'Tap the yellow arrow!';
+    } else {
+      _label = 'Tap here, type, hit Enter key';
+      _hint = 'You are ' + setColor;
+    }
+    if (setLanguage == 'en' || setLanguage == '') {
       // No translation needed
       translatedStimulus = stimulusContent;
       translatedInstructions = stimulusInstructions;
@@ -1335,16 +1351,17 @@ class _DporaAppState extends State<DporaApp> {
       translateThisTextFromEnglish('label', _label);
       translateThisTextFromEnglish('hint', _hint);
       translateThisTextFromEnglish('credit', _credit);
-      // Translate stimulus content, once
-      if (priorStimulus != stimulusContent) {
+      // Translate stimulus content, once, if registered
+      if (priorStimulus != stimulusContent && auth.currentUser != null) {
         translateFromEnglish('stimulus');
         // Using timer to set priorStimulus once, not continuously
         Timer.run(() {
           priorStimulus = stimulusContent;
         });
       }
-      // Translate stimulus instructions, once
-      if (priorInstructions != stimulusInstructions) {
+      // Translate stimulus instructions, once, if registered
+      if (priorInstructions != stimulusInstructions &&
+          auth.currentUser != null) {
         translateFromEnglish('instructions');
         // Using timer to set priorInstructions once, not continuously
         Timer.run(() {
@@ -1967,17 +1984,8 @@ class _DporaAppState extends State<DporaApp> {
     if (thisVersion < minReqVersion) {
       // shut the front door
       setState(() {
-        //
-        // translatedInstructions = 'See web page';
-        // translatedStimulus = 'https://dpora.com/update';
-        //
-        // TODO NEXT
-        // 1. Put in Spanish
-        // 2. Change minReq on DB to 1.4
-        // 3. See if new instructions are translated to Spanish
-        //
-        stimulusInstructions = 'See web page';
-        stimulusContent = 'https://dpora.com/update';
+        translatedInstructions = 'See web page';
+        translatedStimulus = 'https://dpora.com/update';
         // Either the dpora service or app needs to be updated
         upgradeRequired = true;
         iconColor = boxBGColor;
@@ -2005,11 +2013,8 @@ class _DporaAppState extends State<DporaApp> {
       if (auth.currentUser != null) {
         // See if user data exists
         checkUser(auth.currentUser.uid);
-
         if (registered == true) {
           getUser(auth.currentUser.uid);
-          // if language model is not downloaded, do it!
-          // isModelDownloaded(); // TODO: uncomment after deleting deleteModel
           // If not in group (nor have color)...
           if (userColorString == 'black' || groupName == 'none') {
             // User needs to be assigned to a group
@@ -2049,11 +2054,15 @@ class _DporaAppState extends State<DporaApp> {
           iconColor = Colors.grey[700];
         }
       } else {
-        // Show Terms of service to first time users of this app installation
-        translatedStimulus = 'Welcome!';
-        translatedInstructions = 'This is dpora';
-        // Show the How to and Terms of service screen before login
+        iconColor = Colors.black;
         userColor = Colors.grey[700];
+        // Show Terms of service to first time user of this device
+        stimulusContent =
+            '👈 设置语言\n👈 nelegir lenguaje\n👈 لغة مجموعة\n👈 भाषा सेट करें\n👈 установить язык\n👈 ভাষা সেট করুন\n👈 Définir la langue\n👈 言語を設定する\n👈 Definir idioma\n👈 Sprache einstellen\n👈 زبان طے کریں\n👈 Setel bahasa';
+        stimulusInstructions = 'Language setting';
+        // Translate Terms of service, if requested
+        languageTranslation(selectedLanguageCode, userColorString);
+        // Show the How to and Terms of service screen before login
         tileTextLT =
             'HOW TO DPORA: Push the text up using your finger or cursor to view all the content in each colored squircle. If the text does not scroll, you are already viewing all the content. The blue or purple squircles should have enough text for you to test scrolling.';
         textColorLT = Colors.orangeAccent;
@@ -2066,7 +2075,13 @@ class _DporaAppState extends State<DporaApp> {
         tileTextRB =
             'Now tap that little yellow arrow to accept these terms of service and to start using dpora!';
         textColorRB = Colors.redAccent;
-        iconColor = Colors.black;
+        // Translate Terms
+        if (selectedLanguageCode != 'en' && selectedLanguageCode != '') {
+          translateThisTextFromEnglish('termsLT', tileTextLT);
+          translateThisTextFromEnglish('termsRT', tileTextRT);
+          translateThisTextFromEnglish('termsLB', tileTextLB);
+          translateThisTextFromEnglish('termsRB', tileTextRB);
+        }
       }
     }
 
@@ -2121,98 +2136,6 @@ class _DporaAppState extends State<DporaApp> {
                 height: 1.0,
                 thickness: 1.0,
               ),
-              Row(
-                children: [
-                  SizedBox(width: 20),
-                  Text(
-                    'Language: ',
-                    style: TextStyle(
-                      fontSize: 18 * screenSizeUnit,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    selectedLanguageCode,
-                    style: TextStyle(
-                      fontSize: 16 * screenSizeUnit,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-              //
-              // TODO: Keep until can confirm new user signup
-              //
-              ElevatedButton(
-                  onPressed: deleteModel,
-                  child: Text('Delete Translation Engine')),
-              //
-              // TODO: Then uncomment & test isModelDownloaded
-              //
-              Center(
-                child: PopupMenuButton(
-                  child: Text(
-                    '\nTap here to change',
-                    style: TextStyle(
-                      fontSize: 16 * screenSizeUnit,
-                      color: Colors.greenAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  itemBuilder: (BuildContext bc) {
-                    return languageOptions
-                        .map((langs) => PopupMenuItem(
-                              child: Text(langs),
-                              value: langs,
-                            ))
-                        .toList();
-                  },
-                  onSelected: (value) {
-                    updateUser(auth.currentUser.uid, value.substring(0, 2),
-                        'language');
-                    // download language model
-                    downloadModel(value.substring(0, 2));
-                    // close menu drawer so snackbar is visable
-                    _drawerKey.currentState.openEndDrawer();
-                  },
-                ),
-              ),
-              Center(
-                child: Text(
-                  'Experimental feature',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.redAccent,
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Translation powered by',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  Image.asset('assets/images/greyscale-regular.png'),
-                ],
-              ),
-              Center(
-                child: Text(
-                  'but this data is not sent to Google.\nTranslations occur on the device only!',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-              Divider(
-                height: 1.0,
-                thickness: 1.0,
-              ),
               Container(
                 padding: EdgeInsets.only(left: 20.0 * screenSizeUnit),
                 child: Text.rich(
@@ -2256,28 +2179,14 @@ class _DporaAppState extends State<DporaApp> {
                         ),
                       ),
                       TextSpan(
-                        text: '\n\n' + liveCountries + '\n',
-                        style: TextStyle(
-                          fontSize: 16 * screenSizeUnit,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      TextSpan(
-                        text: liveTopics + '\n',
-                        style: TextStyle(
-                          fontSize: 16 * screenSizeUnit,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      TextSpan(
-                        text: liveDevices + '\n',
-                        style: TextStyle(
-                          fontSize: 16 * screenSizeUnit,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      TextSpan(
-                        text: liveComments,
+                        text: '\n\n' +
+                            liveCountries +
+                            '\n' +
+                            liveTopics +
+                            '\n' +
+                            liveDevices +
+                            '\n' +
+                            liveComments,
                         style: TextStyle(
                           fontSize: 16 * screenSizeUnit,
                           color: Colors.white70,
@@ -2314,6 +2223,22 @@ class _DporaAppState extends State<DporaApp> {
                   ),
                 ),
               ),
+              Divider(
+                height: 1.0,
+                thickness: 1.0,
+              ),
+              Column(children: [ //TODO delete this column with 2 children?
+              Text(
+                '\nTranslations occur only\non the device and are\npowered by',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14 * screenSizeUnit,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Image.asset('assets/images/greyscale-regular.png'),
+              ]),
+              //),
               Divider(
                 height: 1.0,
                 thickness: 1.0,
@@ -2512,9 +2437,9 @@ class _DporaAppState extends State<DporaApp> {
     if (airplaneMode == true) {
       // Shows only when no internet connection
       setState(() {
-        translatedStimulus =
+        stimulusContent =
             'No Internet Connection! Please turn on mobile data, WiFi or both.';
-        translatedInstructions = 'Airplane Mode?';
+        stimulusInstructions = 'Airplane Mode?';
       });
     }
     // Multiply object sizes by this to fit different screen sizes
@@ -2570,6 +2495,41 @@ class _DporaAppState extends State<DporaApp> {
                       tooltip: 'Φ Menu',
                       onPressed: () =>
                           _drawerKey.currentState.openDrawer(), // open drawer
+                    ),
+                  ),
+                  SizedBox(
+                    height: 30.0 * screenSizeUnit,
+                    width: 30.0 * screenSizeUnit,
+                    child: PopupMenuButton(
+                      icon: Icon(
+                        Icons.translate_rounded,
+                        color: Colors.grey[700],
+                        size: _iconSize,
+                      ),
+                      padding: EdgeInsets.zero, // need for alignment
+                      tooltip: 'Set Language',
+                      itemBuilder: (BuildContext bc) {
+                        return languageOptions
+                            .map((langs) => PopupMenuItem(
+                                  child: Text(langs),
+                                  value: langs,
+                                ))
+                            .toList();
+                      },
+                      onSelected: (value) {
+                        if (auth.currentUser == null) {
+                          setState(() {
+                            selectedLanguageCode = value.substring(0, 2);
+                          });
+                          setTranslationPairings(value.substring(0, 2));
+                        } else {
+                          updateUser(auth.currentUser.uid,
+                              value.substring(0, 2), 'language');
+                        }
+                        // download language model if not already
+                        downloadModel(value.substring(0, 2));
+                        // that also included translation request
+                      },
                     ),
                   ),
                   SizedBox(
@@ -2693,14 +2653,40 @@ class _DporaAppState extends State<DporaApp> {
                                 if (auth.currentUser != null) {
                                   setState(() {
                                     checkedUser = false;
-                                    translatedStimulus =
-                                        'You can scroll this area too. You have been assigned the private and random ID: ' +
-                                            auth.currentUser.uid.substring(18) +
-                                            ' (accessible from the menu icon). Now tap the arrow once more to join a group!';
-                                    translatedInstructions =
-                                        'Topic theme goes here';
+                                    tileTextLT = '';
+                                    tileTextLB = '';
+                                    tileTextRT = '';
+                                    tileTextRB = '';
+                                    translatedLabel = '';
+                                    translatedHint = '';
                                     iconColor = Colors.grey[700];
                                   });
+                                  if (selectedLanguageCode == 'en' ||
+                                      selectedLanguageCode == '') {
+                                    setState(() {
+                                      translatedStimulus =
+                                          'You can scroll this area too. You have been assigned the private and random ID: ' +
+                                              auth.currentUser.uid
+                                                  .substring(18) +
+                                              '. You may find it again in the sidebar. Now join a group! 👉';
+                                      translatedInstructions =
+                                          'Tap arrow again 👇';
+                                    });
+                                  } else {
+                                    setState(() {
+                                      stimulusContent =
+                                          'You can scroll this area too. You have been assigned the private and random ID: ' +
+                                              auth.currentUser.uid
+                                                  .substring(18) +
+                                              '. You may find it again in the sidebar. For best results after changing the language setting, please quit and restart the app!';
+                                      stimulusInstructions =
+                                          'Restart the app!';
+                                      translatedStimulus = '';
+                                      translatedInstructions = '';
+                                    });
+                                    translateFromEnglish('stimulus');
+                                    translateFromEnglish('instructions');
+                                  }
                                 }
                               });
                             }
@@ -2735,19 +2721,8 @@ class _DporaAppState extends State<DporaApp> {
       boxBGColor = Colors.black;
       clearIconSize = 0.0;
       maxCharacters = 1;
-      // A slogan is also on top of yaml file
-      var _labelText = 'a stranger kind of chat app';
       _labelColor = Colors.grey[700];
-      var _hintText = 'Micro chats, macro ideas';
       _hintColor = Colors.grey[700];
-      if (selectedLanguageCode == '' || selectedLanguageCode == 'en') {
-        // No translation needed
-        translatedLabel = _labelText;
-        translatedHint = _hintText;
-      } else {
-        translateThisTextFromEnglish('label', _labelText);
-        translateThisTextFromEnglish('hint', _hintText);
-      }
     }
     return TextField(
         controller: inputController,
@@ -2877,8 +2852,7 @@ class _DporaAppState extends State<DporaApp> {
     String muteStatusText = '';
     // If tile is vacant, don't show its color
     Color _iconColor = iconColor;
-    // If tile is muted or vacant,
-    // hide its contents or box border
+    // Hide tile's contents or box border if muted or vacant
     Color _textColor = textColor;
     double iconSize = 22.0 * screenSizeUnit; // vertical view
     double muteStatusSize = 10.0 * screenSizeUnit; // vertical
@@ -3070,8 +3044,8 @@ class _DporaAppState extends State<DporaApp> {
     double outerspace = screenSizeUnit * 10;
     final allTileHeight = 0.23; // 23% screen height
     final allTileWidth = 0.43; // 43% screen width
-    double allTextSize = 17.0 * screenSizeUnit; // font size for chatters
-    double _stimulusTextSize = 19.0;
+    double allTextSize = 16.0 * screenSizeUnit; // font size for chatters
+    double _stimulusTextSize = 18.0;
     if (platform == 'iOS') {
       allTextSize = 14 * screenSizeUnit;
       _stimulusTextSize = 16.0;

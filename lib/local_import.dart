@@ -27,12 +27,12 @@ final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
 
 // Tally gets their latest numbers from the DB
 // TODO: Update minimum tally numbers
-int devicesDetected = 14;
+int devicesDetected = 2;
 int countriesRepresented = 2;
-int commentsPosted = 400;
+int commentsPosted = 2;
 double latestVersion = 0.0; // keep 0.0
-double minReqVersion = 1.2;
-// version 1.1 could not create new users properly
+double minReqVersion = 1.3;
+// version 1.3 added new language code to each dporian's record
 String versionStatus = '';
 bool upgradeRequired;
 // TODO: Update in 3 places before every app release
