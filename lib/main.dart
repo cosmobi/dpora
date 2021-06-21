@@ -681,7 +681,6 @@ class _DporaAppState extends State<DporaApp> {
       't': ServerValue.timestamp,
       'c': 'black',
       'g': 'none',
-      's': 'never',
       'l': '$languageCode'
     }).then((_) {
       firebaseRTDB.child('tally').update(
@@ -732,7 +731,6 @@ class _DporaAppState extends State<DporaApp> {
         userBootstamp = userDetails.bootstamp;
         userColorString = userDetails.color;
         groupName = userDetails.group;
-        strikedContent = userDetails.striked;
         selectedLanguageCode = userDetails.language;
       });
       // Set language pairing (even if EN to EN)
@@ -1371,26 +1369,21 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  // Pick a new stimulus
+  // Pick and queque the next stimulus
   void getStimulus(stimuliCategory, stimulusID) {
-    // only if one more strike is needed and
-    // if the user needs a new stimulus queued
-    if (strikesNeeded - stimulusStrikes < 2 &&
-        nextStimulusContent == sentStimulusContent) {
-      firebaseRTDB
-          .child('stimuli')
-          .child('$stimuliCategory')
-          .child('$stimulusID')
-          .once()
-          .then((DataSnapshot snapshot) {
-        Map<String, dynamic> stimulusMap =
-            new Map<String, dynamic>.from(snapshot.value);
-        var stimulusDetails = Stimulus.fromJson(stimulusMap);
-        setState(() {
-          nextStimulusContent = stimulusDetails.stimulus;
-        });
+    firebaseRTDB
+        .child('stimuli')
+        .child('$stimuliCategory')
+        .child('$stimulusID')
+        .once()
+        .then((DataSnapshot snapshot) {
+      Map<String, dynamic> stimulusMap =
+          new Map<String, dynamic>.from(snapshot.value);
+      var stimulusDetails = Stimulus.fromJson(stimulusMap);
+      setState(() {
+        nextStimulusContent = stimulusDetails.stimulus;
       });
-    }
+    });
   }
 
   // Get the stimuli catetory instructions
@@ -1457,9 +1450,6 @@ class _DporaAppState extends State<DporaApp> {
         'si': '$instructStimulus',
         'ss': 0
       }).then((_) {
-        setState(() {
-          sentStimulusContent = nextStimulusContent;
-        });
         // show success
         rootScaffoldMessengerKey.currentState
             .showSnackBar(snackBarNextStimulus);
@@ -1474,9 +1464,6 @@ class _DporaAppState extends State<DporaApp> {
         'si': '$instructStimulus',
         'ss': 0
       }).then((_) {
-        setState(() {
-          sentStimulusContent = nextStimulusContent;
-        });
         // show success
         rootScaffoldMessengerKey.currentState
             .showSnackBar(snackBarNextStimulus);
@@ -1489,14 +1476,6 @@ class _DporaAppState extends State<DporaApp> {
           .child('groups')
           .child('$groupName')
           .update({'ss': ServerValue.increment(1)}).then((_) {
-        // Note this user striked that content to prevent
-        // multiple strikes on same content by same user
-        firebaseRTDB
-            .child('dporians')
-            .child('$uuid')
-            .update({'s': stimulusContent}).catchError((onErrorGroups) {
-          print(onErrorGroups);
-        });
         // Inform that more strikes are needed
         if (neededStrikes == 2) {
           rootScaffoldMessengerKey.currentState
@@ -1620,39 +1599,39 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
-  void randomStimulus() {
-    if (categoryChoice == 'ads') {
-      getStimulus(categoryChoice, adsDeck[0]);
-    } else if (categoryChoice == 'debates') {
-      getStimulus(categoryChoice, debatesDeck[0]);
-    } else if (categoryChoice == 'games') {
-      getStimulus(categoryChoice, gamesDeck[0]);
-    } else if (categoryChoice == 'jokes') {
-      getStimulus(categoryChoice, jokesDeck[0]);
-    } else if (categoryChoice == 'myths') {
-      getStimulus(categoryChoice, mythsDeck[0]);
-    } else if (categoryChoice == 'news') {
-      getStimulus(categoryChoice, newsDeck[0]);
-    } else if (categoryChoice == 'passion') {
-      getStimulus(categoryChoice, passionDeck[0]);
-    } else if (categoryChoice == 'personal') {
-      getStimulus(categoryChoice, personalDeck[0]);
-    } else if (categoryChoice == 'ponder') {
-      getStimulus(categoryChoice, ponderDeck[0]);
-    } else if (categoryChoice == 'proverbs') {
-      getStimulus(categoryChoice, proverbsDeck[0]);
-    } else if (categoryChoice == 'quotes') {
-      getStimulus(categoryChoice, quotesDeck[0]);
-    } else if (categoryChoice == 'share') {
-      getStimulus(categoryChoice, shareDeck[4]);
-    } else if (categoryChoice == 'trivia') {
-      getStimulus(categoryChoice, triviaDeck[0]);
+  void randomStimulus(catCho) {
+    if (catCho == 'ads') {
+      getStimulus(catCho, adsDeck[0]);
+    } else if (catCho == 'debates') {
+      getStimulus(catCho, debatesDeck[0]);
+    } else if (catCho == 'games') {
+      getStimulus(catCho, gamesDeck[0]);
+    } else if (catCho == 'jokes') {
+      getStimulus(catCho, jokesDeck[0]);
+    } else if (catCho == 'myths') {
+      getStimulus(catCho, mythsDeck[0]);
+    } else if (catCho == 'news') {
+      getStimulus(catCho, newsDeck[0]);
+    } else if (catCho == 'passion') {
+      getStimulus(catCho, passionDeck[0]);
+    } else if (catCho == 'personal') {
+      getStimulus(catCho, personalDeck[0]);
+    } else if (catCho == 'ponder') {
+      getStimulus(catCho, ponderDeck[0]);
+    } else if (catCho == 'proverbs') {
+      getStimulus(catCho, proverbsDeck[0]);
+    } else if (catCho == 'quotes') {
+      getStimulus(catCho, quotesDeck[0]);
+    } else if (catCho == 'share') {
+      getStimulus(catCho, shareDeck[4]);
+    } else if (catCho == 'trivia') {
+      getStimulus(catCho, triviaDeck[0]);
     } else {
       getStimulus('share', 5);
     }
   }
 
-// Relay all the group value changes
+  // Relay all the group value changes
   void getContent(groupID) {
     firebaseRTDB.child('groups').child('$groupID').onValue.listen((event) {
       var snapshot = event.snapshot;
@@ -1913,6 +1892,19 @@ class _DporaAppState extends State<DporaApp> {
         checkConnectivity();
       });
     }
+    if (stimulusContent == '') {
+      // Adding timer so setState doesn't
+      // happen prematurely at every launch
+      Timer(Duration(seconds: 2), () {
+        if (stimulusInstructions == '') {
+          // If still no content, assume no internet connection
+          setState(() {
+            translatedStimulus = noStimulus;
+            translatedInstructions = noInstructions;
+          });
+        }
+      });
+    }
     // detect platform
     if (kIsWeb) {
       // detect if web app
@@ -2033,21 +2025,17 @@ class _DporaAppState extends State<DporaApp> {
             }
           }
 
-          // Choose a category
-          chooseCategory(stimuliDeck[0]);
-          // The default stimulus is "DO NOT DELETE THIS ENTRY"
-          // which serves as a placeholder for...
-          if (nextStimulusContent == 'DO NOT DELETE THIS ENTRY') {
-            sentStimulusContent = nextStimulusContent;
+          // Avoid consecutive stimuli
+          if (nextStimulusContent == stimulusContent &&
+              instructStimulus == stimulusInstructions) {
             shuffleDecks();
-          }
-
-          // Choose a random stimulus
-          randomStimulus();
-          if (nextStimulusContent == stimulusContent) {
-            // That's not a topic change, try again
-            sentStimulusContent = nextStimulusContent;
-            randomStimulus();
+            chooseCategory(stimuliDeck[0]);
+            randomStimulus(categoryChoice);
+          } else if (categoryChoice == '') {
+            // or do it on app launch
+            shuffleDecks();
+            chooseCategory(stimuliDeck[0]);
+            randomStimulus(categoryChoice);
           }
 
           // Show icons
@@ -2227,18 +2215,17 @@ class _DporaAppState extends State<DporaApp> {
                 height: 1.0,
                 thickness: 1.0,
               ),
-              Column(children: [ //TODO delete this column with 2 children?
-              Text(
-                '\nTranslations occur only\non the device and are\npowered by',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14 * screenSizeUnit,
-                  color: Colors.grey[600],
+              Center(
+                child: Text(
+                  '\nTranslations occur only\non the device and are\npowered by',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14 * screenSizeUnit,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ),
               Image.asset('assets/images/greyscale-regular.png'),
-              ]),
-              //),
               Divider(
                 height: 1.0,
                 thickness: 1.0,
@@ -2435,11 +2422,10 @@ class _DporaAppState extends State<DporaApp> {
 
   Widget _stimulus(textSize) {
     if (airplaneMode == true) {
-      // Shows only when no internet connection
+      // No internet connection detected
       setState(() {
-        stimulusContent =
-            'No Internet Connection! Please turn on mobile data, WiFi or both.';
-        stimulusInstructions = 'Airplane Mode?';
+        translatedStimulus = noStimulus;
+        translatedInstructions = noInstructions;
       });
     }
     // Multiply object sizes by this to fit different screen sizes
@@ -2640,11 +2626,18 @@ class _DporaAppState extends State<DporaApp> {
                                       .showSnackBar(snackBarNeeds3Strikes);
                                 }
                               } else {
-                                // shuffle category and stimulus decks
-                                shuffleDecks();
-                                // update stimulus strike count or stimulus
+                                // Prevent one user multi-striking same stimulus
+                                // (Good for now, but loophole is to re-launch app)
+                                setState(() {
+                                  strikedContent = stimulusContent;
+                                });
+                                // Change strike number and/or stimulus
                                 strikedStimulus(
                                     auth.currentUser.uid, strikesNeeded);
+                                // queque the next stimulus suggestion
+                                shuffleDecks();
+                                chooseCategory(stimuliDeck[0]);
+                                randomStimulus(categoryChoice);
                               }
                             } else {
                               // Otherwise, sign the user in anonymously
@@ -2679,8 +2672,7 @@ class _DporaAppState extends State<DporaApp> {
                                               auth.currentUser.uid
                                                   .substring(18) +
                                               '. You may find it again in the sidebar. For best results after changing the language setting, please quit and restart the app!';
-                                      stimulusInstructions =
-                                          'Restart the app!';
+                                      stimulusInstructions = 'Restart the app!';
                                       translatedStimulus = '';
                                       translatedInstructions = '';
                                     });

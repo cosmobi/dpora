@@ -54,9 +54,14 @@ int userBootstamp;
 String userColorString = 'black';
 String groupName = 'none';
 int myGroupVacancy;
-String strikedContent = '';
 String groupOfMutedUser = '';
 bool registered = false; // is user in DB?
+
+String strikedContent = '';
+// Unfortunately the user may multi-strike same stimulus with app re-launch.
+// This "bug" can be avoided by saving the strikedContent in the DB user info
+// but it's too expensive b/c its data will have to be continuously downloaded.
+// So, just keep loophole for now. Add as sharedPref later or in DB when $ can burn.
 
 // Create lists (decks) containing all the stimuli counts
 // These decks will be shuffled later to choose a random entry
@@ -81,11 +86,12 @@ String categoryChoice = '';
 // so transitions between reloads are smoother
 String stimulusContent = '';
 String nextStimulusContent = '';
-String sentStimulusContent = '';
 int strikesNeeded = 1; // Both set at 1 for
 int stimulusStrikes = 1; // Terms of service
 String stimulusCategory = '';
 String stimulusInstructions = '';
+String noStimulus = 'No Internet Connection! Please turn on mobile data, WiFi or both.';
+String noInstructions = 'Airplane Mode?';
 
 // Stimuli category instructions may be updated from DB
 String instructAds = 'Ad or sponsor';
@@ -131,7 +137,7 @@ bool showTextField = true;
 // This is updated when user hits Return or Enter on their keyboard
 String submittedText = '';
 
-// The values of slogans and sMax can get updated from the DB
+// The slogan list and sMax can be updated from the DB
 List<String> slogans = [
   'Have private yet meaningful chats with total strangers',
   'No registration. No tracking. No data mining. No spam.',
@@ -141,12 +147,15 @@ List<String> slogans = [
   'Totally social. Totally private. Totally awesome!',
   'The road to peace and wisdom always starts with open dialog',
   'With true social media, everyone is active. There are no passive followers here.',
-  'Finding a middle ground of our one world',
+  'Finding the middle ground of our one world',
   'Micro chats, macro ideas',
+  'Breakthrough the language barrier and talk to the world',
+  'Global discussions, in your hands',
+  'What you say is more important than how you say it',
 ];
 int sNum = 0;
 // TODO: Modify slogan list above and update sMax below
-int sMax = 10;
+int sMax = 13;
 
 // To change language
 String translatedToEnglish = '';
@@ -266,18 +275,15 @@ class Dporian {
   final int bootstamp;
   final String color;
   final String group;
-  final String striked;
   final String language;
 
-  Dporian(this.boots, this.bootstamp, this.color, this.group, this.striked,
-      this.language);
+  Dporian(this.boots, this.bootstamp, this.color, this.group, this.language);
 
   Dporian.fromJson(Map<String, dynamic> json)
       : boots = json['b'],
         bootstamp = json['t'],
         color = json['c'],
         group = json['g'],
-        striked = json['s'],
         language = json['l'];
 
   Map<String, dynamic> toJson() => {
@@ -285,7 +291,6 @@ class Dporian {
         't': bootstamp,
         'c': color,
         'g': group,
-        's': striked,
         'l': language
       };
 }
