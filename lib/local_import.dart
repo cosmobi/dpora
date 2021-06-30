@@ -20,6 +20,7 @@ int totalTrivia = 132;
 // Will be used to hold platform identification
 String platform;
 
+int appLaunchTime = DateTime.now().millisecondsSinceEpoch;
 // Make updated copyright text
 DateTime nowDate = new DateTime.now();
 String nowYear = new DateTime(nowDate.year).toString().substring(0, 4);
@@ -40,7 +41,7 @@ bool upgradeRequired;
 // 2. in the yaml file
 // (also increment number on right side of + sign)
 // 3. below this line
-double thisVersion = 1.3;
+double thisVersion = 1.4;
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;
@@ -49,7 +50,7 @@ int userFadeTime = 10; // in seconds
 int chatFadeTime = 10;
 
 // dporian info
-int userBoots;
+int userBoots = 0;
 int userBootstamp;
 String userColorString = 'black';
 String groupName = 'none';
@@ -62,6 +63,12 @@ String strikedContent = '';
 // This "bug" can be avoided by saving the strikedContent in the DB user info
 // but it's too expensive b/c its data will have to be continuously downloaded.
 // So, just keep loophole for now. Add as sharedPref later or in DB when $ can burn.
+
+// To reduce the background task load, an effort is being made here to run
+// necessary functions often but not constantly every millisecond.
+int runGetUser = 0;
+int runGetContent = 0;
+int runMyGroupVacancyStatus = 0;
 
 // Create lists (decks) containing all the stimuli counts
 // These decks will be shuffled later to choose a random entry
@@ -90,7 +97,8 @@ int strikesNeeded = 1; // Both set at 1 for
 int stimulusStrikes = 1; // Terms of service
 String stimulusCategory = '';
 String stimulusInstructions = '';
-String noStimulus = 'No Internet Connection! Please turn on mobile data, WiFi or both.';
+String noStimulus =
+    'No Internet Connection! Please turn on mobile data, WiFi or both.';
 String noInstructions = 'Airplane Mode?';
 
 // Stimuli category instructions may be updated from DB
@@ -113,23 +121,23 @@ String instructStimulus = '';
 // These variables hold all the chat activity
 String blueContent = '';
 int blueStrikes = 0;
-int blueTimestamp;
+int blueTimestamp = appLaunchTime;
 bool blueVacancy = false;
 String greenContent = '';
 int greenStrikes = 0;
-int greenTimestamp;
+int greenTimestamp = appLaunchTime;
 bool greenVacancy = false;
 String orangeContent = '';
 int orangeStrikes = 0;
-int orangeTimestamp;
+int orangeTimestamp = appLaunchTime;
 bool orangeVacancy = false;
 String purpleContent = '';
 int purpleStrikes = 0;
-int purpleTimestamp;
+int purpleTimestamp = appLaunchTime;
 bool purpleVacancy = false;
 String redContent = '';
 int redStrikes = 0;
-int redTimestamp;
+int redTimestamp = appLaunchTime;
 bool redVacancy = false;
 
 // True = user input, false = user output
@@ -286,13 +294,8 @@ class Dporian {
         group = json['g'],
         language = json['l'];
 
-  Map<String, dynamic> toJson() => {
-        'b': boots,
-        't': bootstamp,
-        'c': color,
-        'g': group,
-        'l': language
-      };
+  Map<String, dynamic> toJson() =>
+      {'b': boots, 't': bootstamp, 'c': color, 'g': group, 'l': language};
 }
 
 class Stimulus {

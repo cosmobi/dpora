@@ -80,11 +80,11 @@ android {
         exclude 'lib/**/libdigitalink.so'
         exclude 'lib/**/libxeno_native.so'
         exclude 'lib/**/libmlkitcommonpipeline.so'
-        exclude 'lib/**/libbarhopper_v2.so'
+        exclude 'lib/**/libbarhopper_v2.so' // barcode detection
         exclude 'lib/**/libclassifier_jni.so'
         exclude 'lib/**/libface_detector_v2_jni.so'
         exclude 'lib/**/libtensorflowlite_jni.so'
-        // exclude 'lib/**/liblanguage_id_jni.so' → required for language detection
+        // exclude 'lib/**/liblanguage_id_jni.so' → language detection
     }
 }
 
@@ -94,5 +94,7 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation platform('com.google.firebase:firebase-bom:26.6.0')
+    implementation platform('com.google.firebase:firebase-bom:28.2.0')
+    implementation 'com.google.firebase:firebase-auth-ktx'
+    implementation 'com.google.firebase:firebase-database-ktx'
 }

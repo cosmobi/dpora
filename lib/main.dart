@@ -44,32 +44,31 @@ Color userColor = Colors.black;
 Color colorOfMutedUser = boxBGColor;
 String tileTextLT = '';
 Color textColorLT = Colors.black;
-int postTimeLT = DateTime.now().millisecondsSinceEpoch;
+int postTimeLT = appLaunchTime;
 bool tileVacancyLT = false;
 int muteCountLT = 0;
 String tileTextLB = '';
 Color textColorLB = Colors.black;
-int postTimeLB = DateTime.now().millisecondsSinceEpoch;
+int postTimeLB = appLaunchTime;
 bool tileVacancyLB = false;
 int muteCountLB = 0;
 String tileTextRT = '';
 Color textColorRT = Colors.black;
-int postTimeRT = DateTime.now().millisecondsSinceEpoch;
+int postTimeRT = appLaunchTime;
 bool tileVacancyRT = false;
 int muteCountRT = 0;
 String tileTextRB = '';
 Color textColorRB = Colors.black;
-int postTimeRB = DateTime.now().millisecondsSinceEpoch;
+int postTimeRB = appLaunchTime;
 bool tileVacancyRB = false;
 int muteCountRB = 0;
 
 // Use to update some data daily or on relaunch
-int dataDownloaded = DateTime.now().millisecondsSinceEpoch;
-int oneDay = 24 * 60 * 60 * 1000;
-// hours * minutes * seconds * 1 second of milliseconds
+int dataDownloaded = appLaunchTime;
+int oneDay = 86400000;
+// 24 hours * 60 minutes * 60 seconds * 1000 milliseconds (1 sec)
 
-// Use this key to open and close drawer
-// programically (in addition to swiping)
+// To open & close drawer programically (in addition to swiping)
 GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
 
 // Code needed for snackbars
@@ -101,6 +100,17 @@ final snackBarNeeds2Strikes = SnackBar(
 );
 final snackBarNeeds3Strikes = SnackBar(
   content: const Text('Topic changes after 3 people hit Next'),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(10.0),
+      topRight: Radius.circular(10.0),
+    ),
+  ),
+  backgroundColor: Colors.yellow,
+  duration: const Duration(seconds: 4),
+);
+final snackBarNewGroup = SnackBar(
+  content: const Text('You have a new group!'),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(10.0),
@@ -156,6 +166,7 @@ final snackBarModelDownloaded = SnackBar(
 );
 
 // Circular process indicator while registering users
+// Also shows when downloading language model
 showAlertDialog(BuildContext context) {
   AlertDialog alert = AlertDialog(
     content: new Row(
@@ -437,8 +448,8 @@ class _DporaAppState extends State<DporaApp> {
           'rs': 0,
           'rt': ServerValue.timestamp,
           'rv': true,
-          'scat': 'personal',
           'sc': 'What would you like to talk about?',
+          'scat': 'personal',
           'si': 'All about you',
           'ss': 0
         }).then((_) {
@@ -497,6 +508,8 @@ class _DporaAppState extends State<DporaApp> {
             .update({'c': '$seatColor', 'g': '$grouper'}).then((_) {
           // update group vacancy status
           updateVacancy(seatColor, false);
+          // show snackbar about joining new group
+          rootScaffoldMessengerKey.currentState.showSnackBar(snackBarNewGroup);
         }).catchError((onAssignError) {
           print(onAssignError);
         });
@@ -532,7 +545,7 @@ class _DporaAppState extends State<DporaApp> {
     if (v == false) {
       userStatus = '[ new ' + seatColor + ' ]';
     } else {
-      // A user unassigns someone else from group
+      // Unassign member from group
       updateUser(groupName, seatColor, 'group');
     }
     // Update the vacancy in groups node
@@ -547,6 +560,11 @@ class _DporaAppState extends State<DporaApp> {
         firebaseRTDB.child('vacancies').update(
             {'$groupName': ServerValue.increment(-1)}).catchError((onErrorSit) {
           print(onErrorSit);
+        });
+      } else {
+        // wait a bit, then update group vacancy total once
+        Timer(Duration(seconds: 10), () {
+          vacancyCount(groupName);
         });
       }
     }).catchError((onErrorUpdateGroups) {
@@ -577,6 +595,27 @@ class _DporaAppState extends State<DporaApp> {
     }).catchError((onErrorCheckGroups) {
       print(onErrorCheckGroups);
     });
+  }
+
+  // On launch, change group if user was inactive
+  // and no one unassigned user from old group yet
+  inactiveGroupChange(inactiveTime) {
+    if (userColorString == 'blue' &&
+        blueTimestamp < appLaunchTime - inactiveTime) {
+      updateVacancy(userColorString, true);
+    } else if (userColorString == 'green' &&
+        greenTimestamp < appLaunchTime - inactiveTime) {
+      updateVacancy(userColorString, true);
+    } else if (userColorString == 'orange' &&
+        orangeTimestamp < appLaunchTime - inactiveTime) {
+      updateVacancy(userColorString, true);
+    } else if (userColorString == 'purple' &&
+        purpleTimestamp < appLaunchTime - inactiveTime) {
+      updateVacancy(userColorString, true);
+    } else if (userColorString == 'red' &&
+        redTimestamp < appLaunchTime - inactiveTime) {
+      updateVacancy(userColorString, true);
+    }
   }
 
   // Seek and destroy ghosts occupying vacancies
@@ -721,23 +760,40 @@ class _DporaAppState extends State<DporaApp> {
 
   // Get user info
   void getUser(dporian) {
-    firebaseRTDB.child('dporians').child('$dporian').onValue.listen((event) {
-      var snapshot = event.snapshot;
-      Map<String, dynamic> userMap =
-          new Map<String, dynamic>.from(snapshot.value);
-      var userDetails = Dporian.fromJson(userMap);
-      setState(() {
-        userBoots = userDetails.boots;
-        userBootstamp = userDetails.bootstamp;
-        userColorString = userDetails.color;
-        groupName = userDetails.group;
-        selectedLanguageCode = userDetails.language;
+    // Run a few times to make sure it goes through
+    if (runGetUser < 8) {
+      firebaseRTDB.child('dporians').child('$dporian').onValue.listen((event) {
+        var snapshot = event.snapshot;
+        Map<String, dynamic> userMap =
+            new Map<String, dynamic>.from(snapshot.value);
+        var userDetails = Dporian.fromJson(userMap);
+        setState(() {
+          userBoots = userDetails.boots;
+          userBootstamp = userDetails.bootstamp;
+          userColorString = userDetails.color;
+          groupName = userDetails.group;
+          selectedLanguageCode = userDetails.language;
+        });
+        if (runGetUser == 3) {
+          // run once
+          // Set language pairing (even if EN to EN)
+          setTranslationPairings(userDetails.language);
+          // Display content in set language (even if EN)
+          languageTranslation(userDetails.language, userDetails.color);
+        }
       });
-      // Set language pairing (even if EN to EN)
-      setTranslationPairings(userDetails.language);
-      // Display content in set language (even if EN)
-      languageTranslation(userDetails.language, userDetails.color);
-    });
+    }
+    // runGetUser will be reset to zero,
+    // and therefore run, about every 15 seconds.
+    if (runGetUser > 500) {
+      setState(() {
+        runGetUser = 0;
+      });
+    } else {
+      setState(() {
+        runGetUser++;
+      });
+    }
   }
 
   // Update the mutee's strike count and possibly boot count too
@@ -828,7 +884,7 @@ class _DporaAppState extends State<DporaApp> {
               });
             }
             if (updateWhat == 'group') {
-              // Another user unassign someone else from group
+              // Unassigns member from group
               firebaseRTDB.child('dporians').child('$bootee').update(
                   {'c': 'black', 'g': 'none'}).catchError((onGroupError) {
                 print(onGroupError);
@@ -1332,8 +1388,11 @@ class _DporaAppState extends State<DporaApp> {
       }
     }
     if (auth.currentUser == null) {
-      _label = 'http://dpora.com/onboard';
+      _label = 'https://dpora.com/onboard';
       _hint = 'Tap the yellow arrow!';
+    } else if (userBoots > 2) {
+      _label = 'Suspended!';
+      _hint = 'You have been muted too many times!';
     } else {
       _label = 'Tap here, type, hit Enter key';
       _hint = 'You are ' + setColor;
@@ -1633,38 +1692,51 @@ class _DporaAppState extends State<DporaApp> {
 
   // Relay all the group value changes
   void getContent(groupID) {
-    firebaseRTDB.child('groups').child('$groupID').onValue.listen((event) {
-      var snapshot = event.snapshot;
-      Map<String, dynamic> groupMap =
-          new Map<String, dynamic>.from(snapshot.value);
-      var groupDetails = Content.fromJson(groupMap);
-      setState(() {
-        blueContent = groupDetails.blueContent;
-        blueStrikes = groupDetails.blueStrikes;
-        blueTimestamp = groupDetails.blueTimestamp;
-        blueVacancy = groupDetails.blueVacancy;
-        greenContent = groupDetails.greenContent;
-        greenStrikes = groupDetails.greenStrikes;
-        greenTimestamp = groupDetails.greenTimestamp;
-        greenVacancy = groupDetails.greenVacancy;
-        orangeContent = groupDetails.orangeContent;
-        orangeStrikes = groupDetails.orangeStrikes;
-        orangeTimestamp = groupDetails.orangeTimestamp;
-        orangeVacancy = groupDetails.orangeVacancy;
-        purpleContent = groupDetails.purpleContent;
-        purpleStrikes = groupDetails.purpleStrikes;
-        purpleTimestamp = groupDetails.purpleTimestamp;
-        purpleVacancy = groupDetails.purpleVacancy;
-        redContent = groupDetails.redContent;
-        redStrikes = groupDetails.redStrikes;
-        redTimestamp = groupDetails.redTimestamp;
-        redVacancy = groupDetails.redVacancy;
-        stimulusCategory = groupDetails.stimulusCategory;
-        stimulusContent = groupDetails.stimulusContent;
-        stimulusInstructions = groupDetails.stimulusInstructions;
-        stimulusStrikes = groupDetails.stimulusStrikes;
+    if (runGetContent < 8) {
+      firebaseRTDB.child('groups').child('$groupID').onValue.listen((event) {
+        var snapshot = event.snapshot;
+        Map<String, dynamic> groupMap =
+            new Map<String, dynamic>.from(snapshot.value);
+        var groupDetails = Content.fromJson(groupMap);
+        setState(() {
+          blueContent = groupDetails.blueContent;
+          blueStrikes = groupDetails.blueStrikes;
+          blueTimestamp = groupDetails.blueTimestamp;
+          blueVacancy = groupDetails.blueVacancy;
+          greenContent = groupDetails.greenContent;
+          greenStrikes = groupDetails.greenStrikes;
+          greenTimestamp = groupDetails.greenTimestamp;
+          greenVacancy = groupDetails.greenVacancy;
+          orangeContent = groupDetails.orangeContent;
+          orangeStrikes = groupDetails.orangeStrikes;
+          orangeTimestamp = groupDetails.orangeTimestamp;
+          orangeVacancy = groupDetails.orangeVacancy;
+          purpleContent = groupDetails.purpleContent;
+          purpleStrikes = groupDetails.purpleStrikes;
+          purpleTimestamp = groupDetails.purpleTimestamp;
+          purpleVacancy = groupDetails.purpleVacancy;
+          redContent = groupDetails.redContent;
+          redStrikes = groupDetails.redStrikes;
+          redTimestamp = groupDetails.redTimestamp;
+          redVacancy = groupDetails.redVacancy;
+          stimulusCategory = groupDetails.stimulusCategory;
+          stimulusContent = groupDetails.stimulusContent;
+          stimulusInstructions = groupDetails.stimulusInstructions;
+          stimulusStrikes = groupDetails.stimulusStrikes;
+        });
       });
-    });
+    }
+    // runGetContent will be reset to zero,
+    // and therefore run, about every 5 seconds.
+    if (runGetContent > 150) {
+      setState(() {
+        runGetContent = 0;
+      });
+    } else {
+      setState(() {
+        runGetContent++;
+      });
+    }
   }
 
   // Assign chat content and colors to their boxes
@@ -1794,16 +1866,33 @@ class _DporaAppState extends State<DporaApp> {
 
   // Keep track of current total vacancies in group
   void myGroupVacancyStatus() {
-    firebaseRTDB.child('vacancies').child('$groupName').onValue.listen((event) {
-      var pinpoint = event.snapshot;
-      setState(() {
-        myGroupVacancy = pinpoint.value;
+    if (runMyGroupVacancyStatus < 8) {
+      firebaseRTDB
+          .child('vacancies')
+          .child('$groupName')
+          .onValue
+          .listen((event) {
+        var pinpoint = event.snapshot;
+        setState(() {
+          myGroupVacancy = pinpoint.value;
+        });
       });
-    });
+    }
+    // runMyGroupVacancyStatus will be reset to zero,
+    // and therefore run, around every 30 seconds
+    if (runMyGroupVacancyStatus > 1000) {
+      setState(() {
+        runMyGroupVacancyStatus = 0;
+      });
+    } else {
+      setState(() {
+        runMyGroupVacancyStatus++;
+      });
+    }
   }
 
-  // Users can roll of a boot once a week
-  // if they haven't got one for a week
+  // Users can roll of a boot daily
+  // if they haven't got one for 24 hours
   void rollBoot() {
     firebaseRTDB.child('dporians').child(auth.currentUser.uid).update({
       'b': ServerValue.increment(-1),
@@ -1832,16 +1921,18 @@ class _DporaAppState extends State<DporaApp> {
     }
     String colorContent = uCS + 'c';
     String colorTimestamp = uCS + 't';
+    String colorVacancy = uCS + 'v';
     firebaseRTDB.child('groups').child('$groupName').update({
       '$colorContent': '$submitted',
-      '$colorTimestamp': ServerValue.timestamp
+      '$colorTimestamp': ServerValue.timestamp,
+      '$colorVacancy': false
     }).then((_) {
       // update tally
       firebaseRTDB
           .child('tally')
           .update({'comments': ServerValue.increment(1)}).then((_) {
         // unassign inactive users of the group
-        var tenMinutes = 10 * 60 * 1000;
+        var tenMinutes = 600000; //10*60*1000
         var beingActive = milli - tenMinutes;
         if (blueTimestamp < beingActive &&
             userColorString != 'blue' &&
@@ -1868,10 +1959,8 @@ class _DporaAppState extends State<DporaApp> {
             redVacancy == false) {
           updateVacancy('red', true);
         }
-        // wait a bit, then update group vacancy total
-        // once. timer may prevent user from switching
-        // into the same group, or color of same group
-        Timer(Duration(seconds: 20), () {
+        // wait a bit, then update group vacancy total once
+        Timer(Duration(seconds: 10), () {
           vacancyCount(groupName);
         });
       }).catchError((onErrorStats) {
@@ -1976,7 +2065,7 @@ class _DporaAppState extends State<DporaApp> {
     if (thisVersion < minReqVersion) {
       // shut the front door
       setState(() {
-        translatedInstructions = 'See web page';
+        translatedInstructions = 'Update your app!';
         translatedStimulus = 'https://dpora.com/update';
         // Either the dpora service or app needs to be updated
         upgradeRequired = true;
@@ -2015,12 +2104,14 @@ class _DporaAppState extends State<DporaApp> {
             getContent(groupName);
             // Assign comments to appropriate color boxes
             assignChatBoxes(userColorString);
+            // If was inactive for 9.5 minutes, then change groups
+            inactiveGroupChange(570000);
             // To keep the myGroupVacancy integer updated
             myGroupVacancyStatus();
             // Seek and destroy ghosts occupying vacancies
             ghostBusters(groupName);
-            // Roll off a boot if not booted for a week
-            if (dataDownloaded - userBootstamp > oneDay * 7 && userBoots > 0) {
+            // Roll off a boot if not booted for 24 hours
+            if (dataDownloaded - userBootstamp > oneDay && userBoots > 0) {
               rollBoot();
             }
           }
@@ -2423,10 +2514,11 @@ class _DporaAppState extends State<DporaApp> {
   Widget _stimulus(textSize) {
     if (airplaneMode == true) {
       // No internet connection detected
-      setState(() {
         translatedStimulus = noStimulus;
         translatedInstructions = noInstructions;
-      });
+    } else if (userBoots > 2) {
+        translatedStimulus = 'https://dpora.com/stop';
+        translatedInstructions = 'Banned for 24 hours';
     }
     // Multiply object sizes by this to fit different screen sizes
     double screenSizeUnit = MediaQuery.of(context).size.height * 0.0015;
@@ -2507,14 +2599,30 @@ class _DporaAppState extends State<DporaApp> {
                           setState(() {
                             selectedLanguageCode = value.substring(0, 2);
                           });
-                          setTranslationPairings(value.substring(0, 2));
                         } else {
                           updateUser(auth.currentUser.uid,
                               value.substring(0, 2), 'language');
                         }
+                        setTranslationPairings(value.substring(0, 2));
                         // download language model if not already
                         downloadModel(value.substring(0, 2));
-                        // that also included translation request
+                        // which includes translation request
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    height: 30.0 * screenSizeUnit,
+                    width: 30.0 * screenSizeUnit,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.threesixty_rounded,
+                        color: iconColor,
+                        size: _iconSize,
+                      ),
+                      padding: EdgeInsets.zero, // need for alignment
+                      tooltip: 'Change Groups',
+                      onPressed: () {
+                        updateVacancy(userColorString, true);
                       },
                     ),
                   ),
@@ -2535,19 +2643,6 @@ class _DporaAppState extends State<DporaApp> {
                       },
                     ),
                   ),
-                  // TODO: add Change Group feature later, when
-                  // there are always a few live groups to switch to
-                  // child: IconButton(
-                  //   icon: Icon(
-                  //     Icons.threesixty_rounded,
-                  //     color: iconColor,
-                  //     size: _iconSize,
-                  //   ),
-                  //   padding: EdgeInsets.zero, // need for alignment
-                  //   tooltip: 'New Group & Topic',
-                  //   onPressed: () {},
-                  // //set dporian groupName to 'none' and update vacancies and group data
-                  // ),
                 ]),
 
             // Stimulus is displayed here
@@ -2709,7 +2804,7 @@ class _DporaAppState extends State<DporaApp> {
     int maxCharacters = 250;
     Color _labelColor = userColor;
     Color _hintColor = iconColor;
-    if (auth.currentUser == null) {
+    if (auth.currentUser == null || userBoots > 2) {
       boxBGColor = Colors.black;
       clearIconSize = 0.0;
       maxCharacters = 1;
