@@ -64,12 +64,6 @@ String strikedContent = '';
 // but it's too expensive b/c its data will have to be continuously downloaded.
 // So, just keep loophole for now. Add as sharedPref later or in DB when $ can burn.
 
-// To reduce the background task load, an effort is being made here to run
-// necessary functions often but not constantly every millisecond.
-int runGetUser = 0;
-int runGetContent = 0;
-int runMyGroupVacancyStatus = 0;
-
 // Create lists (decks) containing all the stimuli counts
 // These decks will be shuffled later to choose a random entry
 List<int> adsDeck = new List<int>.generate(totalAds, (i) => i + 1);
@@ -178,6 +172,14 @@ String translatedTextLT = '';
 String translatedTextLB = '';
 String translatedTextRT = '';
 String translatedTextRB = '';
+String muteStatusTranslatedLT = '';
+String muteStatusTranslatedLB = '';
+String muteStatusTranslatedRT = '';
+String muteStatusTranslatedRB = '';
+bool needMuteStatusTranslatedLT = true;
+bool needMuteStatusTranslatedLB = true;
+bool needMuteStatusTranslatedRT = true;
+bool needMuteStatusTranslatedRB = true;
 String selectedLanguageCode = '';
 List languageOptions = [
   'af -	Afrikaans',

@@ -3,22 +3,22 @@
     "dporians": {
       ".read": "auth != null",
       ".write": "auth != null",
-      ".indexOn": "group",
+      ".indexOn": "g",
       "$uid": {
-        "boots": {
+        "b": {
           ".validate": "newData.isNumber() && newData.val() >= 0"
         },
-        "bootstamp": {
+        "t": {
           ".validate": "newData.isNumber() && newData.val() <= now"
         },
-        "color": {
-          ".validate": "newData.val() == '' || newData.val() == 'black' || newData.val() == 'blue' || newData.val() == 'green' || newData.val() == 'orange' || newData.val() == 'purple' || newData.val() == 'red'"
+        "c": {
+          ".validate": "newData.val() == 'black' || newData.val() == 'blue' || newData.val() == 'green' || newData.val() == 'orange' || newData.val() == 'purple' || newData.val() == 'red'"
         },
-        "group": {
-          ".validate": "newData.isString() || newData.val() == ''"
+        "g": {
+          ".validate": "newData.isString()"
         },
-        "striked": {
-          ".validate": "newData.isString() && newData.val().length < 251"
+        "l": {
+          ".validate": "newData.isString() && newData.val().length == 2"
         }
       }
     },
@@ -26,76 +26,76 @@
       ".read": "auth != null",
       ".write": "auth != null",
       "$uid": {
-        "blue-content": {
+        "bc": {
           ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
-        "blue-strikes": {
+        "bs": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
-        "blue-timestamp": {
+        "bt": {
           ".validate": "newData.isNumber() && newData.val() <= now"
         },
-        "blue-vacancy": {
+        "bv": {
           ".validate": "newData.isBoolean()"
         },
-        "green-content": {
+        "gc": {
           ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
-        "green-strikes": {
+        "gs": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
-        "green-timestamp": {
+        "gt": {
           ".validate": "newData.isNumber() && newData.val() <= now"
         },
-        "green-vacancy": {
+        "gv": {
           ".validate": "newData.isBoolean()"
         },
-        "orange-content": {
+        "oc": {
           ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
-        "orange-strikes": {
+        "os": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
-        "orange-timestamp": {
+        "ot": {
           ".validate": "newData.isNumber() && newData.val() <= now"
         },
-        "orange-vacancy": {
+        "ov": {
           ".validate": "newData.isBoolean()"
         },
-        "purple-content": {
+        "pc": {
           ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
-        "purple-strikes": {
+        "ps": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
-        "purple-timestamp": {
+        "pt": {
           ".validate": "newData.isNumber() && newData.val() <= now"
         },
-        "purple-vacancy": {
+        "pv": {
           ".validate": "newData.isBoolean()"
         },
-        "red-content": {
+        "rc": {
           ".validate": "newData.val() == '' || newData.isString() && newData.val().length < 251"
         },
-        "red-strikes": {
+        "rs": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
         },
-        "red-timestamp": {
+        "rt": {
           ".validate": "newData.isNumber() && newData.val() <= now"
         },
-        "red-vacancy": {
+        "rv": {
           ".validate": "newData.isBoolean()"
         },
-        "stimulus-category": {
+        "scat": {
           ".validate": "newData.isString() && newData.val().length < 24"
         },
-        "stimulus-content": {
+        "sc": {
           ".validate": "newData.isString() && newData.val().length < 251"
         },
-        "stimulus-instructions": {
+        "si": {
           ".validate": "newData.isString() && newData.val().length < 24"
         },
-        "stimulus-strikes": {
+        "ss": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
         }
       }
@@ -108,7 +108,7 @@
       ".read": true,
       ".write": false
     },
-    "statistics": {
+    "tally": {
       ".read": true,
       ".write": "auth != null",
       "comments": {
@@ -119,6 +119,9 @@
       },
       "devices": {
         ".validate": "newData.isNumber() && newData.val() >= 2"
+      },
+      "minreq": {
+        ".validate": "newData.isNumber() && newData.val() >= 0"
       },
       "version": {
         ".validate": "newData.isNumber() && newData.val() >= 0"
