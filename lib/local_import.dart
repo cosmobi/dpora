@@ -1,6 +1,7 @@
 // These default totals should be updated from the DB
 // but since they cannot be null and need some number...
 // TODO: Update all default totals before each release
+
 int totalAds = 1;
 int totalDebates = 267;
 int totalGames = 33;
@@ -28,12 +29,12 @@ final String copyright = 'Copyright © 2020-' + nowYear + ' dpora';
 
 // Tally gets their latest numbers from the DB
 // TODO: Update minimum tally numbers
-int devicesDetected = 2;
+int devicesDetected = 22;
 int countriesRepresented = 2;
-int commentsPosted = 2;
+int commentsPosted = 83;
 double latestVersion = 0.0; // keep 0.0
-double minReqVersion = 1.3;
-// version 1.3 added new language code to each dporian's record
+double minReqVersion = 1.5;
+// version 1.5 adds the ability to display ads
 String versionStatus = '';
 bool upgradeRequired;
 // TODO: Update in 3 places before every app release
@@ -41,7 +42,9 @@ bool upgradeRequired;
 // 2. in the yaml file
 // (also increment number on right side of + sign)
 // 3. below this line
-double thisVersion = 1.4;
+double thisVersion = 1.5;
+//TODO this, minReqVersion (above) and YAML file were already updated to 1.5!
+// DELETE THESE TWO LINES before finalizing version
 
 // Set the opacity and duration for fading text
 double userOpacity = 1.0;

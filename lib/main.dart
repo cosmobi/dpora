@@ -8,12 +8,20 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-// Initialize FlutterFire and also wrap the
-// DporaApp widget within a MaterialApp widget
+// Initialize FlutterFire and AdMob, and also wrap
+// the DporaApp widget within a MaterialApp widget
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  MobileAds.instance.initialize();
+  // TODO: Comment out this part on production version - START here
+  // It's telling AdMob that this is only a test device
+  RequestConfiguration configuration =
+      RequestConfiguration(testDeviceIds: ['6C192357461A687FB4BF58C24AFAAD6C']);
+  MobileAds.instance.updateRequestConfiguration(configuration);
+  // Comment out part above on production version - END here
   runApp(MaterialApp(home: DporaApp()));
 }
 
@@ -201,12 +209,14 @@ showAlertDialog(BuildContext context) {
 }
 
 class _DporaAppState extends State<DporaApp> {
+
   // Using this to handle inputted text in the textfield
   final inputController = TextEditingController();
   @override
   void dispose() {
     inputController.dispose();
     super.dispose();
+    _interstitialAd?.dispose();
   }
 
   // Firebase realtime database reference
@@ -409,6 +419,69 @@ class _DporaAppState extends State<DporaApp> {
     }
   }
 
+  // mobile ad code STARTS
+  InterstitialAd _interstitialAd;
+  int attemptedLoads = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    createInterstitialAd();
+  }
+
+  // create interstitial ads
+  void createInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-9418707553988878/5524772387',
+      // That ad unit ID is for android only
+      // TODO: If developing for iOS, make the ad unit ID platform conditional
+      request: AdRequest(),
+      adLoadCallback:
+          InterstitialAdLoadCallback(
+            onAdLoaded: (InterstitialAd ad) {
+        print('Successfully loaded Ad: $ad');
+        _interstitialAd = ad;
+        attemptedLoads = 0;
+        _interstitialAd.setImmersiveMode(true);
+      }, 
+      onAdFailedToLoad: (LoadAdError error) {
+        print('Interstitial Ad failed to load: $error');
+        attemptedLoads++;
+        _interstitialAd = null;
+        // if failed to load ad once or twice, try again
+        if (attemptedLoads < 3) {
+          createInterstitialAd();
+        }
+      }),
+    );
+  }
+
+// show interstitial ads
+  void showInterstitialAd() {
+    if (_interstitialAd == null) {
+      print('Warning: attempt to show interstitial before loaded.');
+      return;
+    }
+    _interstitialAd.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (InterstitialAd ad) =>
+          print('ad onAdShowedFullScreenContent.'),
+      onAdDismissedFullScreenContent: (InterstitialAd ad) {
+        print('$ad onAdDismissedFullScreenContent.');
+        ad.dispose();
+        createInterstitialAd();
+      },
+      onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+        print('$ad onAdFailedToShowFullScreenContent: $error');
+        ad.dispose();
+        createInterstitialAd();
+      },
+      onAdImpression: (InterstitialAd ad) => print('$ad impression occurred.'),
+    );
+    _interstitialAd.show();
+    _interstitialAd = null;
+  }
+  // mobile ad code ENDS
+
   // Update the tally in the menu drawer
   void liveTally() {
     if (deadTally == false) {
@@ -543,6 +616,8 @@ class _DporaAppState extends State<DporaApp> {
         }).catchError((onAssignError) {
           print(onAssignError);
         });
+        // Show ad before sitting in a new seat
+        showInterstitialAd();
       }
     }).catchError((onCheckError) {
       print(onCheckError);
