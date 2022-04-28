@@ -1,3 +1,5 @@
 # dpora
 
-see dpora.com for more details
+All contributors are welcome and needed!
+
+See dpora.com for more details.
